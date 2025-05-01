@@ -1,0 +1,32 @@
+{
+  "name": "nastyakuznet/blog",
+  "description": "blog",
+  "type": "project",
+  "autoload": {
+    "psr-4": {
+      "NastyaKuznet\\Blog\\": "src/app/"
+    }
+  },
+  "authors": [
+    {
+      "name": "nastyakuznet"
+    }
+  ],
+  "minimum-stability": "dev",
+  "require-dev": {
+    "squizlabs/php_codesniffer": "4.0.x-dev"
+  },
+  "require": {
+    "php": "8.3.*",
+    "psr/http-message": "^2.0@dev",
+    "psr/container": "^2.0@dev",
+    "psr/link": "^2.0@dev",
+    "psr/http-server-handler": "^1.0@dev",
+    "psr/http-server-middleware": "^1.0@dev",
+    "psr/simple-cache": "^3.0@dev",
+    "psr/http-factory": "^1.0@dev",
+    "slim/slim": "^4.0",
+    "nyholm/psr7": "^1.8@dev",
+    "laminas/laminas-diactoros": "3.4.x-dev"
+  }
+}
