@@ -139,7 +139,7 @@ class PostController
 
             // **Перечитываем конфиг и создаем новый PostService**
             $this->config = include __DIR__ . '/../config.php';
-            $this->postService = new PostService($this->config);
+            //$this->postService = new PostService($this->config);
 
             // Перенаправляем на страницу поста
             $response = new SlimResponse();
@@ -180,7 +180,7 @@ class PostController
 
             // Добавляем новый пост в конфиг
             $this->config['posts'][] = $newPost;
-            $this->postService = new PostService($this->config);
+            //$this->postService = new PostService($this->config);
             file_put_contents(__DIR__ . '/../config.php', '<?php return ' . var_export($this->config, true) . ';');
             // Перенаправляем на главную страницу
             $response = new SlimResponse();
@@ -245,7 +245,7 @@ class PostController
                 $result = file_put_contents(__DIR__ . '/../config.php', '<?php return ' . var_export($this->config, true) . ';');
 
                 $this->config = include __DIR__ . '/../config.php';
-                $this->postService = new PostService($this->config);
+                //$this->postService = new PostService($this->config);
 
                 $response = new SlimResponse();
                 return $response->withHeader('Location', '/')->withStatus(302);
@@ -260,7 +260,7 @@ class PostController
             $result = file_put_contents(__DIR__ . '/../config.php', '<?php return ' . var_export($this->config, true) . ';');
 
             $this->config = include __DIR__ . '/../config.php';
-            $this->postService = new PostService($this->config);
+            //$this->postService = new PostService($this->config);
 
             $response = new SlimResponse();
             return $response->withHeader('Location', '/')->withStatus(302);
@@ -285,7 +285,7 @@ class PostController
         $this->config['posts'][$postId]['likes']++;
         $result = file_put_contents(__DIR__ . '/../config.php', '<?php return ' . var_export($this->config, true) . ';');
         $this->config = include __DIR__ . '/../config.php';
-        $this->postService = new PostService($this->config);
+        //$this->postService = new PostService($this->config);
 
         // Перенаправляем обратно на страницу поста (или куда нужно)
         return $response->withHeader('Location', '/')->withStatus(302); //  '/' -  главная страница, замените на нужный URL

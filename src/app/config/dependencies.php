@@ -1,5 +1,6 @@
 <?php
 
+use Base\DatabaseService;
 use Slim\Views\Twig;
 use function DI\create;
 use NastyaKuznet\Blog\Service\PostService;
@@ -23,6 +24,10 @@ return [
     // PostService
     PostService::class => create(PostService::class)
         ->constructor(get('config')),
+
+    // DatabaseService
+    DatabaseService::class => create(DatabaseService::class)
+    ->constructor(get('config')),
 
     // PostController
     PostController::class => create(PostController::class)

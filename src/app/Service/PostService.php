@@ -2,16 +2,19 @@
 
 namespace NastyaKuznet\Blog\Service;
 
+use Base\DatabaseService;
 use NastyaKuznet\Blog\Model\Post;
 use NastyaKuznet\Blog\Model\User;
 
 class PostService
 {
     private array $config;
+    private DatabaseService $databaseService;
 
-    public function __construct(array $config)
+    public function __construct(array $config, DatabaseService $databaseService)
     {
         $this->config = $config;
+        $this->databaseService = $databaseService;
     }
 
     public function getAllPosts(): array
