@@ -1,16 +1,14 @@
 <?php
+require_once '../src/Base/db.php';
+require_once '../src/Base/DatabaseService.php';
 
-require dirname(__DIR__) . '/vendor/autoload.php';
+use Base\DatabaseService;
 
-use Slim\Factory\AppFactory;
-use Psr\Http\Message\ResponseInterface as Response;
-use Psr\Http\Message\ServerRequestInterface as Request;
+// Создаем экземпляр сервиса
+$databaseService = new DatabaseService($pdo);
 
-$app = AppFactory::create();
-
-$app->get('/', function (Request $request, Response $response, $args) {
-    $response->getBody()->write("Hello, World!");
-    return $response;
-});
-
-$app->run(); 
+// Пример вывода всех постов
+$posts = $databaseService->getAllPosts();
+echo "<pre>";
+print_r($posts);
+echo "</pre>";

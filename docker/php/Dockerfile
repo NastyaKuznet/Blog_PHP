@@ -10,6 +10,7 @@ RUN apt-get -y update \
     && apt-get install -y git wget mc nano \
     # Установка расширений PHP
     && docker-php-ext-install pdo_mysql mysqli pcntl sockets bcmath iconv \
+    && apt-get install -y libpq-dev && docker-php-ext-install pdo_pgsql \
     && apt-get install -y libffi-dev && docker-php-ext-install ffi \
     && apt-get install -y libc-client-dev libkrb5-dev && PHP_OPENSSL=yes docker-php-ext-configure imap --with-kerberos --with-imap-ssl && docker-php-ext-install imap \
     && apt-get install -y libpng-dev libfreetype6-dev libjpeg-dev libzip-dev && docker-php-ext-configure gd --with-freetype --with-jpeg && docker-php-ext-install gd \
