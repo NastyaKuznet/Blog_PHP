@@ -6,17 +6,20 @@ use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use NastyaKuznet\Blog\Service\PostService;
 use Slim\Psr7\Response as SlimResponse;
+use Slim\Views\Twig;
 
 class PostController
 {
-    private PostService $postService;
     private array $config;
     private static int $lastPostId = 3;
 
-    public function __construct()
+    private PostService $postService;
+    private Twig $view;  // Добавлено
+
+    public function __construct(PostService $postService, Twig $view) // Добавлено Twig
     {
-        $this->config = include __DIR__ . '/../config.php';
-        $this->postService = new PostService($this->config);
+        $this->postService = $postService;
+        $this->view = $view; // Добавлено
     }
 
     public function index(Request $request, Response $response): Response
@@ -57,11 +60,14 @@ class PostController
         foreach ($posts as $post) {
             $authorName[$post->id] = $this->postService->getAuthorName($post->userId);
         }
-        ob_start();
-        include __DIR__ . '/../View/post/index.php';
-        $content = ob_get_clean();
-        $response->getBody()->write($content);
-        return $response;
+        return $this->view->render($response, 'post/index.twig', [
+            'posts' => $posts,
+            'authorName' => $authorName,
+            'userRole' => "moder",
+            'app' => [  //Чтобы получить доступ к request
+                'request' => $request,
+            ],
+        ]);
     }
 
     public function show(Request $request, Response $response, array $args): Response

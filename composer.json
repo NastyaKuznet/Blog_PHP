@@ -30,6 +30,7 @@
     "nyholm/psr7": "^1.8",
     "twig/twig": "^3.0",
     "slim/twig-view": "^3.4",
-    "pimple/pimple": "dev-main"
+    "pimple/pimple": "dev-main",
+    "php-di/php-di": "dev-master"
   }
 }

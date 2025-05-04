@@ -5,9 +5,19 @@ require dirname(__DIR__) . '/vendor/autoload.php';
 use Slim\Factory\AppFactory;
 use NastyaKuznet\Blog\Controller\PostController;
 use NastyaKuznet\Blog\Middleware\RoleMiddleware;
+use Slim\Views\Twig;
+use Slim\Views\TwigMiddleware;
 use Slim\Routing\RouteCollectorProxy;
 
-$app = AppFactory::create();
+// 1. Создаем контейнер
+$containerBuilder = new \DI\ContainerBuilder();
+$containerBuilder->addDefinitions(__DIR__ . '/../src/app/config/dependencies.php');
+$container = $containerBuilder->build();
+// 2. Создаем Slim приложение, передавая контейнер
+$app = AppFactory::createFromContainer($container);
+
+// Add Twig-View Middleware
+$app->add(TwigMiddleware::createFromContainer($app));
 
 // Add Routing Middleware
 $app->addRoutingMiddleware();
