@@ -16,7 +16,7 @@ class RoleMiddleware
     public function __construct(array $allowedRoles)
     {
         $this->allowedRoles = $allowedRoles;
-        $this->config = include __DIR__ . '/../config.php';
+        $this->config = include __DIR__ . '/../config/config.php';
     }
 
     public function __invoke(Request $request, Handler $handler): Response

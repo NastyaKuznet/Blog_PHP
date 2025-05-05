@@ -1,5 +1,5 @@
 <?php
-namespace Base;
+namespace NastyaKuznet\Blog\Service;
 
 use PDO;
 use PDOException; 
@@ -8,9 +8,20 @@ class DatabaseService
 {
     private $pdo;
 
-    public function __construct(PDO $pdo)
+    public function __construct(array $config)
     {
-        $this->pdo = $pdo;
+        $host = $config['db']['host'];
+        $dbname = $config['db']['dbname'];
+        $username = $config['db']['username'];
+        $password = $config['db']['password'];
+
+        try {
+            $this->pdo = new PDO("pgsql:host=$host;dbname=$dbname", $username, $password);
+            $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            $this->pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC); //Установите режим выборки по умолчанию
+        } catch (PDOException $e) {
+            throw new \Exception("Ошибка подключения к базе данных: " . $e->getMessage());
+        }
     }
 
     // Метод для добавления нового пользователя
@@ -53,7 +64,10 @@ class DatabaseService
     public function getAllPosts()
     {
         try {
-            $stmt = $this->pdo->query("SELECT * FROM posts ORDER BY created_at DESC");
+            $stmt = $this->pdo->query("SELECT p.*, COUNT(c.id) as comment_count 
+                                       FROM posts p 
+                                       LEFT JOIN comments c ON p.id = c.post_id 
+                                       GROUP BY p.id");
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             echo "Ошибка при получении постов: " . $e->getMessage();

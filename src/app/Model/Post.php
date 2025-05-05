@@ -10,8 +10,9 @@ class Post
     public $likes;
     public $userId;
     public $commentCount;
+    public $createdAt;
 
-    public function __construct(int $id, string $title, string $content, int $likes, int $userId, int $commentCount = 0)
+    public function __construct(int $id, string $title, string $content, int $likes, int $userId, int $commentCount = 0, string $createdAt)
     {
         $this->id = $id;
         $this->title = $title;
@@ -19,5 +20,6 @@ class Post
         $this->likes = $likes;
         $this->userId = $userId;
         $this->commentCount = $commentCount;
+        $this->createdAt = $createdAt;
     }
 }

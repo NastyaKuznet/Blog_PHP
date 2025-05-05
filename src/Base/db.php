@@ -1,4 +1,4 @@
-<?php //файл для подключения к бд
+<?php
 $host = 'postgres';
 $dbname = 'Blog'; 
 $username = 'postgres'; 

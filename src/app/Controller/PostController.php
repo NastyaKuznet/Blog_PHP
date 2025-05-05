@@ -2,9 +2,9 @@
 
 namespace NastyaKuznet\Blog\Controller;
 
+use NastyaKuznet\Blog\Service\PostService;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
-use NastyaKuznet\Blog\Service\PostService;
 use Slim\Psr7\Response as SlimResponse;
 use Slim\Views\Twig;
 
@@ -14,12 +14,12 @@ class PostController
     private static int $lastPostId = 3;
 
     private PostService $postService;
-    private Twig $view;  // Добавлено
+    private Twig $view;
 
-    public function __construct(PostService $postService, Twig $view) // Добавлено Twig
+    public function __construct(PostService $postService, Twig $view)
     {
         $this->postService = $postService;
-        $this->view = $view; // Добавлено
+        $this->view = $view;
     }
 
     public function index(Request $request, Response $response): Response

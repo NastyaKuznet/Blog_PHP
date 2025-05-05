@@ -5,9 +5,12 @@ use NastyaKuznet\Blog\Middleware\RoleMiddleware;
 use Slim\Views\Twig;
 use Slim\Views\TwigMiddleware;
 use Slim\Routing\RouteCollectorProxy;
+use DI\ContainerBuilder;
+
+require __DIR__ . '/../vendor/autoload.php';
 
 // 1. Создаем контейнер
-$containerBuilder = new \DI\ContainerBuilder();
+$containerBuilder = new DI\ContainerBuilder();
 $containerBuilder->addDefinitions(__DIR__ . '/../src/app/config/dependencies.php');
 $container = $containerBuilder->build();
 // 2. Создаем Slim приложение, передавая контейнер

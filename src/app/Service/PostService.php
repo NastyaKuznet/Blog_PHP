@@ -2,9 +2,8 @@
 
 namespace NastyaKuznet\Blog\Service;
 
-use Base\DatabaseService;
+use NastyaKuznet\Blog\Service\DatabaseService;
 use NastyaKuznet\Blog\Model\Post;
-use NastyaKuznet\Blog\Model\User;
 
 class PostService
 {
@@ -19,16 +18,17 @@ class PostService
 
     public function getAllPosts(): array
     {
+        $postsFromDb = $this->databaseService->getAllPosts();
         $posts = [];
-        foreach ($this->config['posts'] as $postData) {
-            $commentCount = $this->getCommentCountForPost($postData['id']);
+        foreach ($postsFromDb as $postData) {
             $posts[] = new Post(
                 $postData['id'],
                 $postData['title'],
                 $postData['content'],
                 $postData['likes'],
-                $postData['userId'],
-                $commentCount
+                $postData['user_id'],
+                $postData['comment_count'],
+                $postData['created_at']
             );
         }
         return $posts;
@@ -54,23 +54,13 @@ class PostService
                     $postData['content'],
                     $postData['likes'],
                     $postData['userId'],
-                    $this->getCommentCountForPost($postData['id'])
+                    '',
+                    0
                 );
 
             }
         }
         return null;
-    }
-
-    private function getCommentCountForPost(int $postId): int
-    {
-        $count = 0;
-        foreach ($this->config['comments'] as $comment) {
-            if ($comment['postId'] === $postId) {
-                $count++;
-            }
-        }
-        return $count;
     }
 
     public function filterByAuthorNickname(array $posts, string $nickname): array
