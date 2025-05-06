@@ -2,30 +2,75 @@
 
 namespace NastyaKuznet\Blog\Service;
 
+use NastyaKuznet\Blog\Model\Comment;
+use NastyaKuznet\Blog\Service\DatabaseService;
 use NastyaKuznet\Blog\Model\Post;
-use NastyaKuznet\Blog\Model\User;
 
 class PostService
 {
     private array $config;
+    private DatabaseService $databaseService;
 
-    public function __construct(array $config)
+    public function __construct(array $config, DatabaseService $databaseService)
     {
         $this->config = $config;
+        $this->databaseService = $databaseService;
     }
 
-    public function getAllPosts(): array
+    private function getPostsWithFilters(mixed $sortBy, mixed $order, mixed $authorNickname): array
     {
+        if ($authorNickname) {
+            $postsFromDb = $this->databaseService->getPostsByAuthor($authorNickname);
+            return $postsFromDb;
+        }
+
+        switch ($sortBy) {
+            case 'author':
+                if($order === 'asc'){
+                    $postsFromDb = $this->databaseService->getPostsByAuthorAlphabetical();
+                    return $postsFromDb;
+                } else {
+                    $postsFromDb = $this->databaseService->getPostsByAuthorReverseAlphabetical();
+                    return $postsFromDb;
+                }
+                break;
+            case 'likes':
+                if($order === 'asc'){
+                    $postsFromDb = $this->databaseService->getPostsByLikesAscending();
+                    return $postsFromDb;
+                } else {
+                    $postsFromDb = $this->databaseService->getPostsByLikesDescending();
+                    return $postsFromDb;
+                }
+                break;
+            case 'comments':
+                if($order === 'asc'){
+                    $postsFromDb = $this->databaseService->getPostsByCommentsAscending();
+                    return $postsFromDb;
+                } else {
+                    $postsFromDb = $this->databaseService->getPostsByCommentsDescending();
+                    return $postsFromDb;
+                }
+                break;
+        }
+        $postsFromDb = $this->databaseService->getAllPosts();
+        return $postsFromDb;
+    }
+
+    public function getAllPosts(mixed $sortBy, mixed $order, mixed $authorNickname): array
+    {
+        $postsFromDb = $this->getPostsWithFilters($sortBy, $order, $authorNickname);
         $posts = [];
-        foreach ($this->config['posts'] as $postData) {
-            $commentCount = $this->getCommentCountForPost($postData['id']);
+        foreach ($postsFromDb as $postData) {
             $posts[] = new Post(
                 $postData['id'],
                 $postData['title'],
                 $postData['content'],
                 $postData['likes'],
-                $postData['userId'],
-                $commentCount
+                $postData['user_id'],
+                $postData['user_nickname'],
+                $postData['created_at'],
+                $postData['comment_count']
             );
         }
         return $posts;
@@ -33,6 +78,7 @@ class PostService
 
     public function getAuthorName(int $userId): string
     {
+        $authorsFromDb = $this->databaseService->getUserInfo($userId);
         foreach ($this->config['users'] as $user) {
             if ($user['id'] === $userId) {
                 return $user['nickname'];
@@ -43,31 +89,49 @@ class PostService
 
     public function getPostById(int $id): ?Post
     {
-        foreach ($this->config['posts'] as $postData) {
-            if ($postData['id'] === $id) {
-                return new Post(
-                    $postData['id'],
-                    $postData['title'],
-                    $postData['content'],
-                    $postData['likes'],
-                    $postData['userId'],
-                    $this->getCommentCountForPost($postData['id'])
-                );
+        $postFromDb = $this->databaseService->getPostById($id);
 
-            }
+        if (!$postFromDb) {
+            return null;
         }
-        return null;
+
+        try {
+            return new Post(
+                (int)$postFromDb['id'],
+                $postFromDb['title'],
+                $postFromDb['content'],
+                (int)$postFromDb['likes'],
+                (int)$postFromDb['user_id'],
+                $postFromDb['user_nickname'],
+                $postFromDb['created_at'],
+                (int)$postFromDb['comment_count']
+            );
+        } catch (\Exception $e) {
+            error_log("Ошибка при создании объекта Post: " . $e->getMessage());
+            return null;
+        }
     }
 
-    private function getCommentCountForPost(int $postId): int
+    public function getCommentsByPostId(int $postId): array
     {
-        $count = 0;
-        foreach ($this->config['comments'] as $comment) {
-            if ($comment['postId'] === $postId) {
-                $count++;
-            }
+        $commentsFromDb = $this->databaseService->getCommentsById($postId);
+        $comments = [];
+        foreach ($commentsFromDb as $commentData) {
+            $comments[] = new Comment(
+                $commentData['id'],
+                $commentData['content'],
+                $commentData['post_id'],
+                $commentData['user_id'],
+                $commentData['user_nickname'],
+                $commentData['created_at']
+            );
         }
-        return $count;
+        return $comments;
+    }
+
+    public function addComment(Comment $comment)
+    {
+        $this->databaseService->addComment($comment->content, $comment->postId, $comment->userId);
     }
 
     public function filterByAuthorNickname(array $posts, string $nickname): array

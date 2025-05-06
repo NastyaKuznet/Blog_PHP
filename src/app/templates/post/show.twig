@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ post.title|escape }}</title>
+</head>
+<body>
+<h1>{{ post.title|escape }}</h1>
+
+<p>{{ post.content|escape }}</p>
+<p>Автор: {{ post.userNickname|escape }}</p>
+
+<h2>Комментарии:</h2>
+{% if comments %}
+    {% for comment in comments %}
+        <div style="margin-bottom: 10px; border: 1px solid #eee; padding: 5px;">
+            <p><b>{{ comment.userNickname|escape }}:</b> {{ comment.content|escape }}</p>
+        </div>
+    {% endfor %}
+{% else %}
+    <p>Нет комментариев.</p>
+{% endif %}
+
+<h2>Добавить комментарий:</h2>
+<form action="/post/{{ post.id|escape }}" method="POST">
+    <label for="comment">Комментарий:</label><br>
+    <textarea id="comment" name="comment" rows="4" cols="50" required></textarea><br>
+    <button type="submit">Отправить комментарий</button>
+    <a href="/">Лента</a>
+</form>
+
+</body>
+</html>
+

@@ -2,9 +2,10 @@
 
 namespace NastyaKuznet\Blog\Controller;
 
+use NastyaKuznet\Blog\Model\Comment;
+use NastyaKuznet\Blog\Service\PostService;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
-use NastyaKuznet\Blog\Service\PostService;
 use Slim\Psr7\Response as SlimResponse;
 use Slim\Views\Twig;
 
@@ -14,12 +15,12 @@ class PostController
     private static int $lastPostId = 3;
 
     private PostService $postService;
-    private Twig $view;  // Добавлено
+    private Twig $view;
 
-    public function __construct(PostService $postService, Twig $view) // Добавлено Twig
+    public function __construct(PostService $postService, Twig $view)
     {
         $this->postService = $postService;
-        $this->view = $view; // Добавлено
+        $this->view = $view;
     }
 
     public function index(Request $request, Response $response): Response
@@ -29,42 +30,12 @@ class PostController
         $order = $queryParams['order'] ?? 'asc';
         $authorNickname = $queryParams['author_nickname'] ?? null;
 
-        // изменить чтобы применение фильтров было в post service
-        $posts = $this->postService->getAllPosts();
+        $posts = $this->postService->getAllPosts($sortBy, $order, $authorNickname);
 
-        if ($authorNickname) {
-            $posts = $this->postService->filterByAuthorNickname($posts, $authorNickname);
-        }
-
-        switch ($sortBy) {
-            case 'author':
-                usort($posts, function ($a, $b) use ($order) {
-                    $authorA = $this->postService->getAuthorName($a->userId);
-                    $authorB = $this->postService->getAuthorName($b->userId);
-                    return ($order === 'desc') ? strnatcasecmp($authorB, $authorA) : strnatcasecmp($authorA, $authorB);
-                });
-                break;
-            case 'likes':
-                usort($posts, function ($a, $b) use ($order) {
-                    return ($order === 'desc') ? $b->likes - $a->likes : $a->likes - $b->likes;
-                });
-                break;
-            case 'comments':
-                usort($posts, function ($a, $b) use ($order) {
-                    return ($order === 'desc') ? $b->commentCount - $a->commentCount : $a->commentCount - $b->commentCount;
-                });
-                break;
-        }
-
-        $authorName = [];
-        foreach ($posts as $post) {
-            $authorName[$post->id] = $this->postService->getAuthorName($post->userId);
-        }
         return $this->view->render($response, 'post/index.twig', [
             'posts' => $posts,
-            'authorName' => $authorName,
-            'userRole' => "moder",
-            'app' => [  //Чтобы получить доступ к request
+            'userRole' => "moder", // Убрать потом заглушку!!
+            'app' => [  
                 'request' => $request,
             ],
         ]);
@@ -73,83 +44,51 @@ class PostController
     public function show(Request $request, Response $response, array $args): Response
     {
         $postId = (int)$args['id'];
-        $post = null;
-
-        // Найдем пост в конфиге
-        foreach ($this->config['posts'] as $p) {
-            if ($p['id'] === $postId) {
-                $post = $p;
-                break;
-            }
-        }
+        $post = $this->postService->getPostById($postId);
 
         if (!$post) {
             $response->getBody()->write("Пост не найден.");
-            return $response->withStatus(404);
+            return $response->withStatus(404)->withHeader('Content-Type', 'text/plain');
         }
 
-        $authorName = $this->postService->getAuthorName($post['userId']);
+        $comments = $this->postService->getCommentsByPostId($postId);
 
-        // Получаем комментарии для поста
-        $comments = [];
-        foreach ($this->config['comments'] as $comment) {
-            if ($comment['postId'] === $postId) {
-                //Находим автора комментария
-                foreach ($this->config['users'] as $user) {
-                    if ($user['id'] === $comment['userId']) {
-                        $comment['author'] = $user['nickname'];
-                    }
-                }
-                $comments[] = $comment;
+        if ($request->getMethod() === 'GET') {
+            $data = [
+                'post' => $post,
+                'comments' => $comments
+            ];
+
+            try {
+                return $this->view->render($response, 'post/show.twig', $data);
+            } catch (\Twig\Error\LoaderError $e) {
+                $response->getBody()->write("Ошибка загрузки шаблона: " . $e->getMessage());
+                return $response->withStatus(500)->withHeader('Content-Type', 'text/plain');
+            } catch (\Twig\Error\RuntimeError $e) {
+                $response->getBody()->write("Ошибка времени выполнения шаблона: " . $e->getMessage());
+                return $response->withStatus(500)->withHeader('Content-Type', 'text/plain');
+            } catch (\Twig\Error\SyntaxError $e) {
+                $response->getBody()->write("Синтаксическая ошибка в шаблоне: " . $e->getMessage());
+                return $response->withStatus(500)->withHeader('Content-Type', 'text/plain');
             }
         }
 
-        if ($request->getMethod() === 'GET') {
-            // Отображаем страницу поста с комментариями
-            ob_start();
-            include __DIR__ . '/../View/post/show.php';
-            $content = ob_get_clean();
-
-            // Заменяем все переменные, которые хотим передать в шаблон
-            $content = str_replace('<?php echo htmlspecialchars($post[\'id\']); ?>', htmlspecialchars($post['id']), $content);
-            $content = str_replace('<?php echo htmlspecialchars($post[\'title\']); ?>', htmlspecialchars($post['title']), $content);
-            $content = str_replace('<?php echo htmlspecialchars($post[\'content\']); ?>', htmlspecialchars($post['content']), $content);
-            $content = str_replace('<?php echo htmlspecialchars($authorName); ?>', htmlspecialchars($authorName), $content);
-
-            $response->getBody()->write($content);
-            return $response->withStatus(200)->withHeader('Content-Type', 'text/html');
-        }
-
-        // Обрабатываем POST-запрос (добавление комментария)
         $data = $request->getParsedBody();
         $commentText = $data['comment'] ?? '';
 
         if (!empty($commentText)) {
-            // Создаем новый комментарий (в заглушке)
-            $newComment = [
-                'id' => count($this->config['comments']) + 1,
-                'postId' => $postId,
-                'userId' => 1, // Предположим, что комментирует Reader1 (id=1)
-                'content' => $commentText
-            ];
 
-            // Добавляем новый комментарий в конфиг
-            $this->config['comments'][] = $newComment;
-            file_put_contents(__DIR__ . '/../config.php', '<?php return ' . var_export($this->config, true) . ';');
+            $newComment = new Comment(0, $commentText, $postId, 1, '', ''); // Убрать потом заглушку!!
 
-            // **Перечитываем конфиг и создаем новый PostService**
-            $this->config = include __DIR__ . '/../config.php';
-            $this->postService = new PostService($this->config);
-
-            // Перенаправляем на страницу поста
+        $this->postService->addComment($newComment);
             $response = new SlimResponse();
             return $response->withHeader('Location', '/post/' . $postId)->withStatus(302);
         }
 
-        // Если что-то пошло не так, возвращаем на страницу поста
         $response->getBody()->write("Ошибка при добавлении комментария.");
-        return $response->withStatus(400);
+        return $response->withStatus(400)->withHeader('Content-Type', 'text/plain');
     }
+
 
     public function create(Request $request, Response $response): Response
     {
@@ -180,7 +119,7 @@ class PostController
 
             // Добавляем новый пост в конфиг
             $this->config['posts'][] = $newPost;
-            $this->postService = new PostService($this->config);
+            //$this->postService = new PostService($this->config);
             file_put_contents(__DIR__ . '/../config.php', '<?php return ' . var_export($this->config, true) . ';');
             // Перенаправляем на главную страницу
             $response = new SlimResponse();
@@ -245,7 +184,7 @@ class PostController
                 $result = file_put_contents(__DIR__ . '/../config.php', '<?php return ' . var_export($this->config, true) . ';');
 
                 $this->config = include __DIR__ . '/../config.php';
-                $this->postService = new PostService($this->config);
+                //$this->postService = new PostService($this->config);
 
                 $response = new SlimResponse();
                 return $response->withHeader('Location', '/')->withStatus(302);
@@ -260,7 +199,7 @@ class PostController
             $result = file_put_contents(__DIR__ . '/../config.php', '<?php return ' . var_export($this->config, true) . ';');
 
             $this->config = include __DIR__ . '/../config.php';
-            $this->postService = new PostService($this->config);
+            //$this->postService = new PostService($this->config);
 
             $response = new SlimResponse();
             return $response->withHeader('Location', '/')->withStatus(302);
@@ -285,7 +224,7 @@ class PostController
         $this->config['posts'][$postId]['likes']++;
         $result = file_put_contents(__DIR__ . '/../config.php', '<?php return ' . var_export($this->config, true) . ';');
         $this->config = include __DIR__ . '/../config.php';
-        $this->postService = new PostService($this->config);
+        //$this->postService = new PostService($this->config);
 
         // Перенаправляем обратно на страницу поста (или куда нужно)
         return $response->withHeader('Location', '/')->withStatus(302); //  '/' -  главная страница, замените на нужный URL
