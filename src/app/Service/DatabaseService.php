@@ -64,10 +64,11 @@ class DatabaseService
     public function getAllPosts()
     {
         try {
-            $stmt = $this->pdo->query("SELECT p.*, COUNT(c.id) as comment_count 
-                                       FROM posts p 
-                                       LEFT JOIN comments c ON p.id = c.post_id 
-                                       GROUP BY p.id");
+            $stmt = $this->pdo->query("SELECT p.*, u.nickname as user_nickname, COUNT(c.id) as comment_count
+                                        FROM posts p
+                                        LEFT JOIN comments c ON p.id = c.post_id
+                                        JOIN users u ON p.user_id = u.id
+                                        GROUP BY p.id, u.nickname;");
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             echo "Ошибка при получении постов: " . $e->getMessage();
@@ -75,16 +76,14 @@ class DatabaseService
         }
     }
 
-    // Метод для получения постов по автору, отсортированных по нику автора
-    public function getPostsByAuthorAlphabetical($author_nickname)
+    // Метод для получения постов, отсортированных по нику автора
+    public function getPostsByAuthorAlphabetical()
     {
         try {
             $stmt = $this->pdo->prepare("SELECT p.* 
                                          FROM posts p 
-                                         JOIN users u ON p.user_id = u.id 
-                                         WHERE u.nickname = :author_nickname 
+                                         JOIN users u ON p.user_id = u.id  
                                          ORDER BY u.nickname ASC");
-            $stmt->execute(['author_nickname' => $author_nickname]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             echo "Ошибка при получении постов по автору: " . $e->getMessage();
@@ -93,15 +92,13 @@ class DatabaseService
     }
 
     // Метод для получения постов по автору, отсортированных по нику автора в обратном порядке
-    public function getPostsByAuthorReverseAlphabetical($author_nickname)
+    public function getPostsByAuthorReverseAlphabetical()
     {
         try {
             $stmt = $this->pdo->prepare("SELECT p.* 
                                          FROM posts p 
                                          JOIN users u ON p.user_id = u.id 
-                                         WHERE u.nickname = :author_nickname 
                                          ORDER BY u.nickname DESC");
-            $stmt->execute(['author_nickname' => $author_nickname]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             echo "Ошибка при получении постов по автору: " . $e->getMessage();
@@ -181,6 +178,30 @@ class DatabaseService
         }
     }
 
+    // Метод для получения поста по ид
+    public function getPostById($id)
+    {
+        try {
+            $stmt = $this->pdo->prepare("SELECT p.*, u.nickname as user_nickname, COUNT(c.id) as comment_count
+                                        FROM posts p
+                                        LEFT JOIN comments c ON p.id = c.post_id
+                                        JOIN users u ON p.user_id = u.id
+                                        WHERE p.id = :post_id
+                                        GROUP BY p.id, u.nickname;");
+            $stmt->execute(['post_id' => $id]);
+            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            if (count($result) > 0) {
+                return $result[0];
+            } else {
+                return null;
+            }
+        } catch (PDOException $e) {
+            echo "Ошибка при получении поста: " . $e->getMessage();
+            return null;
+        }
+    }
+
     // Метод для добавления нового поста
     public function addPost($title, $content, $user_id)
     {
@@ -224,6 +245,40 @@ class DatabaseService
             return true;
         } catch (PDOException $e) {
             echo "Ошибка при удалении поста: " . $e->getMessage();
+            return false;
+        }
+    }
+
+    // Метод для получения коментариев по ид поста
+    public function getCommentsById($postId)
+    {
+        try {
+            $stmt = $this->pdo->prepare("SELECT c.*, u.nickname as user_nickname
+                                        FROM comments c
+                                        JOIN users u ON c.user_id = u.id
+                                        WHERE c.post_id = :post_id");
+            $stmt->execute(['post_id' => $postId]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            echo "Ошибка при получении коментариев по ид поста: " . $e->getMessage();
+            return [];
+        }
+    }
+
+    // Метод для добавления коментария по ид поста
+    public function addComment($content, $postId, $userId)
+    {
+        try {
+            $stmt = $this->pdo->prepare("INSERT INTO comments(content, post_id, user_id)
+                                        VALUES (:content, :post_id, :user_id);");
+            $stmt->execute([
+                'content' => $content,
+                'post_id' => $postId,
+                'user_id' => $userId
+            ]);
+            return true;
+        } catch (PDOException $e) {
+            echo "Ошибка при добавлении коментария: " . $e->getMessage();
             return false;
         }
     }
