@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Лента постов</title>
+</head>
+<body>
+<h1>Лента постов</h1>
+
+<div style="display: flex;">
+
+    <div style="width: 200px; padding-right: 20px;">
+        <h2>Фильтры</h2>
+
+        <form action="/" method="GET">
+            <label for="author_nickname">Фильтр по никнейму автора:</label><br>
+            <input type="text" id="author_nickname" name="author_nickname" value="{{ app.request.get('author_nickname')|escape }}"><br><br>
+
+            <label for="sort_by">Сортировать по:</label><br>
+            <select name="sort_by" id="sort_by">
+                <option value="">Не выбрано</option>
+                <option value="author" {% if app.request.get('sort_by') == 'author' %}selected{% endif %}>Автору</option>
+                <option value="likes" {% if app.request.get('sort_by') == 'likes' %}selected{% endif %}>Лайкам</option>
+                <option value="comments" {% if app.request.get('sort_by') == 'comments' %}selected{% endif %}>Комментариям</option>
+            </select><br><br>
+
+            <label for="order">Порядок:</label><br>
+            <select name="order" id="order">
+                <option value="asc" {% if app.request.get('order') == 'asc' %}selected{% endif %}>Возрастанию</option>
+                <option value="desc" {% if app.request.get('order') == 'desc' %}selected{% endif %}>Убыванию</option>
+            </select><br><br>
+
+            <button type="submit">Применить</button>
+            <a href="/">Сбросить фильтры</a>
+        </form>
+    </div>
+
+    <div>
+        {% if userRole in ['writer', 'moder', 'admin'] %}
+            <a href="/post/create">Написать пост</a>
+        {% endif %}
+
+        {% for post in posts %}
+            <div style="margin-bottom: 20px; border: 1px solid #ccc; padding: 10px;">
+                <h3>{{ post.title|escape }}</h3>
+                <p>{{ post.content|escape }}</p>
+                <p>Автор: {{ post.userNickname|escape }}</p>
+                <p>Лайков: {{ post.likes|escape }}</p>
+                <p>Комментариев: {{ post.commentCount|escape }}</p>
+                <form action="/post/{{ post.id|escape }}/like" method="post">
+                    <button type="submit">Лайк</button>
+                </form>
+                <a href="/post/{{ post.id|escape }}">Комментарии</a>
+
+                {% if userRole in ['moder', 'admin'] %}
+                    <a href="/post/edit/{{ post.id|escape }}">Редактировать</a>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
+
+</div>
+
+</body>
+</html>
