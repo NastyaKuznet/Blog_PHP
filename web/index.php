@@ -3,6 +3,7 @@
 use Slim\Factory\AppFactory;
 use NastyaKuznet\Blog\Controller\PostController;
 use NastyaKuznet\Blog\Middleware\RoleMiddleware;
+use NastyaKuznet\Blog\Factory\RoleMiddlewareFactory;
 use Slim\Views\Twig;
 use Slim\Views\TwigMiddleware;
 use Slim\Routing\RouteCollectorProxy;
@@ -30,13 +31,13 @@ $errorMiddleware = $app->addErrorMiddleware(true, true, true);
 $container = $app->getContainer();
 
 // Группировка роутов по префиксу 'post'
-$app->group('/post', function (RouteCollectorProxy $group) {
+$app->group('/post', function (RouteCollectorProxy $group) use ($container) {
     // Роуты, требующие роль 'writer' или выше
-    $group->get('/create', [PostController::class, 'create'])->add(new RoleMiddleware(['writer', 'moder', 'admin']));
-    $group->post('/create', [PostController::class, 'create'])->add(new RoleMiddleware(['writer', 'moder', 'admin']));
+    $group->get('/create', [PostController::class, 'create'])->add((new RoleMiddlewareFactory(['writer', 'moderator', 'admin']))($container));
+    $group->post('/create', [PostController::class, 'create'])->add((new RoleMiddlewareFactory(['writer', 'moderator', 'admin']))($container));
     // Роуты, требующие роль 'moder' или выше
-    $group->get('/edit/{id}', [PostController::class, 'edit'])->add(new RoleMiddleware(['moder', 'admin']));
-    $group->post('/edit/{id}', [PostController::class, 'edit'])->add(new RoleMiddleware(['moder', 'admin']));
+    $group->get('/edit/{id}', [PostController::class, 'edit'])->add((new RoleMiddlewareFactory(['moderator', 'admin']))($container));
+    $group->post('/edit/{id}', [PostController::class, 'edit'])->add((new RoleMiddlewareFactory(['moderator', 'admin']))($container));
 });
 
 $app->get('/', [PostController::class, 'index']);
@@ -46,7 +47,7 @@ $app->map(['GET', 'POST'],'/post/{id}', [PostController::class, 'show']);
 $app->post('/post/{id}/like', [PostController::class, 'likePost']);
 
 //Заглушки для admins
-$app->get('/users', [PostController::class, 'users'])->add(new RoleMiddleware(['admin']));
+$app->get('/users', [PostController::class, 'users'])->add((new RoleMiddlewareFactory(['moderator', 'admin']))($container));
 
 
 $app->run(); 

@@ -7,6 +7,7 @@
         <h1>Редактирование поста</h1>
 
         <form action="/post/edit/{{ post.id }}" method="POST">
+            <p>Автор поста: {{ post.userNickname|escape }}</p>
             <div>
                 <label for="title">Заголовок:</label><br>
                 <input type="text" id="title" name="title" value="{{ post.title|escape }}" required>

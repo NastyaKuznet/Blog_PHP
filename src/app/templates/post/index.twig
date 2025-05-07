@@ -43,6 +43,7 @@
             <div style="margin-bottom: 20px; border: 1px solid #ccc; padding: 10px; word-wrap: break-word;">
                 <h3>{{ post.title|escape }}</h3>
                 <p>{{ post.content|nl2br }}</p>
+                <p>{{ post.createdAt|date('H:i d.m.Y', 'Asia/Yekaterinburg') }}</p>
                 <p>Автор: {{ post.userNickname|escape }}</p>
                 <p>Лайков: {{ post.likes|escape }}</p>
                 <p>Комментариев: {{ post.commentCount|escape }}</p>

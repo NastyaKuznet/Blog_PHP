@@ -80,12 +80,12 @@ class DatabaseService
     public function getPostsByAuthorAlphabetical()
     {
         try {
-            $stmt = $this->pdo->prepare("SELECT p.* , u.nickname as user_nickname, COUNT(c.id) as comment_count
+            $stmt = $this->pdo->query("SELECT p.* , u.nickname as user_nickname, COUNT(c.id) as comment_count
                                          FROM posts p 
                                          LEFT JOIN comments c ON p.id = c.post_id
                                          JOIN users u ON p.user_id = u.id  
                                          GROUP BY p.id, u.nickname
-                                         ORDER BY u.nickname ASC");
+                                         ORDER BY u.nickname ASC;");
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             echo "Ошибка при получении постов по автору: " . $e->getMessage();
@@ -97,12 +97,12 @@ class DatabaseService
     public function getPostsByAuthorReverseAlphabetical()
     {
         try {
-            $stmt = $this->pdo->prepare("SELECT p.* , u.nickname as user_nickname, COUNT(c.id) as comment_count
+            $stmt = $this->pdo->query("SELECT p.* , u.nickname as user_nickname, COUNT(c.id) as comment_count
                                          FROM posts p 
                                          LEFT JOIN comments c ON p.id = c.post_id
                                          JOIN users u ON p.user_id = u.id  
                                          GROUP BY p.id, u.nickname
-                                         ORDER BY u.nickname DESC");
+                                         ORDER BY u.nickname DESC;");
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             echo "Ошибка при получении постов по автору: " . $e->getMessage();
@@ -118,8 +118,8 @@ class DatabaseService
                                          FROM posts p 
                                          LEFT JOIN comments c ON p.id = c.post_id
                                          JOIN users u ON p.user_id = u.id  
-                                         GROUP BY p.id, u.nickname
-                                         WHERE u.nickname = :author_nickname");
+                                         WHERE u.nickname = :author_nickname
+                                         GROUP BY p.id, u.nickname");
             $stmt->execute(['author_nickname' => $author_nickname]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
@@ -404,6 +404,26 @@ class DatabaseService
         } catch (PDOException $e) {
             echo "Ошибка при удалении пользователя: " . $e->getMessage();
             return false;
+        }
+    }
+
+    public function getNameRoleById(int $id): string
+    {
+        try {
+            $stmt = $this->pdo->prepare("SELECT name
+                                       FROM roles 
+                                       WHERE id = :id");
+            $stmt->execute(['id' => $id]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+            if ($result && isset($result['name'])) {
+                return $result['name']; 
+            } else {
+                return "";
+            }
+        } catch (PDOException $e) {
+            echo "Ошибка при получении пользователей: " . $e->getMessage();
+            return "";
         }
     }
 }

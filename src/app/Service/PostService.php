@@ -8,12 +8,10 @@ use NastyaKuznet\Blog\Model\Post;
 
 class PostService
 {
-    private array $config;
     private DatabaseService $databaseService;
 
-    public function __construct(array $config, DatabaseService $databaseService)
+    public function __construct(DatabaseService $databaseService)
     {
-        $this->config = $config;
         $this->databaseService = $databaseService;
     }
 
@@ -27,7 +25,12 @@ class PostService
         switch ($sortBy) {
             case 'author':
                 if($order === 'asc'){
+                    echo('lol2');
                     $postsFromDb = $this->databaseService->getPostsByAuthorAlphabetical();
+                    echo(count($postsFromDb));
+                    foreach($postsFromDb as $d){
+                        echo($d['id']);
+                    }
                     return $postsFromDb;
                 } else {
                     $postsFromDb = $this->databaseService->getPostsByAuthorReverseAlphabetical();
@@ -60,8 +63,10 @@ class PostService
     public function getAllPosts(mixed $sortBy, mixed $order, mixed $authorNickname): array
     {
         $postsFromDb = $this->getPostsWithFilters($sortBy, $order, $authorNickname);
+        echo('lol');
         $posts = [];
         foreach ($postsFromDb as $postData) {
+            echo($postData['id']);
             $posts[] = new Post(
                 $postData['id'],
                 $postData['title'],
@@ -74,17 +79,6 @@ class PostService
             );
         }
         return $posts;
-    }
-
-    public function getAuthorName(int $userId): string
-    {
-        $authorsFromDb = $this->databaseService->getUserInfo($userId);
-        foreach ($this->config['users'] as $user) {
-            if ($user['id'] === $userId) {
-                return $user['nickname'];
-            }
-        }
-        return 'Unknown Author';
     }
 
     public function getPostById(int $id): ?Post
@@ -152,12 +146,5 @@ class PostService
     public function addLike(int $postId): bool 
     {
         return $this->databaseService->addLike($postId);
-    }
-
-    public function incrementLike(int $postId): void
-    {
-        if (isset($this->config['posts'][$postId])) {
-            $this->config['posts'][$postId]['likes']++;
-        }
     }
 }
