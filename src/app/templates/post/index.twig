@@ -34,15 +34,15 @@
         </form>
     </div>
 
-    <div>
+    <div style="width: calc(100% - 240px); margin: 0 auto; padding: 0 20px;">
         {% if userRole in ['writer', 'moder', 'admin'] %}
             <a href="/post/create">Написать пост</a>
         {% endif %}
 
         {% for post in posts %}
-            <div style="margin-bottom: 20px; border: 1px solid #ccc; padding: 10px;">
+            <div style="margin-bottom: 20px; border: 1px solid #ccc; padding: 10px; word-wrap: break-word;">
                 <h3>{{ post.title|escape }}</h3>
-                <p>{{ post.content|escape }}</p>
+                <p>{{ post.content|nl2br }}</p>
                 <p>Автор: {{ post.userNickname|escape }}</p>
                 <p>Лайков: {{ post.likes|escape }}</p>
                 <p>Комментариев: {{ post.commentCount|escape }}</p>

@@ -1,4 +1,5 @@
 <?php
+
 use Slim\Factory\AppFactory;
 use NastyaKuznet\Blog\Controller\PostController;
 use NastyaKuznet\Blog\Middleware\RoleMiddleware;

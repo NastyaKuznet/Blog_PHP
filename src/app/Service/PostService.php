@@ -112,6 +112,21 @@ class PostService
         }
     }
 
+    public function addPost(string $title, string $content, $userId): bool 
+    {
+        return $this->databaseService->addPost($title, $content, $userId); 
+    }
+
+    public function editPost(int $id, string $title, string $content): bool 
+    {
+        return $this->databaseService->editPost($id, $title, $content); 
+    }
+
+    public function deletePostAndComments(int $id): bool 
+    {
+        return $this->databaseService->deletePostAndComments($id); 
+    }
+
     public function getCommentsByPostId(int $postId): array
     {
         $commentsFromDb = $this->databaseService->getCommentsById($postId);
@@ -129,21 +144,14 @@ class PostService
         return $comments;
     }
 
-    public function addComment(Comment $comment)
+    public function addComment(Comment $comment): bool
     {
-        $this->databaseService->addComment($comment->content, $comment->postId, $comment->userId);
+        return $this->databaseService->addComment($comment->content, $comment->postId, $comment->userId);
     }
 
-    public function filterByAuthorNickname(array $posts, string $nickname): array
+    public function addLike(int $postId): bool 
     {
-        $filteredPosts = [];
-        foreach ($posts as $post) {
-            $authorName = $this->getAuthorName($post->userId);
-            if (stripos($authorName, $nickname) !== false) {  // Используем stripos для регистронезависимого поиска
-                $filteredPosts[] = $post;
-            }
-        }
-        return $filteredPosts;
+        return $this->databaseService->addLike($postId);
     }
 
     public function incrementLike(int $postId): void
