@@ -35,6 +35,10 @@
     </div>
 
     <div>
+        <form action="/logout" method="post">
+            <button type="submit">Выход</button>
+        </form>
+
         {% if userRole in ['writer', 'moder', 'admin'] %}
             <a href="/post/create">Написать пост</a>
         {% endif %}
