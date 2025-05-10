@@ -6,14 +6,14 @@ use PDOException;
 
 class DatabaseService
 {
-    private $pdo;
+    public $pdo;
 
     public function __construct(PDO $pdo)
     {
         $this->pdo = $pdo;
     }
 
-    // Метод для добавления нового пользователя
+    // добавление нового пользователя
     public function addUser($nickname, $password, $role_id)
     {
         try {
@@ -30,7 +30,7 @@ class DatabaseService
         }
     }
 
-    // Метод для проверки существования пользователя
+    // проверка существования пользователя
     public function checkUser($nickname, $password)
     {
         try {
@@ -49,7 +49,7 @@ class DatabaseService
         }
     }
 
-    // Метод для получения всех постов
+    // получение всех постов
     public function getAllPosts()
     {
         try {
@@ -61,7 +61,7 @@ class DatabaseService
         }
     }
 
-    // Метод для получения постов по автору, отсортированных по нику автора
+    // получение постов по автору, отсортированных по нику автора
     public function getPostsByAuthorAlphabetical($author_nickname)
     {
         try {
@@ -78,7 +78,7 @@ class DatabaseService
         }
     }
 
-    // Метод для получения постов по автору, отсортированных по нику автора в обратном порядке
+    // получение постов по автору, отсортированных по нику автора в обратном порядке
     public function getPostsByAuthorReverseAlphabetical($author_nickname)
     {
         try {
@@ -95,7 +95,7 @@ class DatabaseService
         }
     }
 
-    // Метод для получения всех постов по конкретному нику автора
+    // получение всех постов по конкретному нику автора
     public function getPostsByAuthor($author_nickname)
     {
         try {
@@ -111,7 +111,7 @@ class DatabaseService
         }
     }
 
-    // Метод для получения всех постов, отсортированных по количеству лайков в порядке возрастания
+    // получение всех постов, отсортированных по количеству лайков в порядке возрастания
     public function getPostsByLikesAscending()
     {
         try {
@@ -123,7 +123,7 @@ class DatabaseService
         }
     }
 
-    // Метод для получения всех постов, отсортированных по количеству лайков в порядке убывания
+    // получение всех постов, отсортированных по количеству лайков в порядке убывания
     public function getPostsByLikesDescending()
     {
         try {
@@ -135,7 +135,7 @@ class DatabaseService
         }
     }
 
-    // Метод для получения всех постов, отсортированных по количеству комментариев в порядке возрастания
+    // получение всех постов, отсортированных по количеству комментариев в порядке возрастания
     public function getPostsByCommentsAscending()
     {
         try {
@@ -151,7 +151,7 @@ class DatabaseService
         }
     }
 
-    // Метод для получения всех постов, отсортированных по количеству комментариев в порядке убывания
+    // получение всех постов, отсортированных по количеству комментариев в порядке убывания
     public function getPostsByCommentsDescending()
     {
         try {
@@ -167,7 +167,7 @@ class DatabaseService
         }
     }
 
-    // Метод для добавления нового поста
+    // добавление нового поста
     public function addPost($title, $content, $user_id)
     {
         try {
@@ -184,7 +184,7 @@ class DatabaseService
         }
     }
 
-    // Метод для редактирования существующего поста
+    // редактирование существующего поста
     public function editPost($post_id, $title, $content)
     {
         try {
@@ -201,7 +201,7 @@ class DatabaseService
         }
     }
 
-    // Метод для удаления поста
+    // удаление поста
     public function deletePost($post_id)
     {
         try {
@@ -214,7 +214,7 @@ class DatabaseService
         }
     }
 
-    // Метод для получения информации о пользователе по его ID
+    // получение информации о пользователе по его id
     public function getUserInfo($user_id)
     {
         try {
@@ -227,7 +227,7 @@ class DatabaseService
         }
     }
 
-    // Метод для получения списка всех пользователей с их ID, ником и ролью
+    // получение списка всех пользователей с их id, ником и ролью
     public function getAllUsers()
     {
         try {
@@ -241,7 +241,7 @@ class DatabaseService
         }
     }
 
-    // Метод для изменения роли пользователя
+    // изменение роли пользователя
     public function changeUserRole($user_id, $new_role_id)
     {
         try {
@@ -257,15 +257,12 @@ class DatabaseService
         }
     }
 
-    // Метод для удаления пользователя и всех его постов
+    // удаление пользователя и всех его постов
     public function deleteUser($user_id)
     {
         try {
-            // Удаляем все посты пользователя
             $stmt = $this->pdo->prepare("DELETE FROM posts WHERE user_id = :user_id");
             $stmt->execute(['user_id' => $user_id]);
-
-            // Удаляем пользователя
             $stmt = $this->pdo->prepare("DELETE FROM users WHERE id = :user_id");
             $stmt->execute(['user_id' => $user_id]);
             return true;
@@ -273,5 +270,27 @@ class DatabaseService
             echo "Ошибка при удалении пользователя: " . $e->getMessage();
             return false;
         }
+    }
+
+    public function getUserRole($user_id)
+    {
+        try {
+            $stmt = $this->pdo->prepare("SELECT role_id FROM users WHERE id = :user_id");
+            $stmt->execute(['user_id' => $user_id]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $result ? $result['role_id'] : null;
+        } catch (PDOException $e) {
+            echo "Ошибка при получении роли пользователя: " . $e->getMessage();
+            return null;
+        }
+    }
+
+    public function createTestUsers()
+    {
+        $this->addUser('reader_test', 'password', 1); // reader id=1
+        $this->addUser('writer_test', 'password', 2); // writer id=2
+        $this->addUser('moderator_test', 'password', 3); // moderator id=3
+        $this->addUser('admin_test', 'password', 4); // admin id=4
+        return true;
     }
 }
