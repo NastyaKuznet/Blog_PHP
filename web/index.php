@@ -13,7 +13,7 @@ $pdo = new PDO("pgsql:host=postgres;dbname=Blog", 'postgres', 'root');
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 $databaseService = new DatabaseService($pdo);
 
-$databaseService->createTestUsers();
+//$databaseService->createTestUsers();
 
 $app = AppFactory::create();
 
@@ -27,6 +27,12 @@ $app->get('/', function (Request $request, Response $response) {
                 <li><a href='/users'>Пользователи</a></li>
              </ul>";
     $response->getBody()->write($html);
+    return $response;
+});
+
+$app->get('/setup-test-data', function (Request $request, Response $response) use ($databaseService) {
+    $databaseService->createTestUsersAndPosts();
+    $response->getBody()->write("<h1>Тестовые данные добавлены!</h1>");
     return $response;
 });
 

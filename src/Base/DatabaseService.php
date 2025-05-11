@@ -261,13 +261,28 @@ class DatabaseService
     public function deleteUser($user_id)
     {
         try {
-            $stmt = $this->pdo->prepare("DELETE FROM posts WHERE user_id = :user_id");
-            $stmt->execute(['user_id' => $user_id]);
-            $stmt = $this->pdo->prepare("DELETE FROM users WHERE id = :user_id");
-            $stmt->execute(['user_id' => $user_id]);
+            $this->pdo->beginTransaction();
+
+            // Проверяем, существует ли пользователь
+            $stmt = $this->pdo->prepare("SELECT COUNT(*) FROM users WHERE id = ?");
+            $stmt->execute([$user_id]);
+            if ($stmt->fetchColumn() == 0) {
+                throw new \Exception("Пользователь с ID {$user_id} не найден.");
+            }
+
+            // Удаляем все посты (автоматически удалятся комментарии благодаря ON DELETE CASCADE)
+            $stmt = $this->pdo->prepare("DELETE FROM posts WHERE user_id = ?");
+            $stmt->execute([$user_id]);
+
+            // Удаляем пользователя
+            $stmt = $this->pdo->prepare("DELETE FROM users WHERE id = ?");
+            $stmt->execute([$user_id]);
+
+            $this->pdo->commit();
             return true;
-        } catch (PDOException $e) {
-            echo "Ошибка при удалении пользователя: " . $e->getMessage();
+        } catch (\PDOException | \Exception $e) {
+            $this->pdo->rollBack();
+            error_log("Ошибка при удалении пользователя: " . $e->getMessage());
             return false;
         }
     }
@@ -315,5 +330,36 @@ class DatabaseService
             echo "Ошибка при проверке существования пользователя: " . $e->getMessage();
             return false;
         }
+    }
+
+    public function createTestPosts()
+    {
+        $posts = [
+            ['title' => 'Пост читателя', 'content' => 'Читатель не должен иметь постов', 'nickname' => 'reader_test'],
+            ['title' => 'Мой первый пост', 'content' => 'Привет, это мой первый пост!', 'nickname' => 'writer_test'],
+            ['title' => 'Работа модератора', 'content' => 'Я могу редактировать и удалять посты.', 'nickname' => 'moderator_test'],
+            ['title' => 'Админский пост', 'content' => 'Я администратор и могу всё!', 'nickname' => 'admin_test'],
+        ];
+
+        foreach ($posts as $post) {
+            // Получаем ID пользователя по никнейму
+            $stmt = $this->pdo->prepare("SELECT id FROM users WHERE nickname = ?");
+            $stmt->execute([$post['nickname']]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($user) {
+                $stmt = $this->pdo->prepare("INSERT INTO posts (title, content, user_id) VALUES (?, ?, ?)");
+                $stmt->execute([$post['title'], $post['content'], $user['id']]);
+            }
+        }
+
+        echo "Тестовые посты добавлены<br>";
+    }
+
+    // src/Base/DatabaseService.php
+    public function createTestUsersAndPosts()
+    {
+        $this->createTestUsers(); 
+        $this->createTestPosts(); 
     }
 }
