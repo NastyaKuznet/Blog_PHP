@@ -91,7 +91,7 @@ $app->get('/accounts', function (Request $request, Response $response) {
     $response->getBody()->write($html);
     return $response;
 });
-
+/*
 // /account/{id}
 $app->get('/account/{id}', function (Request $request, Response $response, array $args) use ($databaseService) {
     $user_id = (int)$args['id'];
@@ -272,6 +272,6 @@ $app->post('/delete_user', function (Request $request, Response $response, array
         error_log("Ошибка при удалении пользователя: " . $e->getMessage());
         die("Произошла ошибка при удалении пользователя");
     }
-});
+});*/
 
 $app->run(); 

@@ -8,7 +8,6 @@ use Exception;
 
 class AuthService
 {
-    private array $config;
     private $db;
     private $roleMap = [
         1 => 'user',
@@ -17,9 +16,8 @@ class AuthService
         4 => 'admin'
     ];
 
-    public function __construct(array $config, DatabaseService $db)
+    public function __construct( DatabaseService $db)
     {
-        $this->config = $config;
         $this->db = $db;
     }
 

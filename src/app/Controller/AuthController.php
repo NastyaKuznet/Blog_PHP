@@ -25,7 +25,7 @@ class AuthController
         $cookies = $request->getCookieParams();
         $token = $cookies['token'] ?? null;
 
-        if ($token) {
+        /*if ($token) {
             // Проверяем токен
             $payload = $this->authService->decodeJwtToken($token, $_ENV['JWT_SECRET']);
 
@@ -33,7 +33,7 @@ class AuthController
                 // Токен валиден → редирект на /post
                 return $response->withHeader('Location', '/post')->withStatus(302);
             }
-        }
+        }*/
 
         // Если нет токена → показываем форму регистрации
         return $this->view->render($response, 'auth/register.twig');
@@ -129,8 +129,8 @@ class AuthController
     private function setTokenInCookie(Response $response, $user): Response
     {
         // Генерируем токен через AuthService
-        $token = $this->authService->generateJwtToken($user, $_ENV['JWT_SECRET']);
-
+        //$token = $this->authService->generateJwtToken($user, $_ENV['JWT_SECRET']);
+        $token = "hello";
         // Устанавливаем токен в куки
         $response = $response->withHeader(
             'Set-Cookie',
