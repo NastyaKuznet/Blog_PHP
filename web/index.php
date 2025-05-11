@@ -1,9 +1,11 @@
 <?php
+
 use Slim\Factory\AppFactory;
 use NastyaKuznet\Blog\Controller\PostController;
 use NastyaKuznet\Blog\Controller\AuthController;
 use NastyaKuznet\Blog\Middleware\RoleMiddleware;
 use NastyaKuznet\Blog\Middleware\AuthMiddleware;
+use NastyaKuznet\Blog\Factory\RoleMiddlewareFactory;
 use Slim\Views\Twig;
 use Slim\Views\TwigMiddleware;
 use Slim\Routing\RouteCollectorProxy;
@@ -14,8 +16,6 @@ use Slim\Psr7\Factory\ResponseFactory;
 use Dotenv\Dotenv;
 
 require __DIR__ . '/../vendor/autoload.php';
-$dotenv = \Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
-$dotenv->load();
 
 // Включаем вывод ошибок
 ini_set('display_errors', 1);
@@ -28,7 +28,7 @@ $container = $containerBuilder->build();
 // 2. Создаем Slim приложение, передавая контейнер
 $app = AppFactory::createFromContainer($container);
 
-session_start();    
+session_start();
 
 // Add Twig-View Middleware
 $app->add(TwigMiddleware::createFromContainer($app));
@@ -63,13 +63,13 @@ $app->get('/debug/routes', function ($request, $response) use ($app) {
 $app->get('/', [AuthController::class, 'home']);
 
 // Группировка роутов по префиксу 'post'
-$app->group('/post', function (RouteCollectorProxy $group) {
+$app->group('/post', function (RouteCollectorProxy $group) use ($container) {
     // Роуты, требующие роль 'writer' или выше
-    $group->get('/create', [PostController::class, 'create'])->add(new RoleMiddleware(['writer', 'moder', 'admin']));
-    $group->post('/create', [PostController::class, 'create'])->add(new RoleMiddleware(['writer', 'moder', 'admin']));
+    $group->get('/create', [PostController::class, 'create'])->add((new RoleMiddlewareFactory(['writer', 'moderator', 'admin']))($container));
+    $group->post('/create', [PostController::class, 'create'])->add((new RoleMiddlewareFactory(['writer', 'moderator', 'admin']))($container));
     // Роуты, требующие роль 'moder' или выше
-    $group->get('/edit/{id}', [PostController::class, 'edit'])->add(new RoleMiddleware(['moder', 'admin']));
-    $group->post('/edit/{id}', [PostController::class, 'edit'])->add(new RoleMiddleware(['moder', 'admin']));
+    $group->get('/edit/{id}', [PostController::class, 'edit'])->add((new RoleMiddlewareFactory(['moderator', 'admin']))($container));
+    $group->post('/edit/{id}', [PostController::class, 'edit'])->add((new RoleMiddlewareFactory(['moderator', 'admin']))($container));
 });
 
 $app->get('/post', [PostController::class, 'index']);
@@ -79,6 +79,6 @@ $app->map(['GET', 'POST'],'/post/{id}', [PostController::class, 'show']);
 $app->post('/post/{id}/like', [PostController::class, 'likePost']);
 
 //Заглушки для admins
-$app->get('/users', [PostController::class, 'users'])->add(new RoleMiddleware(['admin']));
+$app->get('/users', [PostController::class, 'users'])->add((new RoleMiddlewareFactory(['moderator', 'admin']))($container));
 
 $app->run(); 

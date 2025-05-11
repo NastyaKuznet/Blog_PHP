@@ -2,6 +2,7 @@
 
 use NastyaKuznet\Blog\Controller\PostController;
 use NastyaKuznet\Blog\Controller\AuthController;
+use NastyaKuznet\Blog\Middleware\RoleMiddleware;
 use NastyaKuznet\Blog\Service\DatabaseService;
 use NastyaKuznet\Blog\Service\PostService;
 use NastyaKuznet\Blog\Service\AuthService;
@@ -18,11 +19,11 @@ return [
         return new Twig($loader, ['cache' => false]);
     },
 
-    PostService::class => create(PostService::class)
-        ->constructor(get('config'), get(DatabaseService::class)),
-
     DatabaseService::class => create(DatabaseService::class)
         ->constructor(get('config')),
+
+    PostService::class => create(PostService::class)
+        ->constructor(get(DatabaseService::class)),
 
     PostController::class => create(PostController::class)
         ->constructor(get(PostService::class), get('view')),
@@ -31,5 +32,5 @@ return [
         ->constructor(get(AuthService::class), get('view')),
 
     AuthService::class => create(AuthService::class)
-        ->constructor(get('config'), get(DatabaseService::class)),
+        ->constructor(get(DatabaseService::class)),
 ];

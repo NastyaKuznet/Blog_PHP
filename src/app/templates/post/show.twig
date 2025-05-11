@@ -14,6 +14,7 @@
     {% for comment in comments %}
         <div style="margin-bottom: 10px; border: 1px solid #eee; padding: 5px;">
             <p><b>{{ comment.userNickname|escape }}:</b> {{ comment.content|escape }}</p>
+            <p>{{ comment.createdAt|date('H:i d.m.Y', 'Asia/Yekaterinburg') }}</p>
         </div>
     {% endfor %}
 {% else %}

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Редактирование поста</title>
+    </head>
+    <body>
+        <h1>Редактирование поста</h1>
+
+        <form action="/post/edit/{{ post.id }}" method="POST">
+            <p>Автор поста: {{ post.userNickname|escape }}</p>
+            <div>
+                <label for="title">Заголовок:</label><br>
+                <input type="text" id="title" name="title" value="{{ post.title|escape }}" required>
+            </div>
+            <div>
+                <label for="content">Содержание:</label><br>
+                <textarea id="content" name="content" rows="5" cols="50" required>{{ post.content|escape }}</textarea>
+            </div>
+            <div>
+                <button type="submit" name="action" value="save">Сохранить изменения</button>
+                <button type="submit" name="action" value="delete">Удалить пост</button>
+                <a href="/">Лента</a>
+            </div>
+        </form>
+
+    </body>
+</html>
