@@ -1,24 +1,86 @@
 <?php
-require_once '../vendor/autoload.php';
-require_once '../src/Base/db.php';
-require_once '../src/Base/DatabaseService.php';
-
-use Base\DatabaseService;
-use Psr\Http\Message\ResponseInterface as Response;
-use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Factory\AppFactory;
+use NastyaKuznet\Blog\Controller\PostController;
+use NastyaKuznet\Blog\Controller\AuthController;
+use NastyaKuznet\Blog\Middleware\RoleMiddleware;
+use NastyaKuznet\Blog\Middleware\AuthMiddleware;
+use NastyaKuznet\Blog\Factory\RoleMiddlewareFactory;
+use Slim\Views\Twig;
+use Slim\Views\TwigMiddleware;
+use Slim\Routing\RouteCollectorProxy;
+use DI\ContainerBuilder;
+use Psr\Http\Message\ServerRequestInterface as Request;
+use Psr\Http\Message\ResponseInterface as Response;
+use Slim\Psr7\Factory\ResponseFactory;
+use Dotenv\Dotenv;
 
-// Подключение к БД
-$pdo = new PDO("pgsql:host=postgres;dbname=Blog", 'postgres', 'root');
-$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-$databaseService = new DatabaseService($pdo);
+require __DIR__ . '/../vendor/autoload.php';
 
-//$databaseService->createTestUsers();
+// Включаем вывод ошибок
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
 
-$app = AppFactory::create();
+// 1. Создаем контейнер
+$containerBuilder = new DI\ContainerBuilder();
+$containerBuilder->addDefinitions(__DIR__ . '/../src/app/config/dependencies.php');
+$container = $containerBuilder->build();
+// 2. Создаем Slim приложение, передавая контейнер
+$app = AppFactory::createFromContainer($container);
 
-// Главная страница
-$app->get('/', function (Request $request, Response $response) {
+session_start();
+
+// Add Twig-View Middleware
+$app->add(TwigMiddleware::createFromContainer($app));
+
+// Add Routing Middleware
+$app->addRoutingMiddleware();
+
+// загуглить что это
+$app->addBodyParsingMiddleware();
+
+// Add Error Middleware
+$errorMiddleware = $app->addErrorMiddleware(true, true, true);
+
+// Dependency Injection Container (DI Container)
+$container = $app->getContainer();
+
+$app->get('/login', [AuthController::class, 'login']);
+$app->post('/login', [AuthController::class, 'login']);
+$app->get('/register', [AuthController::class, 'register']);
+$app->post('/register', [AuthController::class, 'register']);
+
+$app->post('/logout', [AuthController::class, 'logout']);
+
+$app->get('/debug/routes', function ($request, $response) use ($app) {
+    $routes = $app->getRouteCollector()->getRoutes();
+    $routePatterns = array_map(fn($r) => $r->getPattern(), $routes);
+
+    $response->getBody()->write("<pre>" . print_r($routePatterns, true) . "</pre>");
+    return $response;
+});
+
+$app->get('/', [AuthController::class, 'home']);
+
+// Группировка роутов по префиксу 'post'
+$app->group('/post', function (RouteCollectorProxy $group) use ($container) {
+    // Роуты, требующие роль 'writer' или выше
+    $group->get('/create', [PostController::class, 'create'])->add((new RoleMiddlewareFactory(['writer', 'moderator', 'admin']))($container));
+    $group->post('/create', [PostController::class, 'create'])->add((new RoleMiddlewareFactory(['writer', 'moderator', 'admin']))($container));
+    // Роуты, требующие роль 'moder' или выше
+    $group->get('/edit/{id}', [PostController::class, 'edit'])->add((new RoleMiddlewareFactory(['moderator', 'admin']))($container));
+    $group->post('/edit/{id}', [PostController::class, 'edit'])->add((new RoleMiddlewareFactory(['moderator', 'admin']))($container));
+});
+
+$app->get('/post', [PostController::class, 'index']);
+
+$app->map(['GET', 'POST'],'/post/{id}', [PostController::class, 'show']);
+
+$app->post('/post/{id}/like', [PostController::class, 'likePost']);
+
+//Заглушки для admins
+$app->get('/users', [PostController::class, 'users'])->add((new RoleMiddlewareFactory(['moderator', 'admin']))($container));
+
+$app->get('/accounts', function (Request $request, Response $response) {
     $html = "<h1>Главная</h1><ul>
                 <li><a href='/account/1'>Личный кабинет (ID 1)</a></li>
                 <li><a href='/account/2'>Личный кабинет (ID 2)</a></li>
@@ -29,13 +91,7 @@ $app->get('/', function (Request $request, Response $response) {
     $response->getBody()->write($html);
     return $response;
 });
-
-$app->get('/setup-test-data', function (Request $request, Response $response) use ($databaseService) {
-    $databaseService->createTestUsersAndPosts();
-    $response->getBody()->write("<h1>Тестовые данные добавлены!</h1>");
-    return $response;
-});
-
+/*
 // /account/{id}
 $app->get('/account/{id}', function (Request $request, Response $response, array $args) use ($databaseService) {
     $user_id = (int)$args['id'];
@@ -162,6 +218,7 @@ $app->get('/users', function (Request $request, Response $response) use ($databa
     return $response;
 });
 
+
 // изменения роли пользователя
 $app->post('/change_role', function (Request $request, Response $response) use ($databaseService) {
     $parsedBody = $request->getParsedBody();
@@ -215,6 +272,6 @@ $app->post('/delete_user', function (Request $request, Response $response, array
         error_log("Ошибка при удалении пользователя: " . $e->getMessage());
         die("Произошла ошибка при удалении пользователя");
     }
-});
+});*/
 
-$app->run();
+$app->run(); 

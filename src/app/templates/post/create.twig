@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Создание поста</title>
+</head>
+<body>
+<h1>Создание поста</h1>
+
+<form action="/post/create" method="POST">
+    <div>
+        <label for="title">Заголовок:</label><br>
+        <input type="text" id="title" name="title" required>
+    </div>
+    <div>
+        <label for="content">Содержание:</label><br>
+        <textarea id="content" name="content" rows="5" cols="50" required></textarea>
+    </div>
+    <div>
+        <button type="submit">Опубликовать</button>
+        <a href="/">Лента</a>
+    </div>
+</form>
+
+</body>
+</html>
+
