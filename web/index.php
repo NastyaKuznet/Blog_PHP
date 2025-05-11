@@ -13,14 +13,16 @@ $pdo = new PDO("pgsql:host=postgres;dbname=Blog", 'postgres', 'root');
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 $databaseService = new DatabaseService($pdo);
 
-$databaseService = new DatabaseService($pdo);
 $databaseService->createTestUsers();
 
 $app = AppFactory::create();
 
-//главная страница
+// Главная страница
 $app->get('/', function (Request $request, Response $response) {
     $html = "<h1>Главная</h1><ul>
+                <li><a href='/account/1'>Личный кабинет (ID 1)</a></li>
+                <li><a href='/account/2'>Личный кабинет (ID 2)</a></li>
+                <li><a href='/account/3'>Личный кабинет (ID 3)</a></li>
                 <li><a href='/account/4'>Личный кабинет (ID 4)</a></li>
                 <li><a href='/users'>Пользователи</a></li>
              </ul>";
@@ -32,6 +34,7 @@ $app->get('/', function (Request $request, Response $response) {
 $app->get('/account/{id}', function (Request $request, Response $response, array $args) use ($databaseService) {
     $user_id = (int)$args['id'];
 
+    // Получаем информацию о пользователе
     $stmt = $databaseService->pdo->prepare("SELECT u.id, u.nickname, r.name AS role_name FROM users u JOIN roles r ON u.role_id = r.id WHERE u.id = ?");
     $stmt->execute([$user_id]);
     $user_info = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -41,6 +44,12 @@ $app->get('/account/{id}', function (Request $request, Response $response, array
         return $response->withStatus(404);
     }
 
+    // Получаем количество постов пользователя
+    $stmt = $databaseService->pdo->prepare("SELECT COUNT(*) FROM posts WHERE user_id = ?");
+    $stmt->execute([$user_id]);
+    $post_count = $stmt->fetchColumn();
+
+    // Получаем посты пользователя
     $stmt = $databaseService->pdo->prepare("SELECT * FROM posts WHERE user_id = ? ORDER BY created_at DESC");
     $stmt->execute([$user_id]);
     $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -51,6 +60,7 @@ $app->get('/account/{id}', function (Request $request, Response $response, array
     <head>
         <meta charset="UTF-8">
         <title>Личный кабинет</title>
+        <link rel="stylesheet" href="/style.css">
     </head>
     <body>
         <h1>Личный кабинет</h1>
@@ -58,6 +68,7 @@ $app->get('/account/{id}', function (Request $request, Response $response, array
         <p><strong>Роль:</strong> <?= htmlspecialchars($user_info['role_name']) ?></p>
 
         <?php if ($user_info['role_name'] !== 'reader'): ?>
+            <p><strong>Количество постов:</strong> <?= htmlspecialchars($post_count) ?></p>
             <h2>Посты пользователя</h2>
             <ul>
                 <?php foreach ($posts as $post): ?>
@@ -101,6 +112,7 @@ $app->get('/users', function (Request $request, Response $response) use ($databa
     <head>
         <meta charset="UTF-8">
         <title>Список пользователей</title>
+        <link rel="stylesheet" href="/style.css">
     </head>
     <body>
         <h1>Пользователи</h1>
@@ -161,13 +173,42 @@ $app->post('/delete_user', function (Request $request, Response $response, array
     $parsedBody = $request->getParsedBody();
     $user_id = (int)$parsedBody['user_id'];
 
-    $stmt = $databaseService->pdo->prepare("DELETE FROM posts WHERE user_id = ?");
-    $stmt->execute([$user_id]);
+    if (!isset($parsedBody['user_id']) || !is_numeric($user_id)) {
+        die("Некорректный ID пользователя");
+    }
 
-    $stmt = $databaseService->pdo->prepare("DELETE FROM users WHERE id = ?");
-    $stmt->execute([$user_id]);
+    try {
+        // Начинаем транзакцию
+        $pdo = $databaseService->pdo;
+        $pdo->beginTransaction();
 
-    return $response->withHeader('Location', '/users')->withStatus(302);
+        // Проверяем, существует ли пользователь
+        $stmt = $pdo->prepare("SELECT id FROM users WHERE id = ?");
+        $stmt->execute([$user_id]);
+        $user_exists = $stmt->fetchColumn();
+
+        if (!$user_exists) {
+            throw new Exception("Пользователь не найден");
+        }
+
+        // Удаляем все посты пользователя
+        $stmt = $pdo->prepare("DELETE FROM posts WHERE user_id = ?");
+        $stmt->execute([$user_id]);
+
+        // Удаляем пользователя
+        $stmt = $pdo->prepare("DELETE FROM users WHERE id = ?");
+        $stmt->execute([$user_id]);
+
+        // Комmitt транзакции
+        $pdo->commit();
+
+        return $response->withHeader('Location', '/users')->withStatus(302);
+    } catch (PDOException $e) {
+        // Откатываем изменения при ошибке
+        $pdo->rollBack();
+        error_log("Ошибка при удалении пользователя: " . $e->getMessage());
+        die("Произошла ошибка при удалении пользователя");
+    }
 });
 
 $app->run();

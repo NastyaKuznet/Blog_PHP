@@ -287,10 +287,33 @@ class DatabaseService
 
     public function createTestUsers()
     {
-        $this->addUser('reader_test', 'password', 1); // reader id=1
-        $this->addUser('writer_test', 'password', 2); // writer id=2
-        $this->addUser('moderator_test', 'password', 3); // moderator id=3
-        $this->addUser('admin_test', 'password', 4); // admin id=4
-        return true;
+        if (!$this->userExists('reader_test')) {
+            $this->addUser('reader_test', 'password', 1); // reader id=1
+        }
+
+        if (!$this->userExists('writer_test')) {
+            $this->addUser('writer_test', 'password', 2); // writer id=2
+        }
+
+        if (!$this->userExists('moderator_test')) {
+            $this->addUser('moderator_test', 'password', 3); // moderator id=3
+        }
+
+        if (!$this->userExists('admin_test')) {
+            $this->addUser('admin_test', 'password', 4); // admin id=4
+        }
+    }
+
+    // проверка существования пользователя по нику
+    public function userExists($nickname)
+    {
+        try {
+            $stmt = $this->pdo->prepare("SELECT 1 FROM users WHERE nickname = :nickname");
+            $stmt->execute(['nickname' => $nickname]);
+            return $stmt->fetchColumn() !== false;
+        } catch (PDOException $e) {
+            echo "Ошибка при проверке существования пользователя: " . $e->getMessage();
+            return false;
+        }
     }
 }
