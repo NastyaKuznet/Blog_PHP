@@ -6,7 +6,7 @@ use PDOException;
 
 class DatabaseService
 {
-    private $pdo;
+    public $pdo;
 
     public function __construct(array $config)
     {
@@ -393,19 +393,60 @@ class DatabaseService
     public function deleteUser($user_id)
     {
         try {
-            // Удаляем все посты пользователя
-            $stmt = $this->pdo->prepare("DELETE FROM posts WHERE user_id = :user_id");
-            $stmt->execute(['user_id' => $user_id]);
+            $this->pdo->beginTransaction();
+
+            // Проверяем, существует ли пользователь
+            $stmt = $this->pdo->prepare("SELECT COUNT(*) FROM users WHERE id = ?");
+            $stmt->execute([$user_id]);
+            if ($stmt->fetchColumn() == 0) {
+                throw new \Exception("Пользователь с ID {$user_id} не найден.");
+            }
+
+            // Удаляем все посты (автоматически удалятся комментарии благодаря ON DELETE CASCADE)
+            $stmt = $this->pdo->prepare("DELETE FROM posts WHERE user_id = ?");
+            $stmt->execute([$user_id]);
 
             // Удаляем пользователя
-            $stmt = $this->pdo->prepare("DELETE FROM users WHERE id = :user_id");
-            $stmt->execute(['user_id' => $user_id]);
+            $stmt = $this->pdo->prepare("DELETE FROM users WHERE id = ?");
+            $stmt->execute([$user_id]);
+
+            $this->pdo->commit();
             return true;
-        } catch (PDOException $e) {
-            echo "Ошибка при удалении пользователя: " . $e->getMessage();
+        } catch (\PDOException | \Exception $e) {
+            $this->pdo->rollBack();
+            error_log("Ошибка при удалении пользователя: " . $e->getMessage());
             return false;
         }
     }
+
+    public function getUserRole($user_id)
+    {
+        try {
+            $stmt = $this->pdo->prepare("SELECT role_id FROM users WHERE id = :user_id");
+            $stmt->execute(['user_id' => $user_id]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $result ? $result['role_id'] : null;
+        } catch (PDOException $e) {
+            echo "Ошибка при получении роли пользователя: " . $e->getMessage();
+            return null;
+        }
+    }
+
+    
+    // проверка существования пользователя по нику
+    public function userExists($nickname)
+    {
+        try {
+            $stmt = $this->pdo->prepare("SELECT 1 FROM users WHERE nickname = :nickname");
+            $stmt->execute(['nickname' => $nickname]);
+            return $stmt->fetchColumn() !== false;
+        } catch (PDOException $e) {
+            echo "Ошибка при проверке существования пользователя: " . $e->getMessage();
+            return false;
+        }
+    }
+
+  
 
     public function getNameRoleById(int $id): string
     {
