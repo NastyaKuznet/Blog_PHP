@@ -1,6 +1,7 @@
 <?php
 
 use NastyaKuznet\Blog\Controller\PostController;
+use NastyaKuznet\Blog\Middleware\RoleMiddleware;
 use NastyaKuznet\Blog\Service\DatabaseService;
 use NastyaKuznet\Blog\Service\PostService;
 use Twig\Loader\FilesystemLoader;
@@ -20,11 +21,11 @@ return [
             ]
         ),
 
-    PostService::class => create(PostService::class)
-        ->constructor(get('config'), get(DatabaseService::class)),
-
     DatabaseService::class => create(DatabaseService::class)
         ->constructor(get('config')),
+
+    PostService::class => create(PostService::class)
+        ->constructor(get(DatabaseService::class)),
 
     PostController::class => create(PostController::class)
         ->constructor(get(PostService::class), get('view')),
