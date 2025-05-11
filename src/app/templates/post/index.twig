@@ -34,6 +34,12 @@
         </form>
     </div>
 
+    <div>
+        <form action="/logout" method="post">
+            <button type="submit">Выход</button>
+        </form>
+     </div>
+     
     <div style="width: calc(100% - 240px); margin: 0 auto; padding: 0 20px;">
         {% if userRole in ['writer', 'moder', 'admin'] %}
             <a href="/post/create">Написать пост</a>

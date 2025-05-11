@@ -1,0 +1,154 @@
+<?php
+
+namespace NastyaKuznet\Blog\Controller;
+
+use Psr\Http\Message\ServerRequestInterface as Request;
+use Psr\Http\Message\ResponseInterface as Response;
+use NastyaKuznet\Blog\Service\AuthService;
+use Slim\Psr7\Response as SlimResponse;
+use Slim\Views\Twig;
+
+class AuthController
+{
+    private $authService;
+    private Twig $view;
+
+    public function __construct(AuthService $authService, Twig $view)
+    {
+        $this->authService = $authService;
+        $this->view = $view;
+    }
+
+    public function home(Request $request, Response $response): Response
+    {
+        // Получаем токен из кук
+        $cookies = $request->getCookieParams();
+        $token = $cookies['token'] ?? null;
+
+        if ($token) {
+            // Проверяем токен
+            $payload = $this->authService->decodeJwtToken($token, $_ENV['JWT_SECRET']);
+
+            if (is_array($payload) && isset($payload['exp']) && $payload['exp'] > time()) {
+                // Токен валиден → редирект на /post
+                return $response->withHeader('Location', '/post')->withStatus(302);
+            }
+        }
+
+        // Если нет токена → показываем форму регистрации
+        return $this->view->render($response, 'auth/register.twig');
+    }
+
+    public function register(Request $request, Response $response): Response
+    {
+        if ($request->getMethod() === 'GET') {
+            return $this->view->render($response, 'auth/register.twig');
+        }
+
+
+        $data = $request->getParsedBody();
+        $username = $data['username'] ?? '';
+        $password = $data['password'] ?? '';
+        $role = $data['role'] ?? 'user';
+
+        if (empty($username) || empty($password)) {
+            $html = '<div class="error">Заполните имя и пароль</div>';
+            $response->getBody()->write($html);
+            return $response
+                ->withHeader('Content-Type', 'text/html')
+                ->withStatus(400);
+        }
+
+        $success = $this->authService->registerUser($username, $password, $role);
+
+        if ($success) {
+            // После регистрации сразу логиним пользователя
+            $user = $this->authService->authenticateUser($username, $password);
+
+            // Вызываем наш отдельный метод для установки токена
+            $response = $this->setTokenInCookie($response, $user);
+
+            //$html = "<div class=\"success\">Регистрация успешна! Вы вошли как %s</div>";
+            //$response->getBody()->write(sprintf($html, htmlspecialchars($user->nickname)));
+            //return $response->withHeader('Content-Type', 'text/html');
+            //return $response->withRedirect('/post');
+            return $response->withHeader('Location', '/post')->withStatus(302);
+        } else {
+            $html = '<div class="error">Ошибка при регистрации</div>';
+            $response->getBody()->write($html);
+            return $response
+                ->withHeader('Content-Type', 'text/html')
+                ->withStatus(500);
+        }
+    }
+
+    public function login(Request $request, Response $response): Response
+    {
+        if ($request->getMethod() === 'GET') {
+            return $this->view->render($response, 'auth/login.twig');
+        }
+
+        $data = $request->getParsedBody();
+        $username = $data['username'] ?? '';
+        $password = $data['password'] ?? '';
+
+        if (empty($username) || empty($password)) {
+            $html = '<div class="error">Введите имя и пароль</div>';
+            $response->getBody()->write($html);
+            return $response
+                ->withHeader('Content-Type', 'text/html')
+                ->withStatus(400);
+        }
+
+        $user = $this->authService->authenticateUser($username, $password);
+
+        if (!$user) {
+            $html = '<div class="error">Неверное имя или пароль</div>';
+            $response->getBody()->write($html);
+            return $response
+                ->withHeader('Content-Type', 'text/html')
+                ->withStatus(401);
+        }
+
+        // Вызываем отдельный метод для установки токена
+        $response = $this->setTokenInCookie($response, $user);
+
+        //$html = "<div class=\"success\">Вход выполнен! Привет, %s</div>";
+        //$response->getBody()->write(sprintf($html, htmlspecialchars($user->nickname)));
+
+        return $response->withHeader('Location', '/post')->withStatus(302);
+    }
+
+    /**
+     * Генерирует токен и сохраняет его в куках
+     *
+     * @param Response $response
+     * @param \NastyaKuznet\Blog\Model\User $user
+     * @return Response
+     */
+    private function setTokenInCookie(Response $response, $user): Response
+    {
+        // Генерируем токен через AuthService
+        $token = $this->authService->generateJwtToken($user, $_ENV['JWT_SECRET']);
+
+        // Устанавливаем токен в куки
+        $response = $response->withHeader(
+            'Set-Cookie',
+            sprintf('token=%s; Path=/; HttpOnly; Secure; SameSite=Strict', $token)
+        );
+
+        return $response;
+    }
+
+    public function logout(Request $request, Response $response): Response
+    {
+        // Устанавливаем куку с пустым значением и прошедшим сроком действия
+        $response = $response->withHeader(
+            'Set-Cookie',
+            'token=; Path=/; Expires=' . gmdate('D, d M Y H:i:s', time() - 3600) . ' GMT'
+        );
+
+        // Перенаправляем на главную страницу
+        return $response->withHeader('Location', '/');
+    }
+}
