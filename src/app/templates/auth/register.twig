@@ -15,5 +15,9 @@
     <div class="toggle-auth">
         Уже есть аккаунт? <a href="/login">Войти</a>
     </div>
+
+    {% if error %}
+        <div class="error">{{ error|raw }}</div>
+    {% endif %}
 </body>
 </html>

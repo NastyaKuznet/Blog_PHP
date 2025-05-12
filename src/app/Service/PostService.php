@@ -63,10 +63,8 @@ class PostService
     public function getAllPosts(mixed $sortBy, mixed $order, mixed $authorNickname): array
     {
         $postsFromDb = $this->getPostsWithFilters($sortBy, $order, $authorNickname);
-        echo('lol');
         $posts = [];
         foreach ($postsFromDb as $postData) {
-            echo($postData['id']);
             $posts[] = new Post(
                 $postData['id'],
                 $postData['title'],
@@ -138,9 +136,9 @@ class PostService
         return $comments;
     }
 
-    public function addComment(Comment $comment): bool
+    public function addComment(string $content, int $postId, int $userId): bool
     {
-        return $this->databaseService->addComment($comment->content, $comment->postId, $comment->userId);
+        return $this->databaseService->addComment($content, $postId, $userId);
     }
 
     public function addLike(int $postId): bool 
@@ -158,7 +156,6 @@ class PostService
         $postsFromDb = $this->databaseService->getPostsByUserId($userId);
         $posts = [];
         foreach ($postsFromDb as $postData) {
-            echo($postData['id']);
             $posts[] = new Post(
                 $postData['id'],
                 $postData['title'],

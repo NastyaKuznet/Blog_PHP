@@ -25,7 +25,7 @@ class AuthController
         $cookies = $request->getCookieParams();
         $token = $cookies['token'] ?? null;
 
-        /*if ($token) {
+        if ($token) {
             // Проверяем токен
             $payload = $this->authService->decodeJwtToken($token, $_ENV['JWT_SECRET']);
 
@@ -33,7 +33,7 @@ class AuthController
                 // Токен валиден → редирект на /post
                 return $response->withHeader('Location', '/post')->withStatus(302);
             }
-        }*/
+        }
 
         // Если нет токена → показываем форму регистрации
         return $this->view->render($response, 'auth/register.twig');
@@ -44,7 +44,6 @@ class AuthController
         if ($request->getMethod() === 'GET') {
             return $this->view->render($response, 'auth/register.twig');
         }
-
 
         $data = $request->getParsedBody();
         $username = $data['username'] ?? '';
@@ -59,6 +58,13 @@ class AuthController
                 ->withStatus(400);
         }
 
+        $checkUser = $this->authService->checkUserRegistration($username, $password);
+        if ($checkUser){
+            return $this->view->render($response, 'auth/register.twig', [
+                'error' => '<div class="error">Такой никнейм уже существует</div>'
+            ]);
+        }
+
         $success = $this->authService->registerUser($username, $password, $role);
 
         if ($success) {
@@ -67,18 +73,11 @@ class AuthController
 
             // Вызываем наш отдельный метод для установки токена
             $response = $this->setTokenInCookie($response, $user);
-
-            //$html = "<div class=\"success\">Регистрация успешна! Вы вошли как %s</div>";
-            //$response->getBody()->write(sprintf($html, htmlspecialchars($user->nickname)));
-            //return $response->withHeader('Content-Type', 'text/html');
-            //return $response->withRedirect('/post');
             return $response->withHeader('Location', '/post')->withStatus(302);
         } else {
-            $html = '<div class="error">Ошибка при регистрации</div>';
-            $response->getBody()->write($html);
-            return $response
-                ->withHeader('Content-Type', 'text/html')
-                ->withStatus(500);
+            return $this->view->render($response, 'auth/register.twig', [
+                'error' => '<div class="error">Ошибка при регистрации</div>'
+            ]);
         }
     }
 
@@ -93,28 +92,21 @@ class AuthController
         $password = $data['password'] ?? '';
 
         if (empty($username) || empty($password)) {
-            $html = '<div class="error">Введите имя и пароль</div>';
-            $response->getBody()->write($html);
-            return $response
-                ->withHeader('Content-Type', 'text/html')
-                ->withStatus(400);
+            return $this->view->render($response, 'auth/login.twig', [
+                'error' => '<div class="error">Введите имя и пароль</div>'
+            ]);
         }
 
         $user = $this->authService->authenticateUser($username, $password);
 
         if (!$user) {
-            $html = '<div class="error">Неверное имя или пароль</div>';
-            $response->getBody()->write($html);
-            return $response
-                ->withHeader('Content-Type', 'text/html')
-                ->withStatus(401);
+            return $this->view->render($response, 'auth/login.twig', [
+                'error' => '<div class="error">Неверное имя или пароль</div>'
+            ]);
         }
 
         // Вызываем отдельный метод для установки токена
         $response = $this->setTokenInCookie($response, $user);
-
-        //$html = "<div class=\"success\">Вход выполнен! Привет, %s</div>";
-        //$response->getBody()->write(sprintf($html, htmlspecialchars($user->nickname)));
 
         return $response->withHeader('Location', '/post')->withStatus(302);
     }
@@ -129,8 +121,8 @@ class AuthController
     private function setTokenInCookie(Response $response, $user): Response
     {
         // Генерируем токен через AuthService
-        //$token = $this->authService->generateJwtToken($user, $_ENV['JWT_SECRET']);
-        $token = "hello";
+        $token = $this->authService->generateJwtToken($user, $_ENV['JWT_SECRET']);
+
         // Устанавливаем токен в куки
         $response = $response->withHeader(
             'Set-Cookie',

@@ -23,6 +23,7 @@ class PostController
 
     public function index(Request $request, Response $response): Response
     {
+        $user = $request->getAttribute('user');
         $queryParams = $request->getQueryParams();
         $sortBy = $queryParams['sort_by'] ?? null;
         $order = $queryParams['order'] ?? 'asc';
@@ -32,7 +33,7 @@ class PostController
 
         return $this->view->render($response, 'post/index.twig', [
             'posts' => $posts,
-            'userRole' => "moder", // Убрать потом заглушку!!
+            'userRole' => $user['role'],
             'app' => [  
                 'request' => $request,
             ],
@@ -41,6 +42,7 @@ class PostController
 
     public function show(Request $request, Response $response, array $args): Response
     {
+        $user = $request->getAttribute('user');
         $postId = (int)$args['id'];
         $post = $this->postService->getPostById($postId);
 
@@ -75,13 +77,9 @@ class PostController
         $commentText = trim($data['comment'] ?? '');
 
         if (!empty($commentText)) {
+            $isSuccess = $this->postService->addComment($commentText, $postId, $user['id']);
 
-            $newComment = new Comment(0, $commentText, $postId, 1, '', ''); // Убрать потом заглушку на пользователя!!
-
-            
-            $success = $this->postService->addComment($newComment);
-
-            if ($success) {
+            if ($isSuccess) {
                 $response = new SlimResponse();
                 return $response->withHeader('Location', '/post/' . $postId)->withStatus(302);
             } else {
@@ -98,6 +96,7 @@ class PostController
 
     public function create(Request $request, Response $response): Response
     {
+        $user = $request->getAttribute('user');
         if ($request->getMethod() === 'GET') {
             try {
                 return $this->view->render($response, 'post/create.twig');
@@ -118,14 +117,7 @@ class PostController
         $content = trim($data['content'] ?? '');
 
         if (!empty($title) && !empty($content)) {
-            $userId = 1; //Заглушка!
-            /*$userId = $_SESSION['user_id'] ?? null;
-            if (!$userId) {
-                $response->getBody()->write("Необходимо войти, чтобы создать пост.");
-                return $response->withStatus(403)->withHeader('Content-Type', 'text/plain');
-            }*/
-
-            $success = $this->postService->addPost($title, $content, $userId);
+            $success = $this->postService->addPost($title, $content, $user['id']);
             if ($success) {
                 $response = new SlimResponse();
                 return $response->withHeader('Location', '/')->withStatus(302);
