@@ -3,22 +3,14 @@
 namespace NastyaKuznet\Blog\Service;
 
 use NastyaKuznet\Blog\Model\User;
-use NastyaKuznet\Blog\Model\Role;
-use Exception;
 
 class AuthService
 {
-    private $db;
-    private $roleMap = [
-        1 => 'user',
-        2 => 'writer',
-        3 => 'moder',
-        4 => 'admin'
-    ];
+    private $databaseService;
 
-    public function __construct(DatabaseService $db)
+    public function __construct(DatabaseService $databaseService)
     {
-        $this->db = $db;
+        $this->databaseService = $databaseService;
     }
 
     /**
@@ -31,24 +23,20 @@ class AuthService
      */
     public function registerUser(string $username, string $password, string $roleName = 'user'): bool
     {
+        $roles = $this->databaseService->getRoles();
+        
         // Получаем roleId по названию роли
-        $roleId = array_search($roleName, $this->roleMap);
+        $roleId = array_search($roleName, $roles);
         if ($roleId === false) {
             throw new \InvalidArgumentException("Неизвестная роль: $roleName");
         }
 
-        return $this->db->addUser($username, $password, $roleId);
+        return $this->databaseService->addUser($username, $password, $roleId);
     }
 
-
-    public function checkUser(string $username, string $password): bool
+    public function checkUserRegistration(string $username): bool
     {
-        $userData = $this->db->checkUser($username, $password);
-
-        if (!$userData) {
-            return false;
-        }
-        return true;
+        return $this->databaseService->checkUserNickname($username);
     }
 
     /**
@@ -60,17 +48,18 @@ class AuthService
      */
     public function authenticateUser(string $username, string $password): mixed
     {
-        $userData = $this->db->checkUser($username, $password);
+        $userData = $this->databaseService->authorizationUser($username, $password);
 
         if (!$userData) {
             return false;
         }
 
         return new User(
-            (int)$userData['id'],
+            $userData['id'],
             $userData['nickname'],
             $userData['password'],
-            (int)$userData['role_id']
+            $userData['role_id'],
+            $userData['role_name']
         );
     }
 
@@ -93,7 +82,7 @@ class AuthService
             'iss' => 'blog-app', 
             'id' => $user->id,
             'nickname' => $user->nickname,
-            'role' => $this->getRoleNameById($user->roleId),
+            'role' => $user->roleName,
             'exp' => time() + $ttl,
         ];
 
@@ -104,14 +93,6 @@ class AuthService
         $base64UrlSignature = $this->base64UrlEncode($signature);
 
         return "$base64UrlHeader.$base64UrlPayload.$base64UrlSignature";
-    }
-
-    /**
-     * Получение названия роли по ID
-     */
-    private function getRoleNameById(int $roleId): string
-    {
-        return $this->roleMap[$roleId] ?? 'unknown';
     }
 
     /**

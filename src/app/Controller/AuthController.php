@@ -25,7 +25,7 @@ class AuthController
         $cookies = $request->getCookieParams();
         $token = $cookies['token'] ?? null;
 
-        /*if ($token) {
+        if ($token) {
             // Проверяем токен
             $payload = $this->authService->decodeJwtToken($token, $_ENV['JWT_SECRET']);
 
@@ -33,7 +33,7 @@ class AuthController
                 // Токен валиден → редирект на /post
                 return $response->withHeader('Location', '/post')->withStatus(302);
             }
-        }*/
+        }
 
         // Если нет токена → показываем форму регистрации
         return $this->view->render($response, 'auth/register.twig');
@@ -58,7 +58,7 @@ class AuthController
                 ->withStatus(400);
         }
 
-        $checkUser = $this->authService->checkUser($username, $password, $role);
+        $checkUser = $this->authService->checkUserRegistration($username, $password);
         if ($checkUser){
             return $this->view->render($response, 'auth/register.twig', [
                 'error' => '<div class="error">Такой никнейм уже существует</div>'
@@ -73,11 +73,6 @@ class AuthController
 
             // Вызываем наш отдельный метод для установки токена
             $response = $this->setTokenInCookie($response, $user);
-
-            //$html = "<div class=\"success\">Регистрация успешна! Вы вошли как %s</div>";
-            //$response->getBody()->write(sprintf($html, htmlspecialchars($user->nickname)));
-            //return $response->withHeader('Content-Type', 'text/html');
-            //return $response->withRedirect('/post');
             return $response->withHeader('Location', '/post')->withStatus(302);
         } else {
             return $this->view->render($response, 'auth/register.twig', [
@@ -126,8 +121,8 @@ class AuthController
     private function setTokenInCookie(Response $response, $user): Response
     {
         // Генерируем токен через AuthService
-        //$token = $this->authService->generateJwtToken($user, $_ENV['JWT_SECRET']);
-        $token = "hello";
+        $token = $this->authService->generateJwtToken($user, $_ENV['JWT_SECRET']);
+
         // Устанавливаем токен в куки
         $response = $response->withHeader(
             'Set-Cookie',

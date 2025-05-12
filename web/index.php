@@ -4,22 +4,12 @@ use NastyaKuznet\Blog\Controller\PostController;
 use NastyaKuznet\Blog\Controller\AuthController;
 use NastyaKuznet\Blog\Middleware\RoleMiddleware;
 use NastyaKuznet\Blog\Middleware\AuthMiddleware;
-use NastyaKuznet\Blog\Factory\RoleMiddlewareFactory;
-use Slim\Views\Twig;
 use Slim\Views\TwigMiddleware;
 use Slim\Routing\RouteCollectorProxy;
-use DI\ContainerBuilder;
-use Psr\Http\Message\ServerRequestInterface as Request;
-use Psr\Http\Message\ResponseInterface as Response;
-use Slim\Psr7\Factory\ResponseFactory;
-use Dotenv\Dotenv;
 use NastyaKuznet\Blog\Controller\UserAccountController;
 use NastyaKuznet\Blog\Controller\UsersAdminController;
 
 require __DIR__ . '/../vendor/autoload.php';
-
-$dotenv = \Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
-$dotenv->load();
 
 // Включаем вывод ошибок
 ini_set('display_errors', 1);
@@ -49,7 +39,10 @@ $errorMiddleware = $app->addErrorMiddleware(true, true, true);
 // Dependency Injection Container (DI Container)
 $container = $app->getContainer();
 
+$app->add($container->get(RoleMiddleware::class));
 $app->add($container->get(AuthMiddleware::class));
+
+
 
 $app->get('/login', [AuthController::class, 'login']);
 $app->post('/login', [AuthController::class, 'login']);
@@ -71,11 +64,11 @@ $app->get('/', [AuthController::class, 'home']);
 // Группировка роутов по префиксу 'post'
 $app->group('/post', function (RouteCollectorProxy $group) use ($container) {
     // Роуты, требующие роль 'writer' или выше
-    $group->get('/create', [PostController::class, 'create'])->add((new RoleMiddlewareFactory(['writer', 'moderator', 'admin']))($container));
-    $group->post('/create', [PostController::class, 'create'])->add((new RoleMiddlewareFactory(['writer', 'moderator', 'admin']))($container));
+    $group->get('/create', [PostController::class, 'create']);
+    $group->post('/create', [PostController::class, 'create']);
     // Роуты, требующие роль 'moder' или выше
-    $group->get('/edit/{id}', [PostController::class, 'edit'])->add((new RoleMiddlewareFactory(['moderator', 'admin']))($container));
-    $group->post('/edit/{id}', [PostController::class, 'edit'])->add((new RoleMiddlewareFactory(['moderator', 'admin']))($container));
+    $group->get('/edit/{id}', [PostController::class, 'edit']);
+    $group->post('/edit/{id}', [PostController::class, 'edit']);
 });
 
 $app->group('/admin', function (RouteCollectorProxy $group) use ($container) {
@@ -98,6 +91,6 @@ $app->map(['GET', 'POST'],'/post/{id}', [PostController::class, 'show']);
 
 $app->post('/post/{id}/like', [PostController::class, 'likePost']);
 
-$app->get('/account', [UserAccountController::class, 'index'])->add((new RoleMiddlewareFactory(['reader', 'writer', 'moderator', 'admin']))($container));
+$app->get('/account', [UserAccountController::class, 'index']);
 
 $app->run(); 

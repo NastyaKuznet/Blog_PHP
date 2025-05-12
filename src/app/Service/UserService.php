@@ -26,9 +26,9 @@ class UserService
         );
     }
 
-    public function getAllUsers (int $userId) : array 
+    public function getAllUsers () : array 
     {
-        $usersFromDb = $this->databaseService->getAllUsers($userId);
+        $usersFromDb = $this->databaseService->getAllUsers();
         $users = [];
         foreach ($usersFromDb as $usersData) {
             $users[] = new User(
@@ -41,5 +41,15 @@ class UserService
         }
         return $users;
     }
-        
+    
+    public function changeUserRole($user_id, $new_role_id) : bool 
+    {
+        return $this->databaseService->changeUserRole($user_id, $new_role_id);
+    }
+
+    
+    public function deleteUser(int $user_id) : bool 
+    {
+        return $this->databaseService->deleteUser($user_id);
+    }
 }
