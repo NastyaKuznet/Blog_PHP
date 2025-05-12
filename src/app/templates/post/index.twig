@@ -7,6 +7,9 @@
 <h1>Лента постов</h1>
 <a href="/account">Аккаунт</a>
 
+{% if user.roleName == 'admin' %}
+    <a href="/admin/users">Перейти к управлению пользователями</a>
+{% endif %}
 
 <div style="display: flex;">
 
@@ -66,7 +69,6 @@
             </div>
         {% endfor %}
     </div>
-
 </div>
 
 </body>
