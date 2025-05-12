@@ -6,7 +6,7 @@ use PDOException;
 
 class DatabaseService
 {
-    private $pdo;
+    public $pdo;
 
     public function __construct(array $config)
     {
@@ -21,42 +21,6 @@ class DatabaseService
             $this->pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC); //Установите режим выборки по умолчанию
         } catch (PDOException $e) {
             throw new \Exception("Ошибка подключения к базе данных: " . $e->getMessage());
-        }
-    }
-
-    // Метод для добавления нового пользователя
-    public function addUser($nickname, $password, $role_id)
-    {
-        try {
-            $stmt = $this->pdo->prepare("INSERT INTO users (nickname, password, role_id) VALUES (:nickname, :password, :role_id)");
-            $stmt->execute([
-                'nickname' => $nickname,
-                'password' => password_hash($password, PASSWORD_DEFAULT), // Хэшируем пароль
-                'role_id' => $role_id
-            ]);
-            return true;
-        } catch (PDOException $e) {
-            echo "Ошибка при добавлении пользователя: " . $e->getMessage();
-            return false;
-        }
-    }
-
-    // Метод для проверки существования пользователя
-    public function checkUser($nickname, $password)
-    {
-        try {
-            $stmt = $this->pdo->prepare("SELECT * FROM users WHERE nickname = :nickname");
-            $stmt->execute(['nickname' => $nickname]);
-            $user = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            if ($user && password_verify($password, $user['password'])) {
-                return $user;
-            } else {
-                return false;
-            }
-        } catch (PDOException $e) {
-            echo "Ошибка при проверке пользователя: " . $e->getMessage();
-            return false;
         }
     }
 
@@ -128,6 +92,23 @@ class DatabaseService
         }
     }
 
+    public function getPostsByUserId(int $userId):array
+    {
+        try {
+            $stmt = $this->pdo->prepare("SELECT p.* , u.nickname as user_nickname, COUNT(c.id) as comment_count
+                                         FROM posts p 
+                                         LEFT JOIN comments c ON p.id = c.post_id
+                                         JOIN users u ON p.user_id = u.id  
+                                         WHERE u.id = :user_id
+                                         GROUP BY p.id, u.nickname");
+            $stmt->execute(['user_id' => $userId]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            echo "Ошибка при получении постов по юзер id: " . $e->getMessage();
+            return [];
+        }
+    }
+
     // Метод для получения всех постов, отсортированных по количеству лайков в порядке возрастания
     public function getPostsByLikesAscending()
     {
@@ -193,6 +174,21 @@ class DatabaseService
         } catch (PDOException $e) {
             echo "Ошибка при получении постов по комментариям: " . $e->getMessage();
             return [];
+        }
+    }
+
+    // Метод для получения количества постов по юзерИд
+    public function getCountPostsByUserId(int $userId):int
+    {
+        try {
+            $stmt = $this->pdo->prepare("SELECT COUNT(*) 
+                                        FROM posts 
+                                        WHERE user_id = :user_id");
+            $stmt->execute(['user_id' => $userId]);
+            return (int) $stmt->fetchColumn();
+        } catch (PDOException $e) {
+            echo "Ошибка при получении количество постов: " . $e->getMessage();
+            return 0;
         }
     }
 
@@ -286,7 +282,7 @@ class DatabaseService
             if ($this->pdo->inTransaction()) {
                 $this->pdo->rollBack();
             } 
-            error_log("Ошибка при удалении поста и комментариев: " . $e->getMessage());
+            echo("Ошибка при удалении поста и комментариев: " . $e->getMessage());
             return false;
         }
     }
@@ -350,7 +346,10 @@ class DatabaseService
     public function getUserInfo($user_id)
     {
         try {
-            $stmt = $this->pdo->prepare("SELECT nickname FROM users WHERE id = :user_id");
+            $stmt = $this->pdo->prepare("SELECT u.*, r.name AS role_name 
+                                        FROM users u 
+                                        JOIN roles r ON u.role_id = r.id 
+                                        WHERE u.id = :user_id");
             $stmt->execute(['user_id' => $user_id]);
             return $stmt->fetch(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
@@ -363,9 +362,10 @@ class DatabaseService
     public function getAllUsers()
     {
         try {
-            $stmt = $this->pdo->query("SELECT u.id, u.nickname, r.name as role_name 
+            $stmt = $this->pdo->query("SELECT u.*, r.name as role_name 
                                        FROM users u 
-                                       JOIN roles r ON u.role_id = r.id");
+                                       JOIN roles r ON u.role_id = r.id 
+                                       ORDER BY u.id ASC");
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             echo "Ошибка при получении пользователей: " . $e->getMessage();
@@ -390,40 +390,118 @@ class DatabaseService
     }
 
     // Метод для удаления пользователя и всех его постов
-    public function deleteUser($user_id)
+    public function deleteUser(int $user_id): bool
     {
         try {
-            // Удаляем все посты пользователя
-            $stmt = $this->pdo->prepare("DELETE FROM posts WHERE user_id = :user_id");
-            $stmt->execute(['user_id' => $user_id]);
+            $this->pdo->beginTransaction();
+
+            // Проверяем, существует ли пользователь
+            $stmt = $this->pdo->prepare("SELECT COUNT(*) FROM users WHERE id = ?");
+            $stmt->execute([$user_id]);
+            if ($stmt->fetchColumn() == 0) {
+                throw new \Exception("Пользователь с ID {$user_id} не найден.");
+            }
+
+            // Получаем все ID постов, написанных пользователем
+            $stmt = $this->pdo->prepare("SELECT id FROM posts WHERE user_id = ?");
+            $stmt->execute([$user_id]);
+            $postIds = $stmt->fetchAll(\PDO::FETCH_COLUMN); // Получаем массив ID постов
+
+            // Если есть посты, удаляем комментарии к этим постам
+            if (!empty($postIds)) {
+                // Создаем строку с плейсхолдерами для IN ()
+                $placeholders = str_repeat('?,', count($postIds) - 1) . '?';
+
+                // Подготавливаем запрос на удаление комментариев
+                $stmt = $this->pdo->prepare("DELETE FROM comments WHERE post_id IN ($placeholders)");
+
+                // Выполняем запрос, передавая массив ID постов
+                $stmt->execute($postIds);
+            }
+
+            // Удаляем все посты (автоматически удалятся комментарии благодаря ON DELETE CASCADE, если настроено)
+            $stmt = $this->pdo->prepare("DELETE FROM posts WHERE user_id = ?");
+            $stmt->execute([$user_id]);
 
             // Удаляем пользователя
-            $stmt = $this->pdo->prepare("DELETE FROM users WHERE id = :user_id");
-            $stmt->execute(['user_id' => $user_id]);
+            $stmt = $this->pdo->prepare("DELETE FROM users WHERE id = ?");
+            $stmt->execute([$user_id]);
+
+            $this->pdo->commit();
             return true;
-        } catch (PDOException $e) {
-            echo "Ошибка при удалении пользователя: " . $e->getMessage();
+        } catch (\PDOException | \Exception $e) {
+            $this->pdo->rollBack();
+            echo("Ошибка при удалении пользователя: " . $e->getMessage());
             return false;
         }
     }
 
-    public function getNameRoleById(int $id): string
+    // Метод для добавления нового пользователя
+    public function addUser($nickname, $password, $role_id)
     {
         try {
-            $stmt = $this->pdo->prepare("SELECT name
-                                       FROM roles 
-                                       WHERE id = :id");
-            $stmt->execute(['id' => $id]);
-            $result = $stmt->fetch(PDO::FETCH_ASSOC);
-    
-            if ($result && isset($result['name'])) {
-                return $result['name']; 
+            $stmt = $this->pdo->prepare("INSERT INTO users (nickname, password, role_id) VALUES (:nickname, :password, :role_id)");
+            $stmt->execute([
+                'nickname' => $nickname,
+                'password' => password_hash($password, PASSWORD_DEFAULT), // Хэшируем пароль
+                'role_id' => $role_id
+            ]);
+            return true;
+        } catch (PDOException $e) {
+            echo "Ошибка при добавлении пользователя: " . $e->getMessage();
+            return false;
+        }
+    }
+
+    // Метод для авторизации пользователя
+    public function authorizationUser($nickname, $password)
+    {
+        try {
+            $stmt = $this->pdo->prepare("SELECT u.*, r.name AS role_name 
+                                        FROM users u JOIN roles r ON u.role_id = r.id 
+                                        WHERE u.nickname = :nickname");
+            $stmt->execute(['nickname' => $nickname]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($user && password_verify($password, $user['password'])) {
+                return $user;
             } else {
-                return "";
+                return false;
             }
         } catch (PDOException $e) {
-            echo "Ошибка при получении пользователей: " . $e->getMessage();
-            return "";
+            echo "Ошибка при авторизации пользователя: " . $e->getMessage();
+            return false;
+        }
+    }
+
+    // Метод для проверки занятого ника
+    public function checkUserNickname(string $nickname): bool
+    {
+        try {
+            $stmt = $this->pdo->prepare("SELECT u.*, r.name AS role_name 
+                                        FROM users u JOIN roles r ON u.role_id = r.id 
+                                        WHERE u.nickname = :nickname");
+            $stmt->execute(['nickname' => $nickname]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+           return !!$user;
+        } catch (PDOException $e) {
+            echo "Ошибка при проверке занятости ника: " . $e->getMessage();
+            return false;
+        }
+    }
+
+    // Метод для получения списка ролей
+    public function getRoles(): array
+    {
+        try {
+            $stmt = $this->pdo->query("SELECT r.name 
+                                        FROM roles r");
+
+           return $stmt->fetchAll(PDO::FETCH_COLUMN, 0);
+        } catch (PDOException $e) {
+            echo "Ошибка при получении списка ролей: " . $e->getMessage();
+            return [];
         }
     }
 }

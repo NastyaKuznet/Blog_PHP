@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head><title>Вход</title></head>
+<body>
+    <h2>Вход в систему</h2>
+    <form method="POST" action="/login">
+        <input type="text" name="username" placeholder="Имя пользователя" required><br>
+        <input type="password" name="password" placeholder="Пароль" required><br>
+        <button type="submit">Войти</button>
+    </form>
+    <div class="toggle-auth">
+        Нет аккаунта? <a href="/register">Зарегистрироваться</a>
+    </div>
+
+    
+    {% if error %}
+        <div class="error">{{ error|raw }}</div>
+    {% endif %}
+</body>
+</html>

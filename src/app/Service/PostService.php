@@ -63,10 +63,8 @@ class PostService
     public function getAllPosts(mixed $sortBy, mixed $order, mixed $authorNickname): array
     {
         $postsFromDb = $this->getPostsWithFilters($sortBy, $order, $authorNickname);
-        echo('lol');
         $posts = [];
         foreach ($postsFromDb as $postData) {
-            echo($postData['id']);
             $posts[] = new Post(
                 $postData['id'],
                 $postData['title'],
@@ -138,13 +136,37 @@ class PostService
         return $comments;
     }
 
-    public function addComment(Comment $comment): bool
+    public function addComment(string $content, int $postId, int $userId): bool
     {
-        return $this->databaseService->addComment($comment->content, $comment->postId, $comment->userId);
+        return $this->databaseService->addComment($content, $postId, $userId);
     }
 
     public function addLike(int $postId): bool 
     {
         return $this->databaseService->addLike($postId);
+    }
+
+    public function getCountPosts (int $userId) : int 
+    {
+        return $this->databaseService->getCountPostsByUserId($userId);
+    }
+
+    public function getPostsByUserId (int $userId) : array 
+    {
+        $postsFromDb = $this->databaseService->getPostsByUserId($userId);
+        $posts = [];
+        foreach ($postsFromDb as $postData) {
+            $posts[] = new Post(
+                $postData['id'],
+                $postData['title'],
+                $postData['content'],
+                $postData['likes'],
+                $postData['user_id'],
+                $postData['user_nickname'],
+                $postData['created_at'],
+                $postData['comment_count']
+            );
+        }
+        return $posts;
     }
 }

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head><title>Регистрация</title></head>
+<body>
+    <h2>Регистрация</h2>
+    <form method="POST" action="/register">
+        <input type="text" name="username" placeholder="Имя пользователя" required><br>
+        <input type="password" name="password" placeholder="Пароль" required><br>
+        <select name="role">
+            <option value="user">Читатель</option>
+            <option value="writer">Писатель</option>
+        </select><br>
+        <button type="submit">Зарегистрироваться</button>
+    </form>
+    <div class="toggle-auth">
+        Уже есть аккаунт? <a href="/login">Войти</a>
+    </div>
+
+    {% if error %}
+        <div class="error">{{ error|raw }}</div>
+    {% endif %}
+</body>
+</html>

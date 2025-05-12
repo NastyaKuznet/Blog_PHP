@@ -5,6 +5,11 @@
 </head>
 <body>
 <h1>Лента постов</h1>
+<a href="/account">Аккаунт</a>
+
+{% if userRole == 'admin' %}
+    <a href="/admin/users">Перейти к управлению пользователями</a>
+{% endif %}
 
 <div style="display: flex;">
 
@@ -34,6 +39,12 @@
         </form>
     </div>
 
+    <div>
+        <form action="/logout" method="post">
+            <button type="submit">Выход</button>
+        </form>
+     </div>
+     
     <div style="width: calc(100% - 240px); margin: 0 auto; padding: 0 20px;">
         {% if userRole in ['writer', 'moder', 'admin'] %}
             <a href="/post/create">Написать пост</a>
@@ -58,7 +69,6 @@
             </div>
         {% endfor %}
     </div>
-
 </div>
 
 </body>
