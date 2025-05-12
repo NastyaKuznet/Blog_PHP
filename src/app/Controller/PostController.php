@@ -216,10 +216,4 @@ class PostController
             return $response->withStatus(500);
         }
     }
-
-    public function users(Request $request, Response $response): Response
-    {
-        $response->getBody()->write("Страница управления пользователями (доступна только для admin)");
-        return $response;
-    }
 }
