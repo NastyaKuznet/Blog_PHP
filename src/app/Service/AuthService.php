@@ -91,7 +91,7 @@ class AuthService
 
         $payload = [
             'iss' => 'blog-app', 
-            'sub' => $user->id,
+            'id' => $user->id,
             'nickname' => $user->nickname,
             'role' => $this->getRoleNameById($user->roleId),
             'exp' => time() + $ttl,
@@ -156,7 +156,6 @@ class AuthService
             return null;
         }
 
-        //return $payloadData;
-        return $payloadData['sub'];
+        return $payloadData;
     }
 }
