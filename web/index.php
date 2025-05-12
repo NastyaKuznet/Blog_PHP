@@ -14,6 +14,7 @@ use Psr\Http\Message\ResponseInterface as Response;
 use Slim\Psr7\Factory\ResponseFactory;
 use Dotenv\Dotenv;
 use NastyaKuznet\Blog\Controller\UserAccountController;
+use NastyaKuznet\Blog\Controller\UsersAdminController;
 
 require __DIR__ . '/../vendor/autoload.php';
 
@@ -72,6 +73,20 @@ $app->group('/post', function (RouteCollectorProxy $group) use ($container) {
     $group->post('/edit/{id}', [PostController::class, 'edit'])->add((new RoleMiddlewareFactory(['moderator', 'admin']))($container));
 });
 
+$app->group('/admin', function (RouteCollectorProxy $group) use ($container) {
+    //Роуты, требующие роль 'admin' или выше
+    /*
+    $group->get('/users', [UsersAdminController::class, 'index'])->add((new RoleMiddlewareFactory(['admin']))($container));
+    $group->post('/change_role', [UsersAdminController::class, 'changeRole'])->add((new RoleMiddlewareFactory(['admin']))($container));
+    $group->post('/delete_user', [UsersAdminController::class, 'deleteUser'])->add((new RoleMiddlewareFactory(['admin']))($container));
+    */
+
+    //это удалить когда будет регистрация
+    $group->get('/users', [UsersAdminController::class, 'index']);
+    $group->post('/change_role', [UsersAdminController::class, 'changeRole']);
+    $group->post('/delete_user', [UsersAdminController::class, 'deleteUser']);
+});
+
 $app->get('/post', [PostController::class, 'index']);
 
 $app->map(['GET', 'POST'],'/post/{id}', [PostController::class, 'show']);
@@ -94,6 +109,8 @@ $app->get('/accounts', function (Request $request, Response $response) {
     $response->getBody()->write($html);
     return $response;
 });
+$app->run(); 
+
 /*
 
 // /users (только для админа)
@@ -217,5 +234,3 @@ $app->post('/delete_user', function (Request $request, Response $response, array
         die("Произошла ошибка при удалении пользователя");
     }
 });*/
-
-$app->run(); 

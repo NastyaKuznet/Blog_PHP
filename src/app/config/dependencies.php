@@ -3,6 +3,7 @@
 use NastyaKuznet\Blog\Controller\PostController;
 use NastyaKuznet\Blog\Controller\AuthController;
 use NastyaKuznet\Blog\Controller\UserAccountController;
+use NastyaKuznet\Blog\Controller\UsersAdminController;
 use NastyaKuznet\Blog\Middleware\RoleMiddleware;
 use NastyaKuznet\Blog\Service\DatabaseService;
 use NastyaKuznet\Blog\Service\PostService;
@@ -35,6 +36,9 @@ return [
 
     UserAccountController::class => create(UserAccountController::class)
         ->constructor(get(PostService::class), get(UserService::class), get('view')),
+    
+    UsersAdminController::class => create(UsersAdminController::class)
+        ->constructor(get(DatabaseService::class), get('view')),
 
     AuthService::class => create(AuthService::class)
         ->constructor(get(DatabaseService::class)),

@@ -24,6 +24,10 @@
         </ul>
     {% endif %}
 
+    {% if user.roleName == 'admin' %}
+        <a href="/admin/users">Перейти к управлению пользователями</a>
+    {% endif %}
+
     <a href="/post">← На главную</a>
 </body>
 </html>
