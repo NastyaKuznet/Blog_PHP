@@ -8,7 +8,6 @@ use Exception;
 
 class AuthService
 {
-    private array $config;
     private $db;
     private $roleMap = [
         1 => 'user',
@@ -17,9 +16,8 @@ class AuthService
         4 => 'admin'
     ];
 
-    public function __construct(array $config, DatabaseService $db)
+    public function __construct(DatabaseService $db)
     {
-        $this->config = $config;
         $this->db = $db;
     }
 
@@ -40,6 +38,17 @@ class AuthService
         }
 
         return $this->db->addUser($username, $password, $roleId);
+    }
+
+
+    public function checkUser(string $username, string $password): bool
+    {
+        $userData = $this->db->checkUser($username, $password);
+
+        if (!$userData) {
+            return false;
+        }
+        return true;
     }
 
     /**
@@ -147,6 +156,7 @@ class AuthService
             return null;
         }
 
-        return $payloadData;
+        //return $payloadData;
+        return $payloadData['sub'];
     }
 }
