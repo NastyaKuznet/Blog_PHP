@@ -5,6 +5,7 @@ use NastyaKuznet\Blog\Controller\AuthController;
 use NastyaKuznet\Blog\Controller\UserAccountController;
 use NastyaKuznet\Blog\Controller\UsersAdminController;
 use NastyaKuznet\Blog\Middleware\RoleMiddleware;
+use NastyaKuznet\Blog\Middleware\AuthMiddleware;
 use NastyaKuznet\Blog\Service\DatabaseService;
 use NastyaKuznet\Blog\Service\PostService;
 use NastyaKuznet\Blog\Service\AuthService;
@@ -21,6 +22,9 @@ return [
         $loader = new FilesystemLoader(__DIR__ . '/../templates');
         return new Twig($loader, ['cache' => false]);
     },
+
+    // Секретный ключ из .env
+    'config.jwt_secret' => $_ENV['JWT_SECRET'],
 
     DatabaseService::class => create(DatabaseService::class)
         ->constructor(get('config')),
@@ -42,6 +46,9 @@ return [
 
     AuthService::class => create(AuthService::class)
         ->constructor(get(DatabaseService::class)),
+
+    AuthMiddleware::class => create(AuthMiddleware::class)
+    ->constructor(get(AuthService::class), get('config.jwt_secret')),
     
     UserService::class => create(UserService::class)
         ->constructor(get(DatabaseService::class)),

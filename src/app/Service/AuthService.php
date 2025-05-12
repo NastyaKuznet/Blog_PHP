@@ -16,7 +16,7 @@ class AuthService
         4 => 'admin'
     ];
 
-    public function __construct( DatabaseService $db)
+    public function __construct(DatabaseService $db)
     {
         $this->db = $db;
     }
@@ -38,6 +38,17 @@ class AuthService
         }
 
         return $this->db->addUser($username, $password, $roleId);
+    }
+
+
+    public function checkUser(string $username, string $password): bool
+    {
+        $userData = $this->db->checkUser($username, $password);
+
+        if (!$userData) {
+            return false;
+        }
+        return true;
     }
 
     /**
@@ -80,7 +91,7 @@ class AuthService
 
         $payload = [
             'iss' => 'blog-app', 
-            'sub' => $user->id,
+            'id' => $user->id,
             'nickname' => $user->nickname,
             'role' => $this->getRoleNameById($user->roleId),
             'exp' => time() + $ttl,

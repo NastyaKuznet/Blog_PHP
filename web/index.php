@@ -18,6 +18,9 @@ use NastyaKuznet\Blog\Controller\UsersAdminController;
 
 require __DIR__ . '/../vendor/autoload.php';
 
+$dotenv = \Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
+$dotenv->load();
+
 // Включаем вывод ошибок
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
@@ -45,6 +48,8 @@ $errorMiddleware = $app->addErrorMiddleware(true, true, true);
 
 // Dependency Injection Container (DI Container)
 $container = $app->getContainer();
+
+$app->add($container->get(AuthMiddleware::class));
 
 $app->get('/login', [AuthController::class, 'login']);
 $app->post('/login', [AuthController::class, 'login']);

@@ -45,7 +45,6 @@ class AuthController
             return $this->view->render($response, 'auth/register.twig');
         }
 
-
         $data = $request->getParsedBody();
         $username = $data['username'] ?? '';
         $password = $data['password'] ?? '';
@@ -57,6 +56,13 @@ class AuthController
             return $response
                 ->withHeader('Content-Type', 'text/html')
                 ->withStatus(400);
+        }
+
+        $checkUser = $this->authService->checkUser($username, $password, $role);
+        if ($checkUser){
+            return $this->view->render($response, 'auth/register.twig', [
+                'error' => '<div class="error">Такой никнейм уже существует</div>'
+            ]);
         }
 
         $success = $this->authService->registerUser($username, $password, $role);
@@ -74,11 +80,9 @@ class AuthController
             //return $response->withRedirect('/post');
             return $response->withHeader('Location', '/post')->withStatus(302);
         } else {
-            $html = '<div class="error">Ошибка при регистрации</div>';
-            $response->getBody()->write($html);
-            return $response
-                ->withHeader('Content-Type', 'text/html')
-                ->withStatus(500);
+            return $this->view->render($response, 'auth/register.twig', [
+                'error' => '<div class="error">Ошибка при регистрации</div>'
+            ]);
         }
     }
 
@@ -93,28 +97,21 @@ class AuthController
         $password = $data['password'] ?? '';
 
         if (empty($username) || empty($password)) {
-            $html = '<div class="error">Введите имя и пароль</div>';
-            $response->getBody()->write($html);
-            return $response
-                ->withHeader('Content-Type', 'text/html')
-                ->withStatus(400);
+            return $this->view->render($response, 'auth/login.twig', [
+                'error' => '<div class="error">Введите имя и пароль</div>'
+            ]);
         }
 
         $user = $this->authService->authenticateUser($username, $password);
 
         if (!$user) {
-            $html = '<div class="error">Неверное имя или пароль</div>';
-            $response->getBody()->write($html);
-            return $response
-                ->withHeader('Content-Type', 'text/html')
-                ->withStatus(401);
+            return $this->view->render($response, 'auth/login.twig', [
+                'error' => '<div class="error">Неверное имя или пароль</div>'
+            ]);
         }
 
         // Вызываем отдельный метод для установки токена
         $response = $this->setTokenInCookie($response, $user);
-
-        //$html = "<div class=\"success\">Вход выполнен! Привет, %s</div>";
-        //$response->getBody()->write(sprintf($html, htmlspecialchars($user->nickname)));
 
         return $response->withHeader('Location', '/post')->withStatus(302);
     }
