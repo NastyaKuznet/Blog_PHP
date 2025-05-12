@@ -6,7 +6,6 @@ use NastyaKuznet\Blog\Service\PostService;
 use NastyaKuznet\Blog\Service\UserService;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
-use Slim\Psr7\Response as SlimResponse;
 use Slim\Views\Twig;
 
 class UserAccountController
@@ -24,7 +23,7 @@ class UserAccountController
 
     public function index(Request $request, Response $response): Response
     {
-        $userId = 4; //теперь всегда под админом, но потом убрать хардкод!
+        $userId = 1; //теперь всегда под админом, но потом убрать хардкод!
         $user = $this->userService->getUser($userId);
         $countPosts = $this->postService->getCountPosts($userId);
         $posts = $this->postService->getPostsByUserId($userId);

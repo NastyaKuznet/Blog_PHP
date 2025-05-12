@@ -23,7 +23,7 @@ class AuthMiddleware
     public function __invoke(Request $request, RequestHandler $handler): Response
     {
         // Разрешённые маршруты без авторизации
-        $allowedRoutes = ['/login', '/register', '/api/login', '/api/register'];
+        $allowedRoutes = ['/login', '/register', '/'];
 
         // Получаем текущий URI
         $uri = $request->getUri()->getPath();
@@ -32,7 +32,7 @@ class AuthMiddleware
         if (in_array($uri, $allowedRoutes)) {
             return $handler->handle($request);
         }
-
+        
         // Получаем токен из кук
         $token = $request->getCookieParams()['token'] ?? null;
 
