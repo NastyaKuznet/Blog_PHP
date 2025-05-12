@@ -128,6 +128,23 @@ class DatabaseService
         }
     }
 
+    public function getPostsByUserId(int $userId):array
+    {
+        try {
+            $stmt = $this->pdo->prepare("SELECT p.* , u.nickname as user_nickname, COUNT(c.id) as comment_count
+                                         FROM posts p 
+                                         LEFT JOIN comments c ON p.id = c.post_id
+                                         JOIN users u ON p.user_id = u.id  
+                                         WHERE u.id = :user_id
+                                         GROUP BY p.id, u.nickname");
+            $stmt->execute(['user_id' => $userId]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            echo "Ошибка при получении постов по юзер id: " . $e->getMessage();
+            return [];
+        }
+    }
+
     // Метод для получения всех постов, отсортированных по количеству лайков в порядке возрастания
     public function getPostsByLikesAscending()
     {
@@ -193,6 +210,19 @@ class DatabaseService
         } catch (PDOException $e) {
             echo "Ошибка при получении постов по комментариям: " . $e->getMessage();
             return [];
+        }
+    }
+
+    // Метод для получения количества постов по юзерИд
+    public function getCountPostsByUserId(int $userId):int
+    {
+        try {
+            $stmt = $this->pdo->prepare("SELECT COUNT(*) FROM posts WHERE user_id = :user_id");
+            $stmt->execute(['user_id' => $userId]);
+            return (int) $stmt->fetchColumn();
+        } catch (PDOException $e) {
+            echo "Ошибка при получении количество постов: " . $e->getMessage();
+            return 0;
         }
     }
 
@@ -350,7 +380,7 @@ class DatabaseService
     public function getUserInfo($user_id)
     {
         try {
-            $stmt = $this->pdo->prepare("SELECT nickname FROM users WHERE id = :user_id");
+            $stmt = $this->pdo->prepare("SELECT u.*, r.name AS role_name FROM users u JOIN roles r ON u.role_id = r.id WHERE u.id = :user_id");
             $stmt->execute(['user_id' => $user_id]);
             return $stmt->fetch(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {

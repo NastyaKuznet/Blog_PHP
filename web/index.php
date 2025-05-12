@@ -13,6 +13,7 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Http\Message\ResponseInterface as Response;
 use Slim\Psr7\Factory\ResponseFactory;
 use Dotenv\Dotenv;
+use NastyaKuznet\Blog\Controller\UserAccountController;
 
 require __DIR__ . '/../vendor/autoload.php';
 
@@ -80,6 +81,8 @@ $app->post('/post/{id}/like', [PostController::class, 'likePost']);
 //Заглушки для admins
 $app->get('/users', [PostController::class, 'users'])->add((new RoleMiddlewareFactory(['moderator', 'admin']))($container));
 
+$app->get('/account', [UserAccountController::class, 'index'])->add((new RoleMiddlewareFactory(['reader', 'writer', 'moderator', 'admin']))($container));
+
 $app->get('/accounts', function (Request $request, Response $response) {
     $html = "<h1>Главная</h1><ul>
                 <li><a href='/account/1'>Личный кабинет (ID 1)</a></li>
@@ -92,65 +95,6 @@ $app->get('/accounts', function (Request $request, Response $response) {
     return $response;
 });
 /*
-// /account/{id}
-$app->get('/account/{id}', function (Request $request, Response $response, array $args) use ($databaseService) {
-    $user_id = (int)$args['id'];
-
-    // Получаем информацию о пользователе
-    $stmt = $databaseService->pdo->prepare("SELECT u.id, u.nickname, r.name AS role_name FROM users u JOIN roles r ON u.role_id = r.id WHERE u.id = ?");
-    $stmt->execute([$user_id]);
-    $user_info = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    if (!$user_info) {
-        $response->getBody()->write("<h1>Пользователь не найден</h1>");
-        return $response->withStatus(404);
-    }
-
-    // Получаем количество постов пользователя
-    $stmt = $databaseService->pdo->prepare("SELECT COUNT(*) FROM posts WHERE user_id = ?");
-    $stmt->execute([$user_id]);
-    $post_count = $stmt->fetchColumn();
-
-    // Получаем посты пользователя
-    $stmt = $databaseService->pdo->prepare("SELECT * FROM posts WHERE user_id = ? ORDER BY created_at DESC");
-    $stmt->execute([$user_id]);
-    $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    ob_start(); ?>
-    <!DOCTYPE html>
-    <html lang="ru">
-    <head>
-        <meta charset="UTF-8">
-        <title>Личный кабинет</title>
-        <link rel="stylesheet" href="/style.css">
-    </head>
-    <body>
-        <h1>Личный кабинет</h1>
-        <p><strong>Имя пользователя:</strong> <?= htmlspecialchars($user_info['nickname']) ?></p>
-        <p><strong>Роль:</strong> <?= htmlspecialchars($user_info['role_name']) ?></p>
-
-        <?php if ($user_info['role_name'] !== 'reader'): ?>
-            <p><strong>Количество постов:</strong> <?= htmlspecialchars($post_count) ?></p>
-            <h2>Посты пользователя</h2>
-            <ul>
-                <?php foreach ($posts as $post): ?>
-                    <li>
-                        <strong><?= htmlspecialchars($post['title']) ?></strong><br>
-                        <?= nl2br(htmlspecialchars($post['content'])) ?><br>
-                        <small><?= htmlspecialchars($post['created_at']) ?></small>
-                    </li>
-                <?php endforeach; ?>
-            </ul>
-        <?php endif; ?>
-
-        <a href="/">← На главную</a>
-    </body>
-    </html>
-    <?php
-    $html = ob_get_clean();
-    $response->getBody()->write($html);
-    return $response;
-});
 
 // /users (только для админа)
 $app->get('/users', function (Request $request, Response $response) use ($databaseService) {
