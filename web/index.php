@@ -1,5 +1,4 @@
 <?php
-
 use Slim\Factory\AppFactory;
 use NastyaKuznet\Blog\Controller\PostController;
 use NastyaKuznet\Blog\Controller\AuthController;
@@ -14,6 +13,8 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Http\Message\ResponseInterface as Response;
 use Slim\Psr7\Factory\ResponseFactory;
 use Dotenv\Dotenv;
+use NastyaKuznet\Blog\Controller\UserAccountController;
+use NastyaKuznet\Blog\Controller\UsersAdminController;
 
 require __DIR__ . '/../vendor/autoload.php';
 
@@ -77,13 +78,26 @@ $app->group('/post', function (RouteCollectorProxy $group) use ($container) {
     $group->post('/edit/{id}', [PostController::class, 'edit'])->add((new RoleMiddlewareFactory(['moderator', 'admin']))($container));
 });
 
+$app->group('/admin', function (RouteCollectorProxy $group) use ($container) {
+    //Роуты, требующие роль 'admin' или выше
+    /*
+    $group->get('/users', [UsersAdminController::class, 'index'])->add((new RoleMiddlewareFactory(['admin']))($container));
+    $group->post('/change_role', [UsersAdminController::class, 'changeRole'])->add((new RoleMiddlewareFactory(['admin']))($container));
+    $group->post('/delete_user', [UsersAdminController::class, 'deleteUser'])->add((new RoleMiddlewareFactory(['admin']))($container));
+    */
+
+    //это удалить когда будет регистрация
+    $group->get('/users', [UsersAdminController::class, 'index']);
+    $group->post('/change_role', [UsersAdminController::class, 'changeRole']);
+    $group->post('/delete_user', [UsersAdminController::class, 'deleteUser']);
+});
+
 $app->get('/post', [PostController::class, 'index']);
 
 $app->map(['GET', 'POST'],'/post/{id}', [PostController::class, 'show']);
 
 $app->post('/post/{id}/like', [PostController::class, 'likePost']);
 
-//Заглушки для admins
-$app->get('/users', [PostController::class, 'users'])->add((new RoleMiddlewareFactory(['moderator', 'admin']))($container));
+$app->get('/account', [UserAccountController::class, 'index'])->add((new RoleMiddlewareFactory(['reader', 'writer', 'moderator', 'admin']))($container));
 
 $app->run(); 

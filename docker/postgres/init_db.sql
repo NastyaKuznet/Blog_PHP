@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     nickname VARCHAR(50) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
-    role_id INTEGER NOT NULL REFERENCES roles(id)
+    role_id INTEGER NOT NULL REFERENCES roles(id) ON DELETE CASCADE
 );
 
 -- Создаем таблицу posts
@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS posts (
     title VARCHAR(255) NOT NULL,
     content TEXT NOT NULL,
     likes INTEGER DEFAULT 0,
-    user_id INTEGER NOT NULL REFERENCES users(id),
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -34,3 +34,26 @@ CREATE TABLE IF NOT EXISTS comments (
     user_id INTEGER NOT NULL REFERENCES users(id),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+
+-- Создаем роли
+CREATE TABLE IF NOT EXISTS roles (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(50) NOT NULL UNIQUE
+);
+
+-- Добавляем тестовых пользователей, если их нет
+INSERT INTO users (nickname, password, role_id) VALUES ('reader', 'reader', 1)
+ON CONFLICT DO NOTHING;
+INSERT INTO users (nickname, password, role_id) VALUES ('writer', 'writer', 2)
+ON CONFLICT DO NOTHING;
+INSERT INTO users (nickname, password, role_id) VALUES ('moderator', 'moderator', 3)
+ON CONFLICT DO NOTHING;
+INSERT INTO users (nickname, password, role_id) VALUES ('admin', 'admin', 4)
+ON CONFLICT DO NOTHING;
+
+-- Добавляем тестовые посты
+INSERT INTO posts (title, content, user_id) VALUES ('Пост читателя', 'Читатель не должен иметь постов', 1);
+INSERT INTO posts (title, content, user_id) VALUES ('Пост писателя', 'Привет, это мой первый пост!', 2);
+INSERT INTO posts (title, content, user_id) VALUES ('Пост модера', 'Я могу редактировать и удалять посты', 3);
+INSERT INTO posts (title, content, user_id) VALUES ('Пост админа', 'Я администратор и могу всё!', 4);

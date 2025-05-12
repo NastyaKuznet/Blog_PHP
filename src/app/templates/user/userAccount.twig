@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Личный кабинет</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <h1>Личный кабинет</h1>
+    <p><strong>Имя пользователя:</strong> {{ user.nickname|escape }}</p>
+    <p><strong>Роль:</strong> {{ user.roleName|escape }}</p>
+
+    {% if user.roleName != 'reader' %}
+        <p><strong>Количество постов:</strong> {{ countPosts|escape }}</p>
+        <h2>Посты пользователя</h2>
+        <ul>
+            {% for post in posts %}
+                <li>
+                    <strong>{{ post.title|escape }}</strong><br>
+                    {{ post.content|escape|nl2br }}<br>
+                    <small>{{ post.created_at|escape }}</small>
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    <a href="/post">← На главную</a>
+</body>
+</html>
