@@ -47,7 +47,6 @@ class UserService
         return $this->databaseService->changeUserRole($user_id, $new_role_id);
     }
 
-    
     public function deleteUser(int $user_id) : bool 
     {
         return $this->databaseService->deleteUser($user_id);

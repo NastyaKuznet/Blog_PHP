@@ -16,7 +16,7 @@
     <div style="width: 200px; padding-right: 20px;">
         <h2>Фильтры</h2>
 
-        <form action="/" method="GET">
+        <form action="/post" method="GET">
             <label for="author_nickname">Фильтр по никнейму автора:</label><br>
             <input type="text" id="author_nickname" name="author_nickname" value="{{ app.request.get('author_nickname')|escape }}"><br><br>
 
@@ -35,7 +35,7 @@
             </select><br><br>
 
             <button type="submit">Применить</button>
-            <a href="/">Сбросить фильтры</a>
+            <a href="/post">Сбросить фильтры</a>
         </form>
     </div>
 
