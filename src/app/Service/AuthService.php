@@ -2,6 +2,7 @@
 
 namespace NastyaKuznet\Blog\Service;
 
+use NastyaKuznet\Blog\Model\Role;
 use NastyaKuznet\Blog\Model\User;
 
 class AuthService
@@ -21,16 +22,8 @@ class AuthService
      * @param string $roleName
      * @return bool
      */
-    public function registerUser(string $username, string $password, string $roleName = 'user'): bool
+    public function registerUser(string $username, string $password, string $roleId): bool
     {
-        $roles = $this->databaseService->getRoles();
-        
-        // Получаем roleId по названию роли
-        $roleId = array_search($roleName, $roles);
-        if ($roleId === false) {
-            throw new \InvalidArgumentException("Неизвестная роль: $roleName");
-        }
-
         return $this->databaseService->addUser($username, $password, $roleId);
     }
 
