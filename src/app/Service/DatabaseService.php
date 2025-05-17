@@ -31,7 +31,7 @@ class DatabaseService
             $stmt = $this->pdo->query("SELECT p.*, u.nickname as user_nickname, COUNT(c.id) as comment_count
                                         FROM posts p
                                         LEFT JOIN comments c ON p.id = c.post_id
-                                        JOIN users u ON p.user_id = u.id
+                                        JOIN users u ON p.author_id = u.id
                                         GROUP BY p.id, u.nickname;");
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
@@ -47,7 +47,7 @@ class DatabaseService
             $stmt = $this->pdo->query("SELECT p.* , u.nickname as user_nickname, COUNT(c.id) as comment_count
                                          FROM posts p 
                                          LEFT JOIN comments c ON p.id = c.post_id
-                                         JOIN users u ON p.user_id = u.id  
+                                         JOIN users u ON p.author_id = u.id  
                                          GROUP BY p.id, u.nickname
                                          ORDER BY u.nickname ASC;");
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -64,7 +64,7 @@ class DatabaseService
             $stmt = $this->pdo->query("SELECT p.* , u.nickname as user_nickname, COUNT(c.id) as comment_count
                                          FROM posts p 
                                          LEFT JOIN comments c ON p.id = c.post_id
-                                         JOIN users u ON p.user_id = u.id  
+                                         JOIN users u ON p.author_id = u.id  
                                          GROUP BY p.id, u.nickname
                                          ORDER BY u.nickname DESC;");
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -81,7 +81,7 @@ class DatabaseService
             $stmt = $this->pdo->prepare("SELECT p.* , u.nickname as user_nickname, COUNT(c.id) as comment_count
                                          FROM posts p 
                                          LEFT JOIN comments c ON p.id = c.post_id
-                                         JOIN users u ON p.user_id = u.id  
+                                         JOIN users u ON p.author_id = u.id  
                                          WHERE u.nickname = :author_nickname
                                          GROUP BY p.id, u.nickname");
             $stmt->execute(['author_nickname' => $author_nickname]);
@@ -98,7 +98,7 @@ class DatabaseService
             $stmt = $this->pdo->prepare("SELECT p.* , u.nickname as user_nickname, COUNT(c.id) as comment_count
                                          FROM posts p 
                                          LEFT JOIN comments c ON p.id = c.post_id
-                                         JOIN users u ON p.user_id = u.id  
+                                         JOIN users u ON p.author_id = u.id  
                                          WHERE u.id = :user_id
                                          GROUP BY p.id, u.nickname");
             $stmt->execute(['user_id' => $userId]);
@@ -116,7 +116,7 @@ class DatabaseService
             $stmt = $this->pdo->query("SELECT p.* , u.nickname as user_nickname, COUNT(c.id) as comment_count
                                         FROM posts p 
                                         LEFT JOIN comments c ON p.id = c.post_id
-                                        JOIN users u ON p.user_id = u.id  
+                                        JOIN users u ON p.author_id = u.id  
                                         GROUP BY p.id, u.nickname
                                         ORDER BY likes ASC");
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -133,7 +133,7 @@ class DatabaseService
             $stmt = $this->pdo->query("SELECT p.* , u.nickname as user_nickname, COUNT(c.id) as comment_count
                                         FROM posts p 
                                         LEFT JOIN comments c ON p.id = c.post_id
-                                        JOIN users u ON p.user_id = u.id  
+                                        JOIN users u ON p.author_id = u.id  
                                         GROUP BY p.id, u.nickname 
                                         ORDER BY likes DESC");
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -150,7 +150,7 @@ class DatabaseService
             $stmt = $this->pdo->query("SELECT p.* , u.nickname as user_nickname, COUNT(c.id) as comment_count
                                         FROM posts p 
                                         LEFT JOIN comments c ON p.id = c.post_id
-                                        JOIN users u ON p.user_id = u.id  
+                                        JOIN users u ON p.author_id = u.id  
                                         GROUP BY p.id, u.nickname
                                         ORDER BY comment_count ASC");
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -167,7 +167,7 @@ class DatabaseService
             $stmt = $this->pdo->query("SELECT p.* , u.nickname as user_nickname, COUNT(c.id) as comment_count
                                         FROM posts p 
                                         LEFT JOIN comments c ON p.id = c.post_id
-                                        JOIN users u ON p.user_id = u.id  
+                                        JOIN users u ON p.author_id = u.id  
                                         GROUP BY p.id, u.nickname
                                         ORDER BY comment_count DESC");
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -199,7 +199,7 @@ class DatabaseService
             $stmt = $this->pdo->prepare("SELECT p.*, u.nickname as user_nickname, COUNT(c.id) as comment_count
                                         FROM posts p
                                         LEFT JOIN comments c ON p.id = c.post_id
-                                        JOIN users u ON p.user_id = u.id
+                                        JOIN users u ON p.author_id = u.id
                                         WHERE p.id = :post_id
                                         GROUP BY p.id, u.nickname;");
             $stmt->execute(['post_id' => $id]);

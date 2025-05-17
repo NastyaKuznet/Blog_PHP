@@ -70,9 +70,9 @@ class PostService
                 $postData['title'],
                 $postData['content'],
                 $postData['likes'],
-                $postData['user_id'],
+                $postData['author_id'],
                 $postData['user_nickname'],
-                $postData['created_at'],
+                $postData['created_date'],
                 $postData['comment_count']
             );
         }
@@ -93,9 +93,9 @@ class PostService
                 $postFromDb['title'],
                 $postFromDb['content'],
                 (int)$postFromDb['likes'],
-                (int)$postFromDb['user_id'],
+                (int)$postFromDb['author_id'],
                 $postFromDb['user_nickname'],
-                $postFromDb['created_at'],
+                $postFromDb['created_date'],
                 (int)$postFromDb['comment_count']
             );
         } catch (\Exception $e) {
