@@ -494,10 +494,10 @@ class DatabaseService
     public function getRoles(): array
     {
         try {
-            $stmt = $this->pdo->query("SELECT r.name 
+            $stmt = $this->pdo->query("SELECT r.id, r.name 
                                         FROM roles r");
 
-           return $stmt->fetchAll(PDO::FETCH_COLUMN, 0);
+           return $stmt->fetchAll(PDO::FETCH_COLUMN);
         } catch (PDOException $e) {
             echo "Ошибка при получении списка ролей: " . $e->getMessage();
             return [];

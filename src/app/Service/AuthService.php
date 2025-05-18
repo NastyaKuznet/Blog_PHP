@@ -2,6 +2,7 @@
 
 namespace NastyaKuznet\Blog\Service;
 
+use NastyaKuznet\Blog\Model\Role;
 use NastyaKuznet\Blog\Model\User;
 
 class AuthService
@@ -21,7 +22,7 @@ class AuthService
      * @param string $roleName
      * @return bool
      */
-    public function registerUser(string $username, string $password, string $roleName = 'user'): bool
+    public function registerUser(string $username, string $password, string $roleId): bool
     {
         return $this->databaseService->addUser($username, $password);
     }

@@ -63,23 +63,13 @@ $app->get('/debug/routes', function ($request, $response) use ($app) {
 
 // Группировка роутов по префиксу 'post'
 $app->group('/post', function (RouteCollectorProxy $group) use ($container) {
-    // Роуты, требующие роль 'writer' или выше
     $group->get('/create', [PostController::class, 'create']);
     $group->post('/create', [PostController::class, 'create']);
-    // Роуты, требующие роль 'moder' или выше
     $group->get('/edit/{id}', [PostController::class, 'edit']);
     $group->post('/edit/{id}', [PostController::class, 'edit']);
 });
 
 $app->group('/admin', function (RouteCollectorProxy $group) use ($container) {
-    //Роуты, требующие роль 'admin' или выше
-    /*
-    $group->get('/users', [UsersAdminController::class, 'index'])->add((new RoleMiddlewareFactory(['admin']))($container));
-    $group->post('/change_role', [UsersAdminController::class, 'changeRole'])->add((new RoleMiddlewareFactory(['admin']))($container));
-    $group->post('/delete_user', [UsersAdminController::class, 'deleteUser'])->add((new RoleMiddlewareFactory(['admin']))($container));
-    */
-
-    //это удалить когда будет регистрация
     $group->get('/users', [UsersAdminController::class, 'index']);
     $group->post('/change_role', [UsersAdminController::class, 'changeRole']);
     $group->post('/delete_user', [UsersAdminController::class, 'deleteUser']);
