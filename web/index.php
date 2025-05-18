@@ -39,8 +39,8 @@ $errorMiddleware = $app->addErrorMiddleware(true, true, true);
 // Dependency Injection Container (DI Container)
 $container = $app->getContainer();
 
-$app->add($container->get(RoleMiddleware::class));
-$app->add($container->get(AuthMiddleware::class));
+//$app->add($container->get(RoleMiddleware::class));
+//$app->add($container->get(AuthMiddleware::class));
 
 
 
@@ -72,7 +72,7 @@ $app->group('/post', function (RouteCollectorProxy $group) use ($container) {
 $app->group('/admin', function (RouteCollectorProxy $group) use ($container) {
     $group->get('/users', [UsersAdminController::class, 'index']);
     $group->post('/change_role', [UsersAdminController::class, 'changeRole']);
-    $group->post('/delete_user', [UsersAdminController::class, 'deleteUser']);
+    $group->post('/toggle_ban', [UsersAdminController::class, 'toggleBan']); 
 });
 
 $app->get('/post', [PostController::class, 'index']);

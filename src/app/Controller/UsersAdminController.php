@@ -49,20 +49,21 @@ class UsersAdminController
         return $response->withStatus(500);
     }
 
-    public function deleteUser(Request $request, Response $response): Response
+    public function toggleBan(Request $request, Response $response): Response
     {
         $parsedBody = $request->getParsedBody();
         $userId = (int) ($parsedBody['user_id'] ?? 0);
-        
-        $isSuccess = $this->userService->deleteUser($userId);
-        if($isSuccess)
-        {
+        $isBanned = (bool) ($parsedBody['is_banned'] ?? false);
+
+        $isSuccess = $this->databaseService->toggleUserBan($userId, $isBanned);
+
+        if ($isSuccess) {
             return $response->withHeader('Location', '/admin/users')->withStatus(302);
         }
 
         $response = new SlimResponse();
-        $response->getBody()->write('Error in delete user.');
+        $response->getBody()->write('Error in toggling ban status.');
         return $response->withStatus(500);
     }
-
+    
 }

@@ -504,4 +504,20 @@ class DatabaseService
             return [];
         }
     }
+
+    // Метод для изменения статуса "забанен"
+    public function toggleUserBan(int $userId, bool $isBanned): bool
+    {
+        try {
+            $stmt = $this->pdo->prepare("UPDATE users SET is_banned = :is_banned WHERE id = :user_id");
+            $stmt->execute([
+                'is_banned' => $isBanned,
+                'user_id' => $userId
+            ]);
+            return $stmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            echo "Ошибка при изменении статуса забаненности пользователя: " . $e->getMessage();
+            return false;
+        }
+    }
 }
