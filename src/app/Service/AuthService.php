@@ -48,11 +48,13 @@ class AuthService
         }
 
         return new User(
-            $userData['id'],
+            $userData['id'], 
             $userData['nickname'],
             $userData['password'],
             $userData['role_id'],
-            $userData['role_name']
+            $userData['role_name'],
+            $userData['register_date'],    
+            $userData['is_banned']          
         );
     }
 
