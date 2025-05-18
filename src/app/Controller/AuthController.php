@@ -48,7 +48,6 @@ class AuthController
         $data = $request->getParsedBody();
         $username = $data['username'] ?? '';
         $password = $data['password'] ?? '';
-        $role = $data['role'] ?? 'user';
 
         if (empty($username) || empty($password)) {
             $html = '<div class="error">Заполните имя и пароль</div>';
@@ -65,7 +64,7 @@ class AuthController
             ]);
         }
 
-        $success = $this->authService->registerUser($username, $password, $role);
+        $success = $this->authService->registerUser($username, $password);
 
         if ($success) {
             // После регистрации сразу логиним пользователя
@@ -73,7 +72,7 @@ class AuthController
 
             // Вызываем наш отдельный метод для установки токена
             $response = $this->setTokenInCookie($response, $user);
-            return $response->withHeader('Location', '/post')->withStatus(302);
+            return $response->withHeader('Location', '/')->withStatus(302);
         } else {
             return $this->view->render($response, 'auth/register.twig', [
                 'error' => '<div class="error">Ошибка при регистрации</div>'
@@ -108,7 +107,7 @@ class AuthController
         // Вызываем отдельный метод для установки токена
         $response = $this->setTokenInCookie($response, $user);
 
-        return $response->withHeader('Location', '/post')->withStatus(302);
+        return $response->withHeader('Location', '/')->withStatus(302);
     }
 
     /**
@@ -141,6 +140,6 @@ class AuthController
         );
 
         // Перенаправляем на главную страницу
-        return $response->withHeader('Location', '/');
+        return $response->withHeader('Location', '/register');
     }
 }

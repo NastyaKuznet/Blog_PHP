@@ -23,15 +23,7 @@ class AuthService
      */
     public function registerUser(string $username, string $password, string $roleName = 'user'): bool
     {
-        $roles = $this->databaseService->getRoles();
-        
-        // Получаем roleId по названию роли
-        $roleId = array_search($roleName, $roles);
-        if ($roleId === false) {
-            throw new \InvalidArgumentException("Неизвестная роль: $roleName");
-        }
-
-        return $this->databaseService->addUser($username, $password, $roleId);
+        return $this->databaseService->addUser($username, $password);
     }
 
     public function checkUserRegistration(string $username): bool

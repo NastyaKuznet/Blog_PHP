@@ -59,7 +59,7 @@ $app->get('/debug/routes', function ($request, $response) use ($app) {
     return $response;
 });
 
-$app->get('/', [AuthController::class, 'home']);
+//$app->get('/', [AuthController::class, 'home']);
 
 // Группировка роутов по префиксу 'post'
 $app->group('/post', function (RouteCollectorProxy $group) use ($container) {
@@ -85,7 +85,7 @@ $app->group('/admin', function (RouteCollectorProxy $group) use ($container) {
     $group->post('/delete_user', [UsersAdminController::class, 'deleteUser']);
 });
 
-$app->get('/post', [PostController::class, 'index']);
+$app->get('/', [PostController::class, 'index']);
 
 $app->map(['GET', 'POST'],'/post/{id}', [PostController::class, 'show']);
 

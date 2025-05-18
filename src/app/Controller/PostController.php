@@ -33,7 +33,7 @@ class PostController
 
         return $this->view->render($response, 'post/index.twig', [
             'posts' => $posts,
-            'userRole' => $user['role'],
+            'userRole' => is_array($user) ? $user['role'] : 'reader',
             'app' => [  
                 'request' => $request,
             ],
