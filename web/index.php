@@ -39,8 +39,8 @@ $errorMiddleware = $app->addErrorMiddleware(true, true, true);
 // Dependency Injection Container (DI Container)
 $container = $app->getContainer();
 
-//$app->add($container->get(RoleMiddleware::class));
-//$app->add($container->get(AuthMiddleware::class));
+$app->add($container->get(RoleMiddleware::class));
+$app->add($container->get(AuthMiddleware::class));
 
 
 
