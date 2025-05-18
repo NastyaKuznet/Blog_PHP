@@ -584,4 +584,21 @@ class DatabaseService
             return [];
         }
     }
+
+    // Метод для удаления категории
+    public function deleteCategory(int $categoryId): bool
+    {
+        try {
+            $stmt = $this->pdo->prepare("DELETE FROM category_posts WHERE category_id = :category_id");
+            $stmt->execute(['category_id' => $categoryId]);
+
+            $stmt = $this->pdo->prepare("DELETE FROM categories WHERE id = :category_id");
+            $stmt->execute(['category_id' => $categoryId]);
+
+            return true;
+        } catch (\PDOException $e) {
+            error_log("Ошибка удаления категории: " . $e->getMessage());
+            return false;
+        }
+    }
 }

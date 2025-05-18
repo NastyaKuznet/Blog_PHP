@@ -19,7 +19,17 @@
                 <tr>
                     <td>{{ category.id|escape }}</td>
                     <td>{{ category.name|escape }}</td>
-                    <td>{{ category.parent_id is not none ? (categories|selectattr('id', '==', category.parent_id)|first).name : 'Нет' }}</td>
+                    <td>
+                        {% if category.parent_id %}
+                            {% for parent in categories %}
+                                {% if parent.id == category.parent_id %}
+                                    {{ parent.name }}
+                                {% endif %}
+                            {% endfor %}
+                        {% else %}
+                            Нет
+                        {% endif %}
+                    </td>                   
                     <td>{{ category.created_at|date('H:i d.m.Y', 'Asia/Yekaterinburg') }}</td>
                     <td>
                         <!-- Форма для удаления категории -->

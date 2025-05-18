@@ -38,4 +38,9 @@ class CategoryService
     {
         return $this->databaseService->getPostsByCategoryId($categoryId);
     }
+
+    public function deleteCategory(int $categoryId): bool
+    {
+        return $this->databaseService->deleteCategory($categoryId);
+    }
 }
