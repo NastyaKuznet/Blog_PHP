@@ -21,35 +21,7 @@ class AuthMiddleware
     }
 
     public function __invoke(Request $request, RequestHandler $handler): Response
-    {
-        // Разрешённые маршруты без авторизации
-        /*$allowedRoutes = [
-            '/', 
-            '/login', 
-            '/register', 
-            '/logout',
-            '/post', 
-            '#^/post/\d+$#', 
-            '#^/post/\d+/like$#'
-        ];
-
-        // Получаем текущий URI
-        $uri = $request->getUri()->getPath();
-
-        foreach ($allowedRoutes as $route) {
-            if (str_starts_with($route, '#')) {
-                $matchResult = preg_match($route, $uri);
-                
-                if ($matchResult) {
-                    return $handler->handle($request);
-                }
-            } else {
-                if ($uri === $route) {
-                    return $handler->handle($request);
-                }
-            }
-        }*/
-        
+    {        
         // Получаем токен из кук
         $token = $request->getCookieParams()['token'] ?? null;
 
@@ -61,18 +33,7 @@ class AuthMiddleware
                 $request = $request->withAttribute('user', $payload);
             }
         }
-
-        /*$payload = $this->authService->decodeJwtToken($token, $this->secretKey);
-
-        if ($payload === null || !isset($payload['exp']) || $payload['exp'] < time()) {
-            return (new ResponseFactory())->createResponse(401)
-                ->withHeader('Location', '/login')
-                ->withStatus(302);
-        }
-
-        // Добавляем пользователя в атрибуты запроса
-        $request = $request->withAttribute('user', $payload);*/
-
+        
         // Продолжаем обработку
         return $handler->handle($request);
     }
