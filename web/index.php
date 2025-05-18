@@ -4,6 +4,7 @@ use NastyaKuznet\Blog\Controller\PostController;
 use NastyaKuznet\Blog\Controller\AuthController;
 use NastyaKuznet\Blog\Middleware\RoleMiddleware;
 use NastyaKuznet\Blog\Middleware\AuthMiddleware;
+use NastyaKuznet\Blog\Controller\CategoryController;
 use Slim\Views\TwigMiddleware;
 use Slim\Routing\RouteCollectorProxy;
 use NastyaKuznet\Blog\Controller\UserAccountController;
@@ -42,8 +43,6 @@ $container = $app->getContainer();
 $app->add($container->get(RoleMiddleware::class));
 $app->add($container->get(AuthMiddleware::class));
 
-
-
 $app->get('/login', [AuthController::class, 'login']);
 $app->post('/login', [AuthController::class, 'login']);
 $app->get('/register', [AuthController::class, 'register']);
@@ -73,6 +72,9 @@ $app->group('/admin', function (RouteCollectorProxy $group) use ($container) {
     $group->get('/users', [UsersAdminController::class, 'index']);
     $group->post('/change_role', [UsersAdminController::class, 'changeRole']);
     $group->post('/delete_user', [UsersAdminController::class, 'deleteUser']);
+    $group->get('/category', [CategoryController::class, 'index']);
+    $group->get('/category/create', [CategoryController::class, 'create']);
+    $group->post('/category/create', [CategoryController::class, 'create']);
 });
 
 $app->get('/post', [PostController::class, 'index']);

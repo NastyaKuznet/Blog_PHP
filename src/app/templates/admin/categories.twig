@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ru">
+    <head>
+        <meta charset="UTF-8">
+        <title>Категории</title>
+        <link rel="stylesheet" href="/style.css">
+    </head>
+    <body>
+        <h1>Управление категориями</h1>
+        <table border="1" cellpadding="5" cellspacing="0">
+            <tr>
+                <th>ID</th>
+                <th>Название</th>
+                <th>Родительская категория</th>
+                <th>Дата создания</th>
+                <th>Действия</th>
+            </tr>
+            {% for category in categories %}
+                <tr>
+                    <td>{{ category.id|escape }}</td>
+                    <td>{{ category.name|escape }}</td>
+                    <td>{{ category.parent_id is not none ? (categories|selectattr('id', '==', category.parent_id)|first).name : 'Нет' }}</td>
+                    <td>{{ category.created_at|date('H:i d.m.Y', 'Asia/Yekaterinburg') }}</td>
+                    <td>
+                        <!-- Форма для удаления категории -->
+                        <form method="POST" action="/admin/category/delete/{{ category.id }}">
+                            <button type="submit">Удалить</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+        </table>
+        <a href="/admin/category/create">Добавить категорию</a>
+        <a href="/">← На главную</a>
+    </body>
+</html>

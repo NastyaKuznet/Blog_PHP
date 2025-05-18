@@ -169,4 +169,23 @@ class PostService
         }
         return $posts;
     }
+
+    public function getPostsByCategoryId(int $categoryId): array
+    {
+        $postsFromDb = $this->databaseService->getPostsByCategoryId($categoryId);
+        $posts = [];
+        foreach ($postsFromDb as $postData) {
+            $posts[] = new Post(
+                $postData['id'],
+                $postData['title'],
+                $postData['content'],
+                $postData['likes'],
+                $postData['user_id'],
+                $postData['user_nickname'],
+                $postData['created_at'],
+                $postData['comment_count']
+            );
+        }
+        return $posts;
+    }
 }

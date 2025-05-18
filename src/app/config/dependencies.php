@@ -4,12 +4,14 @@ use NastyaKuznet\Blog\Controller\AuthController;
 use NastyaKuznet\Blog\Controller\PostController;
 use NastyaKuznet\Blog\Controller\UserAccountController;
 use NastyaKuznet\Blog\Controller\UsersAdminController;
+use NastyaKuznet\Blog\Controller\CategoryController;
 use NastyaKuznet\Blog\Middleware\AuthMiddleware;
 use NastyaKuznet\Blog\Middleware\RoleMiddleware;
 use NastyaKuznet\Blog\Service\AuthService;
 use NastyaKuznet\Blog\Service\DatabaseService;
 use NastyaKuznet\Blog\Service\PostService;
 use NastyaKuznet\Blog\Service\UserService;
+use NastyaKuznet\Blog\Service\CategoryService;
 use Twig\Loader\FilesystemLoader;
 use Slim\Views\Twig;
 use function DI\create;
@@ -40,6 +42,9 @@ return [
     
     UserService::class => create(UserService::class)
         ->constructor(get(DatabaseService::class)),
+
+    CategoryService::class => create(CategoryService::class)
+        ->constructor(get(DatabaseService::class)),
     
     AuthMiddleware::class => create(AuthMiddleware::class)
         ->constructor(get(AuthService::class), get('config.jwt_secret')),
@@ -51,11 +56,14 @@ return [
         ->constructor(get(AuthService::class), get('view')),
 
     PostController::class => create(PostController::class)
-        ->constructor(get(PostService::class), get('view')),
+        ->constructor(get(PostService::class), get(CategoryService::class), get('view')),
 
     UserAccountController::class => create(UserAccountController::class)
         ->constructor(get(PostService::class), get(UserService::class), get('view')),
     
     UsersAdminController::class => create(UsersAdminController::class)
         ->constructor(get(DatabaseService::class), get(UserService::class), get('view')),
+
+    CategoryController::class => create(CategoryController::class)
+        ->constructor(get(CategoryService::class), get('view')),
 ];

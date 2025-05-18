@@ -42,6 +42,21 @@ CREATE TABLE IF NOT EXISTS roles (
     name VARCHAR(50) NOT NULL UNIQUE
 );
 
+-- Таблица categories
+CREATE TABLE IF NOT EXISTS categories (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    parent_id INTEGER REFERENCES categories(id) ON DELETE SET NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Таблица category_posts
+CREATE TABLE IF NOT EXISTS category_posts (
+    category_id INTEGER REFERENCES categories(id) ON DELETE CASCADE,
+    post_id INTEGER REFERENCES posts(id) ON DELETE CASCADE,
+    PRIMARY KEY (category_id, post_id)
+);
+
 -- Добавляем тестовых пользователей, если их нет
 INSERT INTO users (nickname, password, role_id) VALUES ('reader', 'reader', 1)
 ON CONFLICT DO NOTHING;
