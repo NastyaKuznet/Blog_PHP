@@ -30,7 +30,7 @@
                             Нет
                         {% endif %}
                     </td>                   
-                    <td>{{ category.created_at|date('H:i d.m.Y', 'Asia/Yekaterinburg') }}</td>
+                    <td>{{ category.created_date|date('H:i d.m.Y', 'Asia/Yekaterinburg') }}</td>
                     <td>
                         <!-- Форма для удаления категории -->
                         <form method="POST" action="/admin/category/delete/{{ category.id }}">

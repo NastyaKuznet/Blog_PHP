@@ -33,8 +33,7 @@ class PostController
         $authorNickname = $queryParams['author_nickname'] ?? null;
         $categoryId = $queryParams['category_id'] ?? null;
 
-        $categories = $this->categoryService->getAllCategories();
-
+        $categories = $this->categoryService->getCategoriesTree();
         if ($categoryId) {
             $posts = $this->postService->getPostsByCategoryId($categoryId);
         } else {

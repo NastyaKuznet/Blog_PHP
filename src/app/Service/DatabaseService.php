@@ -569,13 +569,20 @@ class DatabaseService
     {
         try {
             $stmt = $this->pdo->prepare("
-                SELECT p.*, u.nickname as user_nickname, COUNT(c.id) as comment_count
-                FROM posts p
-                JOIN category_posts cp ON p.id = cp.post_id
-                JOIN users u ON p.user_id = u.id
-                LEFT JOIN comments c ON p.id = c.post_id
-                WHERE cp.category_id = :category_id
-                GROUP BY p.id, u.nickname
+                WITH RECURSIVE category_tree AS (
+                SELECT id FROM categories WHERE id = :category_id
+                UNION ALL
+                SELECT c.id 
+                FROM categories c
+                INNER JOIN category_tree ct ON c.parent_id = ct.id
+            )
+            SELECT p.*, u.nickname as user_nickname, COUNT(c.id) as comment_count
+            FROM posts p
+            JOIN category_posts cp ON p.id = cp.post_id
+            JOIN users u ON p.user_id = u.id
+            LEFT JOIN comments c ON p.id = c.post_id
+            WHERE cp.category_id IN (SELECT id FROM category_tree)
+            GROUP BY p.id, u.nickname;
             ");
             $stmt->execute(['category_id' => $categoryId]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);

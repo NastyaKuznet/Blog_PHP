@@ -30,7 +30,10 @@ class CategoryController
     public function create(Request $request, Response $response): Response
     {
         if ($request->getMethod() === 'GET') {
-            return $this->view->render($response, 'admin/create_category.twig');
+            $categories = $this->categoryService->getAllCategories();
+            return $this->view->render($response, 'admin/create_category.twig', [
+                'categories' => $categories,
+            ]);
         }
 
         $data = $request->getParsedBody();
