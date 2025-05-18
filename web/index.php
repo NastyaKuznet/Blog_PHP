@@ -2,6 +2,7 @@
 use Slim\Factory\AppFactory;
 use NastyaKuznet\Blog\Controller\PostController;
 use NastyaKuznet\Blog\Controller\AuthController;
+use NastyaKuznet\Blog\Controller\CommentController;
 use NastyaKuznet\Blog\Middleware\RoleMiddleware;
 use NastyaKuznet\Blog\Middleware\AuthMiddleware;
 use Slim\Views\TwigMiddleware;
@@ -82,5 +83,9 @@ $app->map(['GET', 'POST'],'/post/{id}', [PostController::class, 'show']);
 $app->post('/post/{id}/like', [PostController::class, 'likePost']);
 
 $app->get('/account', [UserAccountController::class, 'index']);
+
+$app->get('/comment/edit/{id}', [CommentController::class, 'editForm']);
+$app->post('/comment/edit/{id}', [CommentController::class, 'update']);
+$app->post('/comment/delete/{id}', [CommentController::class, 'delete']);
 
 $app->run(); 

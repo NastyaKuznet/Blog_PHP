@@ -130,7 +130,11 @@ class PostService
                 $commentData['post_id'],
                 $commentData['user_id'],
                 $commentData['user_nickname'],
-                $commentData['created_at']
+                $commentData['created_date'],
+                $commentData['edit_date'],
+                $commentData['delete_date'],
+                $commentData['is_edit'],
+                $commentData['is_delete'] 
             );
         }
         return $comments;

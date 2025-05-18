@@ -56,7 +56,10 @@ class PostController
         if ($request->getMethod() === 'GET') {
             $data = [
                 'post' => $post,
-                'comments' => $comments
+                'comments' => $comments,
+                'app' => [
+                    'user' => $user // ← Передаём пользователя в шаблон
+                ]
             ];
 
             try {

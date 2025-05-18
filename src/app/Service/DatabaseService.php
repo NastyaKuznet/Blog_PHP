@@ -294,7 +294,7 @@ class DatabaseService
             $stmt = $this->pdo->prepare("SELECT c.*, u.nickname as user_nickname
                                         FROM comments c
                                         JOIN users u ON c.user_id = u.id
-                                        WHERE c.post_id = :post_id");
+                                        WHERE c.post_id = :post_id AND c.is_delete = FALSE");
             $stmt->execute(['post_id' => $postId]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
@@ -303,12 +303,26 @@ class DatabaseService
         }
     }
 
+    public function getCommentById(int $commentId): ?array
+    {
+        try {
+            $stmt = $this->pdo->prepare("SELECT * FROM comments WHERE id = :id AND is_delete = FALSE");
+            $stmt->execute(['id' => $commentId]);
+            $result = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+            return $result ?: null;
+        } catch (\PDOException $e) {
+            error_log("Ошибка при получении комментария: " . $e->getMessage());
+            return null;
+        }
+    }
+
     // Метод для добавления коментария по ид поста
     public function addComment($content, $postId, $userId)
     {
         try {
-            $stmt = $this->pdo->prepare("INSERT INTO comments(content, post_id, user_id)
-                                        VALUES (:content, :post_id, :user_id);");
+            $stmt = $this->pdo->prepare("INSERT INTO comments (content, post_id, user_id, created_date, is_edit, is_delete) 
+                                        VALUES (:content, :post_id, :user_id, CURRENT_TIMESTAMP, FALSE, FALSE)");
             $stmt->execute([
                 'content' => $content,
                 'post_id' => $postId,
@@ -317,6 +331,40 @@ class DatabaseService
             return true;
         } catch (PDOException $e) {
             echo "Ошибка при добавлении коментария: " . $e->getMessage();
+            return false;
+        }
+    }
+
+    public function updateComment(int $commentId, string $newContent): bool
+    {
+        try {
+            $stmt = $this->pdo->prepare("UPDATE comments
+                                        SET content = :content,
+                                            edit_date = CURRENT_TIMESTAMP,
+                                            is_edit = TRUE
+                                        WHERE id = :comment_id");
+            $stmt->execute([
+                'content' => $newContent,
+                'comment_id' => $commentId
+            ]);
+            return $stmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            echo "Ошибка при обновлении комментария: " . $e->getMessage();
+            return false;
+        }
+    }
+
+    public function deleteComment(int $commentId): bool
+    {
+        try {
+            $stmt = $this->pdo->prepare("UPDATE comments
+                                        SET is_delete = TRUE,
+                                            delete_date = CURRENT_TIMESTAMP
+                                        WHERE id = :comment_id");
+            $stmt->execute(['comment_id' => $commentId]);
+            return $stmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            echo "Ошибка при мягком удалении комментария: " . $e->getMessage();
             return false;
         }
     }
