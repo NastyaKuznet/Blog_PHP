@@ -24,15 +24,22 @@ class DatabaseService
         }
     }
 
-    // Метод для получения всех постов
+    // Метод для получения всех опубликованных постов
     public function getAllPosts()
     {
         try {
-            $stmt = $this->pdo->query("SELECT p.*, u.nickname as user_nickname, COUNT(c.id) as comment_count
+            $stmt = $this->pdo->query("SELECT p.*, 
+                                            u.nickname as user_nickname, 
+                                            u2.nickname as last_editor_nickname,
+                                            COUNT(l.id) as like_count,
+                                            COUNT(c.id) as comment_count
                                         FROM posts p
                                         LEFT JOIN comments c ON p.id = c.post_id
-                                        JOIN users u ON p.user_id = u.id
-                                        GROUP BY p.id, u.nickname;");
+                                        LEFT JOIN likes l ON p.id = l.post_id
+                                        JOIN users u ON p.author_id = u.id
+                                        JOIN users u2 ON p.last_editor_id = u2.id
+                                        WHERE p.is_publish = true and p.is_delete = false
+                                        GROUP BY p.id, u.nickname, u2.nickname;");
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             echo "Ошибка при получении постов: " . $e->getMessage();
@@ -44,12 +51,19 @@ class DatabaseService
     public function getPostsByAuthorAlphabetical()
     {
         try {
-            $stmt = $this->pdo->query("SELECT p.* , u.nickname as user_nickname, COUNT(c.id) as comment_count
-                                         FROM posts p 
-                                         LEFT JOIN comments c ON p.id = c.post_id
-                                         JOIN users u ON p.user_id = u.id  
-                                         GROUP BY p.id, u.nickname
-                                         ORDER BY u.nickname ASC;");
+            $stmt = $this->pdo->query("SELECT p.* , 
+                                                u.nickname as user_nickname, 
+                                                u2.nickname as last_editor_nickname,
+                                                COUNT(l.id) as like_count,
+                                                COUNT(c.id) as comment_count
+                                        FROM posts p 
+                                        LEFT JOIN comments c ON p.id = c.post_id
+                                        LEFT JOIN likes l ON p.id = l.post_id
+                                        JOIN users u ON p.author_id = u.id  
+                                        JOIN users u2 ON p.last_editor_id = u2.id
+                                        WHERE p.is_publish = true and p.is_delete = false
+                                        GROUP BY p.id, u.nickname, u2.nickname
+                                        ORDER BY u.nickname ASC;");
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             echo "Ошибка при получении постов по автору: " . $e->getMessage();
@@ -61,12 +75,19 @@ class DatabaseService
     public function getPostsByAuthorReverseAlphabetical()
     {
         try {
-            $stmt = $this->pdo->query("SELECT p.* , u.nickname as user_nickname, COUNT(c.id) as comment_count
-                                         FROM posts p 
-                                         LEFT JOIN comments c ON p.id = c.post_id
-                                         JOIN users u ON p.user_id = u.id  
-                                         GROUP BY p.id, u.nickname
-                                         ORDER BY u.nickname DESC;");
+            $stmt = $this->pdo->query("SELECT p.*, 
+                                            u.nickname as user_nickname, 
+                                            u2.nickname as last_editor_nickname,
+                                            COUNT(l.id) as like_count,
+                                            COUNT(c.id) as comment_count
+                                        FROM posts p 
+                                        LEFT JOIN comments c ON p.id = c.post_id
+                                        LEFT JOIN likes l ON p.id = l.post_id
+                                        JOIN users u ON p.author_id = u.id
+                                        JOIN users u2 ON p.last_editor_id = u2.id
+                                        WHERE p.is_publish = true and p.is_delete = false
+                                        GROUP BY p.id, u.nickname, u2.nickname
+                                        ORDER BY u.nickname DESC;");
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             echo "Ошибка при получении постов по автору: " . $e->getMessage();
@@ -78,12 +99,18 @@ class DatabaseService
     public function getPostsByAuthor($author_nickname)
     {
         try {
-            $stmt = $this->pdo->prepare("SELECT p.* , u.nickname as user_nickname, COUNT(c.id) as comment_count
-                                         FROM posts p 
-                                         LEFT JOIN comments c ON p.id = c.post_id
-                                         JOIN users u ON p.user_id = u.id  
-                                         WHERE u.nickname = :author_nickname
-                                         GROUP BY p.id, u.nickname");
+            $stmt = $this->pdo->prepare("SELECT p.*, 
+                                            u.nickname as user_nickname, 
+                                            u2.nickname as last_editor_nickname,
+                                            COUNT(l.id) as like_count,
+                                            COUNT(c.id) as comment_count
+                                        FROM posts p 
+                                        LEFT JOIN comments c ON p.id = c.post_id
+                                        LEFT JOIN likes l ON p.id = l.post_id
+                                        JOIN users u ON p.author_id = u.id
+                                        JOIN users u2 ON p.last_editor_id = u2.id 
+                                        WHERE u.nickname = :author_nickname AND p.is_publish = true AND p.is_delete = false
+                                        GROUP BY p.id, u.nickname, u2.nickname;");
             $stmt->execute(['author_nickname' => $author_nickname]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
@@ -92,33 +119,23 @@ class DatabaseService
         }
     }
 
-    public function getPostsByUserId(int $userId):array
-    {
-        try {
-            $stmt = $this->pdo->prepare("SELECT p.* , u.nickname as user_nickname, COUNT(c.id) as comment_count
-                                         FROM posts p 
-                                         LEFT JOIN comments c ON p.id = c.post_id
-                                         JOIN users u ON p.user_id = u.id  
-                                         WHERE u.id = :user_id
-                                         GROUP BY p.id, u.nickname");
-            $stmt->execute(['user_id' => $userId]);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            echo "Ошибка при получении постов по юзер id: " . $e->getMessage();
-            return [];
-        }
-    }
-
     // Метод для получения всех постов, отсортированных по количеству лайков в порядке возрастания
     public function getPostsByLikesAscending()
     {
         try {
-            $stmt = $this->pdo->query("SELECT p.* , u.nickname as user_nickname, COUNT(c.id) as comment_count
+            $stmt = $this->pdo->query("SELECT p.*, 
+                                            u.nickname as user_nickname,
+                                            u2.nickname as last_editor_nickname,
+                                            COUNT(l.id) as like_count,
+                                            COUNT(c.id) as comment_count
                                         FROM posts p 
                                         LEFT JOIN comments c ON p.id = c.post_id
-                                        JOIN users u ON p.user_id = u.id  
-                                        GROUP BY p.id, u.nickname
-                                        ORDER BY likes ASC");
+                                        LEFT JOIN likes l ON p.id = l.post_id
+                                        JOIN users u ON p.author_id = u.id
+                                        JOIN users u2 ON p.last_editor_id = u2.id 
+                                        WHERE p.is_publish = true and p.is_delete = false
+                                        GROUP BY p.id, u.nickname, u2.nickname
+                                        ORDER BY like_count ASC;");
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             echo "Ошибка при получении постов по лайкам: " . $e->getMessage();
@@ -130,12 +147,19 @@ class DatabaseService
     public function getPostsByLikesDescending()
     {
         try {
-            $stmt = $this->pdo->query("SELECT p.* , u.nickname as user_nickname, COUNT(c.id) as comment_count
+            $stmt = $this->pdo->query("SELECT p.*, 
+                                            u.nickname as user_nickname, 
+                                            u2.nickname as last_editor_nickname,
+                                            COUNT(l.id) as like_count,
+                                            COUNT(c.id) as comment_count
                                         FROM posts p 
                                         LEFT JOIN comments c ON p.id = c.post_id
-                                        JOIN users u ON p.user_id = u.id  
-                                        GROUP BY p.id, u.nickname 
-                                        ORDER BY likes DESC");
+                                        LEFT JOIN likes l ON p.id = l.post_id
+                                        JOIN users u ON p.author_id = u.id  
+                                        JOIN users u2 ON p.last_editor_id = u2.id
+                                        WHERE p.is_publish = true and p.is_delete = false
+                                        GROUP BY p.id, u.nickname, u2.nickname
+                                        ORDER BY like_count DESC;");
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             echo "Ошибка при получении постов по лайкам: " . $e->getMessage();
@@ -147,12 +171,19 @@ class DatabaseService
     public function getPostsByCommentsAscending()
     {
         try {
-            $stmt = $this->pdo->query("SELECT p.* , u.nickname as user_nickname, COUNT(c.id) as comment_count
+            $stmt = $this->pdo->query("SELECT p.*, 
+                                            u.nickname as user_nickname,
+                                            u2.nickname as last_editor_nickname,
+                                            COUNT(l.id) as like_count,
+                                            COUNT(c.id) as comment_count
                                         FROM posts p 
                                         LEFT JOIN comments c ON p.id = c.post_id
-                                        JOIN users u ON p.user_id = u.id  
-                                        GROUP BY p.id, u.nickname
-                                        ORDER BY comment_count ASC");
+                                        LEFT JOIN likes l ON p.id = l.post_id
+                                        JOIN users u ON p.author_id = u.id
+                                        JOIN users u2 ON p.last_editor_id = u2.id
+                                        WHERE p.is_publish = true and p.is_delete = false
+                                        GROUP BY p.id, u.nickname, u2.nickname
+                                        ORDER BY comment_count ASC;");
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             echo "Ошибка при получении постов по комментариям: " . $e->getMessage();
@@ -164,12 +195,19 @@ class DatabaseService
     public function getPostsByCommentsDescending()
     {
         try {
-            $stmt = $this->pdo->query("SELECT p.* , u.nickname as user_nickname, COUNT(c.id) as comment_count
+            $stmt = $this->pdo->query("SELECT p.*, 
+                                            u.nickname as user_nickname, 
+                                            u2.nickname as last_editor_nickname,
+                                            COUNT(l.id) as like_count,
+                                            COUNT(c.id) as comment_count
                                         FROM posts p 
                                         LEFT JOIN comments c ON p.id = c.post_id
-                                        JOIN users u ON p.user_id = u.id  
-                                        GROUP BY p.id, u.nickname
-                                        ORDER BY comment_count DESC");
+                                        LEFT JOIN likes l ON p.id = l.post_id
+                                        JOIN users u ON p.author_id = u.id 
+                                        JOIN users u2 ON p.last_editor_id = u2.id 
+                                        WHERE p.is_publish = true and p.is_delete = false
+                                        GROUP BY p.id, u.nickname, u2.nickname
+                                        ORDER BY comment_count DESC;");
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             echo "Ошибка при получении постов по комментариям: " . $e->getMessage();
@@ -177,13 +215,164 @@ class DatabaseService
         }
     }
 
-    // Метод для получения количества постов по юзерИд
+    // Получение всех постов по ид автора
+    public function getPostsByUserId(int $userId):array
+    {
+        try {
+            $stmt = $this->pdo->prepare("SELECT p.*, 
+                                            u.nickname as user_nickname,
+                                            u2.nickname as last_editor_nickname, 
+                                            COUNT(l.id) as like_count,
+                                            COUNT(c.id) as comment_count
+                                        FROM posts p 
+                                        LEFT JOIN comments c ON p.id = c.post_id
+                                        LEFT JOIN likes l ON p.id = l.post_id
+                                        JOIN users u ON p.author_id = u.id  
+                                        JOIN users u2 ON p.last_editor_id = u2.id
+                                        WHERE u.author_id = :user_id and p.is_publish = true
+                                        GROUP BY p.id, u.nickname, u2.nickname;");
+            $stmt->execute(['user_id' => $userId]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            echo "Ошибка при получении постов по юзер id: " . $e->getMessage();
+            return [];
+        }
+    }
+
+    // Метод для получения всех не опубликованных постов
+    public function getAllNonPublishPosts()
+    {
+        try {
+            $stmt = $this->pdo->query("SELECT p.*, 
+                                            u.nickname as user_nickname, 
+                                            u2.nickname as last_editor_nickname,
+                                            COUNT(c.id) as comment_count
+                                        FROM posts p
+                                        LEFT JOIN comments c ON p.id = c.post_id
+                                        JOIN users u ON p.author_id = u.id
+                                        JOIN users u2 ON p.last_editor_id = u2.id
+                                        WHERE p.is_publish = false and p.is_delete = false
+                                        GROUP BY p.id, u.nickname, u2.nickname;");
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            echo "Ошибка при получении постов: " . $e->getMessage();
+            return [];
+        }
+    }
+
+    // Метод для получения поста по ид
+    function getPostById(int $postId): ?array
+    {
+        try {
+            $this->pdo->beginTransaction();
+
+            $stmt = $this->pdo->prepare("SELECT * FROM posts WHERE id = :postId");
+            $stmt->execute([':postId' => $postId]);
+            $post = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$post) {
+                echo "Пост с ID $postId не найден.\n";
+                return null;
+            }
+
+            $stmt = $this->pdo->prepare("SELECT COUNT(*) FROM likes WHERE post_id = :postId");
+            $stmt->execute([':postId' => $postId]);
+            $likeCount = $stmt->fetchColumn();
+
+            $stmt = $this->pdo->prepare("SELECT COUNT(*) FROM comments WHERE post_id = :postId");
+            $stmt->execute([':postId' => $postId]);
+            $commentCount = $stmt->fetchColumn();
+
+            $authorId = $post['author_id'];
+            $stmt = $this->pdo->prepare("SELECT nickname FROM users WHERE id = :authorId");
+            $stmt->execute([':authorId' => $authorId]);
+            $authorNickname = $stmt->fetchColumn();
+
+            $editorNickname = null;
+            if (isset($post['last_editor_id']) && $post['last_editor_id'] !== null) 
+            {
+                $lastEditorId = $post['last_editor_id'];
+                $stmt = $this->pdo->prepare("SELECT nickname FROM users WHERE id = :lastEditorId");
+                $stmt->execute([':lastEditorId' => $lastEditorId]);
+                $editorNickname = $stmt->fetchColumn();
+            }
+
+            $this->pdo->commit();
+
+            $result = [
+                'post' => $post,
+                'like_count' => $likeCount,
+                'comment_count' => $commentCount,
+                'author_nickname' => $authorNickname,
+                'last_editor_nickname' => $editorNickname,
+            ];
+
+            return $result;
+
+        } catch (PDOException $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            echo "Ошибка в транзакции: " . $e->getMessage() . "\n";
+            return null;
+        }
+    }
+
+    // Метод для получения неопубликованного поста по ид
+    function getNonPublishPostById(int $postId): ?array
+    {
+        try {
+            $this->pdo->beginTransaction();
+
+            $stmt = $this->pdo->prepare("SELECT * FROM posts WHERE id = :postId");
+            $stmt->execute([':postId' => $postId]);
+            $post = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$post) {
+                echo "Пост с ID $postId не найден.\n";
+                return null;
+            }
+
+            $authorId = $post['author_id'];
+            $stmt = $this->pdo->prepare("SELECT nickname FROM users WHERE id = :authorId");
+            $stmt->execute([':authorId' => $authorId]);
+            $authorNickname = $stmt->fetchColumn();
+
+            $editorNickname = null;
+            if (isset($post['last_editor_id']) && $post['last_editor_id'] !== null) 
+            {
+                $lastEditorId = $post['last_editor_id'];
+                $stmt = $this->pdo->prepare("SELECT nickname FROM users WHERE id = :lastEditorId");
+                $stmt->execute([':lastEditorId' => $lastEditorId]);
+                $editorNickname = $stmt->fetchColumn();
+            }
+
+            $this->pdo->commit();
+
+            $result = [
+                'post' => $post,
+                'author_nickname' => $authorNickname,
+                'last_editor_nickname' => $editorNickname,
+            ];
+
+            return $result;
+
+        } catch (PDOException $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            echo "Ошибка в транзакции: " . $e->getMessage() . "\n";
+            return null;
+        }
+    }
+
+    // Метод для получения количества опубликованных постов по юзерИд
     public function getCountPostsByUserId(int $userId):int
     {
         try {
             $stmt = $this->pdo->prepare("SELECT COUNT(*) 
                                         FROM posts 
-                                        WHERE user_id = :user_id");
+                                        WHERE user_id = :user_id and p.is_publish = true");
             $stmt->execute(['user_id' => $userId]);
             return (int) $stmt->fetchColumn();
         } catch (PDOException $e) {
@@ -192,39 +381,16 @@ class DatabaseService
         }
     }
 
-    // Метод для получения поста по ид
-    public function getPostById($id)
-    {
-        try {
-            $stmt = $this->pdo->prepare("SELECT p.*, u.nickname as user_nickname, COUNT(c.id) as comment_count
-                                        FROM posts p
-                                        LEFT JOIN comments c ON p.id = c.post_id
-                                        JOIN users u ON p.user_id = u.id
-                                        WHERE p.id = :post_id
-                                        GROUP BY p.id, u.nickname;");
-            $stmt->execute(['post_id' => $id]);
-            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-            if (count($result) > 0) {
-                return $result[0];
-            } else {
-                return null;
-            }
-        } catch (PDOException $e) {
-            echo "Ошибка при получении поста: " . $e->getMessage();
-            return null;
-        }
-    }
-
     // Метод для добавления нового поста
-    public function addPost(string $title, string $content, int $userId): bool
+    public function addPost(string $title, string $preview, string $content, int $userId): bool
     {
         try {
-            $stmt = $this->pdo->prepare("INSERT INTO posts (title, content, user_id) VALUES (:title, :content, :user_id)");
+            $stmt = $this->pdo->prepare("INSERT INTO posts (title, preview, content, author_id, last_editor_id) VALUES (:title, :preview, :content, :author_id, :author_id)");
             $stmt->execute([
                 'title' => $title,
+                'preview' => $preview,
                 'content' => $content,
-                'user_id' => $userId
+                'author_id' => $userId
             ]);
             return true;
         } catch (PDOException $e) {
@@ -234,14 +400,22 @@ class DatabaseService
     }
 
     // Метод для редактирования существующего поста
-    public function editPost($post_id, $title, $content)
+    public function editPost(int $postId, string $title, string $preview, string $content, int $editorId): bool
     {
         try {
-            $stmt = $this->pdo->prepare("UPDATE posts SET title = :title, content = :content WHERE id = :post_id");
+            $stmt = $this->pdo->prepare("UPDATE posts 
+                                        SET title = :title, 
+                                            preview = :preview,
+                                            content = :content,
+                                            edit_date = CURRENT_TIMESTAMP,
+                                            last_editor_id = :editor_id
+                                        WHERE id = :post_id");
             $stmt->execute([
                 'title' => $title,
+                'preview' => $preview,
                 'content' => $content,
-                'post_id' => $post_id
+                'editor_id' => $editorId,
+                'post_id' => $postId
             ]);
             return true;
         } catch (PDOException $e) {
@@ -250,39 +424,38 @@ class DatabaseService
         }
     }
 
-    // Метод для удаления поста и связанных с ним комментариев
-    public function deletePostAndComments(int $postId): bool
+    // Метод для удаления поста
+    public function deletePost(int $postId): bool
     {
         try {
-            $this->pdo->beginTransaction();
-
-            $stmt = $this->pdo->prepare("DELETE FROM comments WHERE post_id = :post_id");
-            $stmt->execute(['post_id' => $postId]);
-            $commentsDeleted = $stmt->rowCount() > 0;
-
-            $stmt = $this->pdo->prepare("DELETE FROM posts WHERE id = :post_id");
-            $stmt->execute(['post_id' => $postId]);
-            $postDeleted = $stmt->rowCount() > 0;
-
-
-            if ($commentsDeleted && $postDeleted) {
-                $this->pdo->commit();
-                return true;
-            } elseif ($postDeleted) {
-                $this->pdo->commit();
-                return true;
-            } else{
-                if ($this->pdo->inTransaction()) {
-                    $this->pdo->rollBack();
-                }
-                return false;
-            }
-
+            $stmt = $this->pdo->prepare("UPDATE posts 
+                                        SET delete_date = CURRENT_TIMESTAMP, 
+                                            is_delete = true
+                                        WHERE id = :post_id");
+            $stmt->execute([
+                'post_id' => $postId
+            ]);
+            return true;
         } catch (PDOException $e) {
-            if ($this->pdo->inTransaction()) {
-                $this->pdo->rollBack();
-            } 
-            echo("Ошибка при удалении поста и комментариев: " . $e->getMessage());
+            echo "Ошибка при установки даты удаления поста: " . $e->getMessage();
+            return false;
+        }
+    }
+
+    // Метод для публикации поста
+    public function publishPost(int $postId): bool
+    {
+        try {
+            $stmt = $this->pdo->prepare("UPDATE posts 
+                                        SET publish_date = CURRENT_TIMESTAMP, 
+                                            is_publish = true
+                                        WHERE id = :post_id");
+            $stmt->execute([
+                'post_id' => $postId
+            ]);
+            return true;
+        } catch (PDOException $e) {
+            echo "Ошибка при публикации поста: " . $e->getMessage();
             return false;
         }
     }
@@ -366,26 +539,59 @@ class DatabaseService
         } catch (PDOException $e) {
             echo "Ошибка при мягком удалении комментария: " . $e->getMessage();
             return false;
+        } 
+    }
+
+    // Метод для проверки поставлен ли лайк пользателем по определенному посту
+    public function checkLikeByPostIdAndUserId($postId, $userId): bool
+    {
+        try {
+            $stmt = $this->pdo->prepare("SELECT * 
+                                        FROM likes l
+                                        WHERE l.post_id = :post_id AND l.user_id = :user_id;
+                                        ");
+            $stmt->execute([
+                'post_id' => $postId,
+                'user_id' => $userId
+            ]);
+            $count = $stmt->fetchColumn();
+            return $count > 0;
+        } catch (PDOException $e) {
+            echo "Ошибка при проверке лайка: " . $e->getMessage();
+            return false;
         }
     }
 
     // Метод для добавления лайка по ид поста
-    public function addLike(int $postId): bool
+    public function addLike(int $postId, int $userId): bool
     {
         try {
-            $stmt = $this->pdo->prepare("SELECT likes FROM posts WHERE id = :post_id");
-            $stmt->execute(['post_id' => $postId]);
-            $postLikes = $stmt->fetchColumn();
-            $newLikes = $postLikes + 1;
-            $stmt = $this->pdo->prepare("UPDATE posts SET likes = :newLikes
-                                        WHERE id = :post_id");
+            $stmt = $this->pdo->prepare("INSERT INTO likes (post_id, user_id) 
+                                        VALUES (:post_id, :user_id);");
             $stmt->execute([
-                ':newLikes' => $newLikes,
-                'post_id' => $postId
+                'post_id' => $postId,
+                'user_id' => $userId
             ]);
-            return $stmt->rowCount() !== 0;
+            return true;
         } catch (PDOException $e) {
-            echo "Ошибка при добавлении лайка по ид поста: " . $e->getMessage();
+            echo "Ошибка при добавлении лайка: " . $e->getMessage();
+            return false;
+        }
+    }
+
+    public function deleteLike(int $postId, int $userId): bool
+    {
+        try {
+            $stmt = $this->pdo->prepare("DELETE FROM likes l
+                                        WHERE l.post_id = :post_id AND l.user_id = :user_id;
+                                        ");
+            $stmt->execute([
+                'post_id' => $postId,
+                'user_id' => $userId
+            ]);
+            return true;
+        } catch (PDOException $e) {
+            echo "Ошибка при удалении лайка: " . $e->getMessage();
             return false;
         }
     }
@@ -485,14 +691,13 @@ class DatabaseService
     }
 
     // Метод для добавления нового пользователя
-    public function addUser($nickname, $password, $role_id)
+    public function addUser($nickname, $password)
     {
         try {
-            $stmt = $this->pdo->prepare("INSERT INTO users (nickname, password, role_id) VALUES (:nickname, :password, :role_id)");
+            $stmt = $this->pdo->prepare("INSERT INTO users (nickname, password, role_id) VALUES (:nickname, :password, 2)");
             $stmt->execute([
                 'nickname' => $nickname,
-                'password' => password_hash($password, PASSWORD_DEFAULT), // Хэшируем пароль
-                'role_id' => $role_id
+                'password' => password_hash($password, PASSWORD_DEFAULT) // Хэшируем пароль
             ]);
             return true;
         } catch (PDOException $e) {

@@ -13,14 +13,31 @@ class RoleMiddleware
     public function __invoke(Request $request, Handler $handler): Response
     {
         // Разрешённые маршруты без авторизации
-        $allowedRoutes = ['/login', '/register', '/', '/logout'];
+        $allowedRoutes = [
+            '/', 
+            '/login', 
+            '/register', 
+            '/logout',
+            '/post', 
+            '#^/post/\d+$#', 
+            '#^/post/\d+/like$#'
+        ];
 
         // Получаем текущий URI
         $uri = $request->getUri()->getPath();
 
-        // Пропускаем, если маршрут разрешён
-        if (in_array($uri, $allowedRoutes)) {
-            return $handler->handle($request);
+        foreach ($allowedRoutes as $route) {            
+            if (str_starts_with($route, '#')) {
+                $matchResult = preg_match($route, $uri);
+                
+                if ($matchResult) {
+                    return $handler->handle($request);
+                }
+            } else {
+                if ($uri === $route) {
+                    return $handler->handle($request);
+                }
+            }
         }
 
         // Получаем пользователя из атрибутов запроса
@@ -35,10 +52,10 @@ class RoleMiddleware
         }
 
         $routes = [
-            'reader'    => ['#^/post(\?.*)?$#', '#^/post/\d+$#', '#^/post/\d+/like$#', '/account'],
+            'reader'    => ['#^/post(\?.*)?$#', '#^/post/\d+$#'],
             'writer'    => ['#^/post(\?.*)?$#', '#^/post/\d+$#', '#^/post/\d+/like$#', '/account', '/post/create', '#^/comment/edit/\d+$#', '#^/comment/delete/\d+$#'],
-            'moderator' => ['#^/post(\?.*)?$#', '#^/post/\d+$#', '#^/post/\d+/like$#', '/account', '/post/create', '#^/post/edit/\d+$#', '#^/comment/edit/\d+$#', '#^/comment/delete/\d+$#'],
-            'admin'     => ['#^/post(\?.*)?$#', '#^/post/\d+$#', '#^/post/\d+/like$#', '/account', '/post/create', '#^/post/edit/\d+$#', '/admin/users', '/admin/change_role', '/admin/delete_user', '#^/comment/edit/\d+$#', '#^/comment/delete/\d+$#'],
+            'moderator' => ['#^/post(\?.*)?$#', '#^/post/\d+$#', '#^/post/\d+/like$#', '/account', '/post/create', '#^/post/edit/\d+$#', '#^/comment/edit/\d+$#', '#^/comment/delete/\d+$#', '/post-non-publish', '#^/post-non-publish/\d+$#'],
+            'admin'     => ['#^/post(\?.*)?$#', '#^/post/\d+$#', '#^/post/\d+/like$#', '/account', '/post/create', '#^/post/edit/\d+$#', '/admin/users', '/admin/change_role', '/admin/delete_user', '#^/comment/edit/\d+$#', '#^/comment/delete/\d+$#', '/post-non-publish', '#^/post-non-publish/\d+$#'],
         ];
 
         $role = $user['role'];
