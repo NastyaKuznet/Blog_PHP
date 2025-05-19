@@ -19,7 +19,7 @@
             {% if comment.editDate %}
                 <p style="color: gray;">(редактировано {{ comment.editDate|date('H:i d.m.Y', 'Asia/Yekaterinburg') }})</p>
             {% endif %}
-            {% if app.user and comment.userNickname == app.user.nickname %}
+            {% if app.user and (comment.userNickname == app.user.nickname or app.user.role in ['admin']) %}
                 <form action="/comment/edit/{{ comment.id }}" method="GET">
                     <button type="submit">Редактировать</button>
                 </form>

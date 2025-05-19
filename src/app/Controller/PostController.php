@@ -58,7 +58,7 @@ class PostController
                 'post' => $post,
                 'comments' => $comments,
                 'app' => [
-                    'user' => $user // ← Передаём пользователя в шаблон
+                    'user' => $user 
                 ]
             ];
 
