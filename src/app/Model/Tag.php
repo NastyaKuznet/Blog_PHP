@@ -1,3 +1,5 @@
+<?php
+
 namespace NastyaKuznet\Blog\Model;
 
 class Tag

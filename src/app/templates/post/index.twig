@@ -32,12 +32,7 @@
                 <option value="desc" {% if app.request.get('order') == 'desc' %}selected{% endif %}>Убыванию</option>
             </select><br><br>
             <label for="tag">По тегу:</label><br>
-            <select name="tag" id="tag">
-                <option value="">Не выбрано</option>
-                {% for tag in tags %}
-                    <option value="{{ tag.id }}" {% if app.request.get('tag') == tag.id|format('%s') %}selected{% endif %}>{{ tag.name }}</option>
-                {% endfor %}
-            </select><br><br>
+            <input type="text" id="tag_search" name="tag_search" value="{{ app.request.get('tag_search')|escape }}"><br><br>
             <button type="submit">Применить</button>
             <a href="/post">Сбросить фильтры</a>
         </form>

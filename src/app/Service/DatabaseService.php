@@ -177,6 +177,24 @@ class DatabaseService
         }
     }
 
+    public function getPostsByTag(string $tagName): array
+    {
+        try {
+            $stmt = $this->pdo->prepare("SELECT p.* , u.nickname as user_nickname, COUNT(c.id) as comment_count
+                                        FROM tags t 
+                                        JOIN posts p ON t.post_id = p.id
+                                        LEFT JOIN comments c ON p.id = c.post_id
+                                        JOIN users u ON p.user_id = u.id  
+                                        WHERE t.name = :tag_name
+                                        GROUP BY p.id, u.nickname");
+            $stmt->execute(['tag_name' => $tagName]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            echo "Ошибка при получении постов по тегу: " . $e->getMessage();
+            return [];
+        }
+    }
+
     // Метод для получения количества постов по юзерИд
     public function getCountPostsByUserId(int $userId):int
     {
@@ -524,8 +542,7 @@ class DatabaseService
             $stmt = $this->pdo->prepare("
                 SELECT t.*
                 FROM tags t
-                JOIN post_tags pt ON t.id = pt.tag_id
-                WHERE pt.post_id = :post_id
+                WHERE t.post_id = :post_id
             ");
             $stmt->execute(['post_id' => $postId]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -535,34 +552,27 @@ class DatabaseService
         }
     }
 
-    // Метод для добавления связи между постом и тегами
-    public function addTagsToPost(int $postId, array $tagIds): bool
-    {
-        try {
-            // Удаляем существующие теги для данного поста
-            $this->pdo->prepare("DELETE FROM post_tags WHERE post_id = :post_id")->execute(['post_id' => $postId]);
-
-            // Добавляем новые теги
-            if (!empty($tagIds)) {
-                $placeholders = str_repeat('?,', count($tagIds) - 1) . '?';
-                $stmt = $this->pdo->prepare("INSERT INTO post_tags (post_id, tag_id) VALUES (:post_id, ?)" . str_repeat(", (:post_id, ?)", count($tagIds) - 1));
-                $params = array_merge([$postId], $tagIds);
-                $stmt->execute($params);
-            }
-
-            return true;
-        } catch (PDOException $e) {
-            echo "Ошибка при добавлении тегов к посту: " . $e->getMessage();
-            return false;
-        }
-    }
-
     public function addTag(string $name, int $postId): bool
     {
         try {
             $stmt = $this->pdo->prepare("INSERT INTO tags (name, post_id) VALUES (:name, :post_id);");
             $stmt->execute(['name' => $name, 'post_id' => $postId]);
-            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return true;
+        } catch (PDOException $e) {
+            error_log("Ошибка при добавлении тега: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function deleteTag(string $name, int $postId): bool
+    {
+        try {
+            $stmt = $this->pdo->prepare("DELETE FROM tags t
+                                        WHERE t.name = :name AND t.post_id = :post_id;");
+            $stmt->execute([
+                'name' => $name, 
+                'post_id' => $postId
+            ]);
             return true;
         } catch (PDOException $e) {
             error_log("Ошибка при добавлении тега: " . $e->getMessage());
@@ -581,21 +591,6 @@ class DatabaseService
         } catch (PDOException $e) {
             error_log("Ошибка при получении ID тега: " . $e->getMessage());
             return null;
-        }
-    }
-
-    // Связать тег с постом
-    public function addTagToPost(int $postId, int $tagId): bool
-    {
-        try {
-            $stmt = $this->pdo->prepare("INSERT INTO post_tags (post_id, tag_id) VALUES (:post_id, :tag_id)");
-            return $stmt->execute([
-                'post_id' => $postId,
-                'tag_id' => $tagId
-            ]);
-        } catch (PDOException $e) {
-            error_log("Ошибка при связывании тега с постом: " . $e->getMessage());
-            return false;
         }
     }
 

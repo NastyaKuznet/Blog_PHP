@@ -35,7 +35,6 @@ CREATE TABLE IF NOT EXISTS comments (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-
 -- Создаем роли
 CREATE TABLE IF NOT EXISTS roles (
     id SERIAL PRIMARY KEY,

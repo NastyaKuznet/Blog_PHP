@@ -28,8 +28,9 @@ class PostController
         $sortBy = $queryParams['sort_by'] ?? null;
         $order = $queryParams['order'] ?? 'asc';
         $authorNickname = $queryParams['author_nickname'] ?? null;
+        $tag = $queryParams['tag_search'] ?? null;
 
-        $posts = $this->postService->getAllPosts($sortBy, $order, $authorNickname);
+        $posts = $this->postService->getAllPosts($sortBy, $order, $authorNickname, $tag);
 
         return $this->view->render($response, 'post/index.twig', [
             'posts' => $posts,
@@ -145,8 +146,6 @@ class PostController
             try {
                 return $this->view->render($response, 'post/edit.twig', [
                     'post' => $post,
-                    'tags' => $this->postService->getAllTags(),
-                    'postTags' => $this->postService->getTagsByPostId($postId),
                 ]);
             } catch (\Twig\Error\LoaderError $e) {
                 $response->getBody()->write("Ошибка загрузки шаблона: " . $e->getMessage());
@@ -165,14 +164,11 @@ class PostController
         if ($action === 'save') {
             $title = $data['title'] ?? '';
             $content = $data['content'] ?? '';
-
             $tags = $data['tags'] ?? [];
-            //var_dump($tagNames); die();
 
             if (!empty($title) && !empty($content)) {
-                $isSuccess = $this->postService->editPost($postId, $title, $content);
+                $isSuccess = $this->postService->editPost($postId, $title, $content, $tags);
                 if ($isSuccess) {
-                    $this->postService->addTagsToPost($postId, $tags);
                     return $response->withHeader('Location', '/')->withStatus(302);
                 }
                 $response->getBody()->write("Неудалось сохранить пост.");
