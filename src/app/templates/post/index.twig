@@ -4,12 +4,24 @@
     <title>Лента постов</title>
 </head>
 <body>
-<h1>Лента постов</h1>
-<a href="/account">Аккаунт</a>
+<div style="display: flex; justify-content: space-between; align-items: center;">
+  <h1>Лента постов</h1>
+  <form action="/logout" method="post">
+    <button type="submit">Выход</button>
+  </form>
+</div>
 
-{% if userRole == 'admin' %}
-    <a href="/admin/users">Перейти к управлению пользователями</a>
-{% endif %}
+<p>
+    <a href="/account">Аккаунт</a> 
+    |
+    {% if userRole in ['moderator', 'admin'] %}
+        <a href="/post-non-publish">Неопубликованные посты</a>
+    {% endif %} 
+    {% if userRole == 'admin' %}
+        |
+        <a href="/admin/users">Перейти к управлению пользователями</a>
+    {% endif %}
+</p>
 
 <div style="display: flex;">
 
@@ -38,12 +50,6 @@
             <a href="/post">Сбросить фильтры</a>
         </form>
     </div>
-
-    <div>
-        <form action="/logout" method="post">
-            <button type="submit">Выход</button>
-        </form>
-     </div>
      
     <div style="width: calc(100% - 240px); margin: 0 auto; padding: 0 20px;">
         {% if userRole in ['writer', 'moder', 'admin'] %}
@@ -53,18 +59,15 @@
         {% for post in posts %}
             <div style="margin-bottom: 20px; border: 1px solid #ccc; padding: 10px; word-wrap: break-word;">
                 <h3>{{ post.title|escape }}</h3>
-                <p>{{ post.content|nl2br }}</p>
-                <p>{{ post.createdAt|date('H:i d.m.Y', 'Asia/Yekaterinburg') }}</p>
+                <p>{{ post.preview|nl2br }}</p>
+                <p>Дата публикации поста: {{ post.publishDate|date('H:i d.m.Y', 'Asia/Yekaterinburg') }}</p>
                 <p>Автор: {{ post.userNickname|escape }}</p>
                 <p>Лайков: {{ post.likes|escape }}</p>
                 <p>Комментариев: {{ post.commentCount|escape }}</p>
-                <form action="/post/{{ post.id|escape }}/like" method="post">
-                    <button type="submit">Лайк</button>
-                </form>
-                <a href="/post/{{ post.id|escape }}">Комментарии</a>
+                <a href="/post/{{ post.id|escape }}">Открыть пост</a>
 
-                {% if userRole in ['moder', 'admin'] %}
-                    <a href="/post/edit/{{ post.id|escape }}">Редактировать</a>
+                {% if userRole in ['moderator', 'admin'] %}
+                    <a href="/post/edit/{{ post.id|escape }}">Редактировать пост</a>
                 {% endif %}
             </div>
         {% endfor %}

@@ -37,8 +37,8 @@ class RoleMiddleware
         $routes = [
             'reader'    => ['#^/post(\?.*)?$#', '#^/post/\d+$#', '#^/post/\d+/like$#', '/account'],
             'writer'    => ['#^/post(\?.*)?$#', '#^/post/\d+$#', '#^/post/\d+/like$#', '/account', '/post/create'],
-            'moderator' => ['#^/post(\?.*)?$#', '#^/post/\d+$#', '#^/post/\d+/like$#', '/account', '/post/create', '#^/post/edit/\d+$#'],
-            'admin'     => ['#^/post(\?.*)?$#', '#^/post/\d+$#', '#^/post/\d+/like$#', '/account', '/post/create', '#^/post/edit/\d+$#', '/admin/users', '/admin/change_role', '/admin/delete_user'],
+            'moderator' => ['#^/post(\?.*)?$#', '#^/post/\d+$#', '#^/post/\d+/like$#', '/account', '/post/create', '#^/post/edit/\d+$#', '/post-non-publish', '#^/post-non-publish/\d+$#'],
+            'admin'     => ['#^/post(\?.*)?$#', '#^/post/\d+$#', '#^/post/\d+/like$#', '/account', '/post/create', '#^/post/edit/\d+$#', '/post-non-publish', '#^/post-non-publish/\d+$#', '/admin/users', '/admin/change_role', '/admin/delete_user'],
         ];
 
         $role = $user['role'];
