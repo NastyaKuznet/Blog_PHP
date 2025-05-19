@@ -45,14 +45,9 @@ CREATE TABLE IF NOT EXISTS roles (
 -- Создаем таблицу tags
 CREATE TABLE IF NOT EXISTS tags (
     id SERIAL PRIMARY KEY,
-    name VARCHAR(100) NOT NULL UNIQUE
-);
+    post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+    name VARCHAR(100) NOT NULL
 
--- Создаем связующую таблицу post_tags
-CREATE TABLE IF NOT EXISTS post_tags (
-    post_id INTEGER REFERENCES posts(id) ON DELETE CASCADE,
-    tag_id INTEGER REFERENCES tags(id) ON DELETE CASCADE,
-    PRIMARY KEY (post_id, tag_id)
 );
 
 -- Добавляем тестовых пользователей, если их нет

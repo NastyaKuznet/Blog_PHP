@@ -115,10 +115,10 @@ class PostController
         $data = $request->getParsedBody();
         $title = trim($data['title'] ?? '');
         $content = trim($data['content'] ?? '');
-        $tagIds = $data['tag_ids'] ?? [];
+        $tags = $data['tags'] ?? [];
 
         if (!empty($title) && !empty($content)) {
-            $success = $this->postService->addPostWithTags($title, $content, $user['id'], $tagIds);
+            $success = $this->postService->addPostWithTags($title, $content, $user['id'], $tags);
 
             if ($success) {
                 return $response->withHeader('Location', '/')->withStatus(302);
@@ -165,12 +165,14 @@ class PostController
         if ($action === 'save') {
             $title = $data['title'] ?? '';
             $content = $data['content'] ?? '';
-            $tagIds = $data['tag_ids'] ?? [];
+
+            $tags = $data['tags'] ?? [];
+            //var_dump($tagNames); die();
 
             if (!empty($title) && !empty($content)) {
                 $isSuccess = $this->postService->editPost($postId, $title, $content);
                 if ($isSuccess) {
-                    $this->postService->addTagsToPost($postId, $tagIds);
+                    $this->postService->addTagsToPost($postId, $tags);
                     return $response->withHeader('Location', '/')->withStatus(302);
                 }
                 $response->getBody()->write("Неудалось сохранить пост.");

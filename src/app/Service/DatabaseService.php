@@ -557,16 +557,16 @@ class DatabaseService
         }
     }
 
-    public function addTag(string $name): ?int
+    public function addTag(string $name, int $postId): bool
     {
         try {
-            $stmt = $this->pdo->prepare("INSERT INTO tags (name) VALUES (:name) ON CONFLICT (name) DO NOTHING RETURNING id");
-            $stmt->execute(['name' => $name]);
+            $stmt = $this->pdo->prepare("INSERT INTO tags (name, post_id) VALUES (:name, :post_id);");
+            $stmt->execute(['name' => $name, 'post_id' => $postId]);
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
-            return $result ? (int)$result['id'] : null;
+            return true;
         } catch (PDOException $e) {
             error_log("Ошибка при добавлении тега: " . $e->getMessage());
-            return null;
+            return false;
         }
     }
 
