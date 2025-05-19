@@ -46,14 +46,11 @@ CREATE TABLE IF NOT EXISTS comments (
     content TEXT NOT NULL,
     post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-
--- Создаем роли
-CREATE TABLE IF NOT EXISTS roles (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(50) NOT NULL UNIQUE
+    created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    edit_date TIMESTAMP,
+    delete_date TIMESTAMP,
+    is_edit BOOLEAN NOT NULL DEFAULT FALSE,
+    is_delete BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 -- Добавляем тестовых пользователей, если их нет

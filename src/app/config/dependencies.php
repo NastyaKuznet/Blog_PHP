@@ -2,11 +2,13 @@
 
 use NastyaKuznet\Blog\Controller\AuthController;
 use NastyaKuznet\Blog\Controller\PostController;
+use NastyaKuznet\Blog\Controller\CommentController;
 use NastyaKuznet\Blog\Controller\UserAccountController;
 use NastyaKuznet\Blog\Controller\UsersAdminController;
 use NastyaKuznet\Blog\Middleware\AuthMiddleware;
 use NastyaKuznet\Blog\Middleware\RoleMiddleware;
 use NastyaKuznet\Blog\Service\AuthService;
+use NastyaKuznet\Blog\Service\CommentService;
 use NastyaKuznet\Blog\Service\DatabaseService;
 use NastyaKuznet\Blog\Service\PostService;
 use NastyaKuznet\Blog\Service\UserService;
@@ -32,6 +34,9 @@ return [
     AuthService::class => create(AuthService::class)
         ->constructor(get(DatabaseService::class)),
 
+    CommentService::class => create(CommentService::class)
+        ->constructor(get(DatabaseService::class)),
+
     DatabaseService::class => create(DatabaseService::class)
         ->constructor(get('config')),
 
@@ -49,6 +54,9 @@ return [
 
     AuthController::class => create(AuthController::class)
         ->constructor(get(AuthService::class), get('view')),
+
+    CommentController::class => create(CommentController::class)
+        ->constructor(get(CommentService::class), get('view')),
 
     PostController::class => create(PostController::class)
         ->constructor(get(PostService::class), get('view')),

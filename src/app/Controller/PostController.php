@@ -70,6 +70,9 @@ class PostController
             $data = [
                 'post' => $post,
                 'comments' => $comments,
+                'app' => [
+                    'user' => $user 
+                ],
                 'isLikedByUser' => $isLikedByUser
             ];
 
