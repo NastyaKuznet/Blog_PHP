@@ -6,22 +6,32 @@ class Post
 {
     public $id;
     public $title;
+    public $preview;
     public $content;
-    public $likes;
     public $userId;
     public $userNickname;
+    public $lastEditorId;
+    public $lastEditorNickname;
     public $commentCount;
-    public $createdAt;
+    public $createDate;
+    public $publishDate;
+    public $editDate;
+    public $likes;
 
-    public function __construct(int $id, string $title, string $content, int $likes, int $userId, string $userNickname, string $createdAt, int $commentCount = 0)
+    public function __construct(int $id, string $title, string $preview, string $content, int $userId, string $userNickname, int $lastEditorId, string $lastEditorNickname, string $createDate, ?string $publishDate, ?string $editDate, int $likes = 0, int $commentCount = 0)
     {
         $this->id = $id;
         $this->title = $title;
+        $this->preview = $preview;
         $this->content = $content;
-        $this->likes = $likes;
         $this->userId = $userId;
         $this->userNickname = $userNickname;
+        $this->lastEditorId = $lastEditorId;
+        $this->lastEditorNickname = $lastEditorNickname;
         $this->commentCount = $commentCount;
-        $this->createdAt = $createdAt;
+        $this->createDate = $createDate;
+        $this->publishDate = $publishDate;
+        $this->editDate = $editDate;
+        $this->likes = $likes;
     }
 }

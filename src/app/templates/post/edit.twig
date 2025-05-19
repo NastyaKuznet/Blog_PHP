@@ -5,12 +5,15 @@
     </head>
     <body>
         <h1>Редактирование поста</h1>
-
+        <p>Автор поста: {{ post.userNickname|escape }}</p>
         <form action="/post/edit/{{ post.id }}" method="POST">
-            <p>Автор поста: {{ post.userNickname|escape }}</p>
             <div>
                 <label for="title">Заголовок:</label><br>
                 <input type="text" id="title" name="title" value="{{ post.title|escape }}" required>
+            </div>
+            <div>
+                <label for="content">Превью:</label><br>
+                <textarea id="content" name="content" rows="5" cols="50" required>{{ post.preview|escape }}</textarea>
             </div>
             <div>
                 <label for="content">Содержание:</label><br>

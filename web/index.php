@@ -77,6 +77,10 @@ $app->group('/admin', function (RouteCollectorProxy $group) use ($container) {
 
 $app->get('/', [PostController::class, 'index']);
 
+$app->get('/post-non-publish', [PostController::class, 'indexNonPublish']);
+
+$app->map(['GET', 'POST'],'/post-non-publish/{id}', [PostController::class, 'editNonPublish']);
+
 $app->map(['GET', 'POST'],'/post/{id}', [PostController::class, 'show']);
 
 $app->post('/post/{id}/like', [PostController::class, 'likePost']);

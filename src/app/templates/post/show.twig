@@ -5,9 +5,28 @@
 </head>
 <body>
 <h1>{{ post.title|escape }}</h1>
-
+<h2>{{ post.preview|escape }}</h2>
 <p>{{ post.content|escape }}</p>
-<p>Автор: {{ post.userNickname|escape }}</p>
+<p>Автор поста: {{ post.userNickname|escape }}</p>
+<p>Дата создания поста: {{ post.createDate|date('H:i d.m.Y', 'Asia/Yekaterinburg') }}</p>
+<p>Дата публикации поста: {{ post.publishDate|date('H:i d.m.Y', 'Asia/Yekaterinburg') }}</p>
+<p>Лайков: {{ post.likes|escape }}</p>
+<p>Комментариев: {{ post.commentCount|escape }}</p>
+
+{% if post.editDate %}
+    <p>Пост был редактирован: {{ post.lastEditorNickname|escape }}</p>
+    <p>Дата редактирования поста: {{ post.editDate|date('H:i d.m.Y', 'Asia/Yekaterinburg') }}</p>
+{% endif %}
+
+{% if isLikedByUser %}
+    <form action="/post/{{ post.id|escape }}/like" method="post">
+        <button type="submit">Снять лайк</button>
+    </form>
+{% else %}
+    <form action="/post/{{ post.id|escape }}/like" method="post">
+        <button type="submit">Поставить лайк</button>
+    </form>
+{% endif %}
 
 <h2>Комментарии:</h2>
 {% if comments %}
