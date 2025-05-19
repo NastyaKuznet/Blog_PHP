@@ -55,7 +55,7 @@ class DatabaseService
                                                 u.nickname as user_nickname, 
                                                 u2.nickname as last_editor_nickname,
                                                 COUNT(l.id) as like_count,
-                                                COUNT(c.id) as comment_count
+                                                COUNT(CASE WHEN c.is_delete = false THEN c.id ELSE NULL END) as comment_count
                                         FROM posts p 
                                         LEFT JOIN comments c ON p.id = c.post_id
                                         LEFT JOIN likes l ON p.id = l.post_id
@@ -79,7 +79,7 @@ class DatabaseService
                                             u.nickname as user_nickname, 
                                             u2.nickname as last_editor_nickname,
                                             COUNT(l.id) as like_count,
-                                            COUNT(c.id) as comment_count
+                                            COUNT(CASE WHEN c.is_delete = false THEN c.id ELSE NULL END) as comment_count
                                         FROM posts p 
                                         LEFT JOIN comments c ON p.id = c.post_id
                                         LEFT JOIN likes l ON p.id = l.post_id
@@ -103,7 +103,7 @@ class DatabaseService
                                             u.nickname as user_nickname, 
                                             u2.nickname as last_editor_nickname,
                                             COUNT(l.id) as like_count,
-                                            COUNT(c.id) as comment_count
+                                            COUNT(CASE WHEN c.is_delete = false THEN c.id ELSE NULL END) as comment_count
                                         FROM posts p 
                                         LEFT JOIN comments c ON p.id = c.post_id
                                         LEFT JOIN likes l ON p.id = l.post_id
@@ -127,7 +127,7 @@ class DatabaseService
                                             u.nickname as user_nickname,
                                             u2.nickname as last_editor_nickname,
                                             COUNT(l.id) as like_count,
-                                            COUNT(c.id) as comment_count
+                                            COUNT(CASE WHEN c.is_delete = false THEN c.id ELSE NULL END) as comment_count
                                         FROM posts p 
                                         LEFT JOIN comments c ON p.id = c.post_id
                                         LEFT JOIN likes l ON p.id = l.post_id
@@ -151,7 +151,7 @@ class DatabaseService
                                             u.nickname as user_nickname, 
                                             u2.nickname as last_editor_nickname,
                                             COUNT(l.id) as like_count,
-                                            COUNT(c.id) as comment_count
+                                            COUNT(CASE WHEN c.is_delete = false THEN c.id ELSE NULL END) as comment_count
                                         FROM posts p 
                                         LEFT JOIN comments c ON p.id = c.post_id
                                         LEFT JOIN likes l ON p.id = l.post_id
@@ -175,7 +175,7 @@ class DatabaseService
                                             u.nickname as user_nickname,
                                             u2.nickname as last_editor_nickname,
                                             COUNT(l.id) as like_count,
-                                            COUNT(c.id) as comment_count
+                                            COUNT(CASE WHEN c.is_delete = false THEN c.id ELSE NULL END) as comment_count
                                         FROM posts p 
                                         LEFT JOIN comments c ON p.id = c.post_id
                                         LEFT JOIN likes l ON p.id = l.post_id
@@ -199,7 +199,7 @@ class DatabaseService
                                             u.nickname as user_nickname, 
                                             u2.nickname as last_editor_nickname,
                                             COUNT(l.id) as like_count,
-                                            COUNT(c.id) as comment_count
+                                            COUNT(CASE WHEN c.is_delete = false THEN c.id ELSE NULL END) as comment_count
                                         FROM posts p 
                                         LEFT JOIN comments c ON p.id = c.post_id
                                         LEFT JOIN likes l ON p.id = l.post_id
@@ -223,7 +223,7 @@ class DatabaseService
                                             u.nickname as user_nickname,
                                             u2.nickname as last_editor_nickname, 
                                             COUNT(l.id) as like_count,
-                                            COUNT(c.id) as comment_count
+                                            COUNT(CASE WHEN c.is_delete = false THEN c.id ELSE NULL END) as comment_count
                                         FROM posts p 
                                         LEFT JOIN comments c ON p.id = c.post_id
                                         LEFT JOIN likes l ON p.id = l.post_id
@@ -245,10 +245,8 @@ class DatabaseService
         try {
             $stmt = $this->pdo->query("SELECT p.*, 
                                             u.nickname as user_nickname, 
-                                            u2.nickname as last_editor_nickname,
-                                            COUNT(c.id) as comment_count
+                                            u2.nickname as last_editor_nickname
                                         FROM posts p
-                                        LEFT JOIN comments c ON p.id = c.post_id
                                         JOIN users u ON p.author_id = u.id
                                         JOIN users u2 ON p.last_editor_id = u2.id
                                         WHERE p.is_publish = false and p.is_delete = false
@@ -279,7 +277,7 @@ class DatabaseService
             $stmt->execute([':postId' => $postId]);
             $likeCount = $stmt->fetchColumn();
 
-            $stmt = $this->pdo->prepare("SELECT COUNT(*) FROM comments WHERE post_id = :postId");
+            $stmt = $this->pdo->prepare("SELECT COUNT(*) FROM comments WHERE post_id = :postId AND is_delete = false");
             $stmt->execute([':postId' => $postId]);
             $commentCount = $stmt->fetchColumn();
 
