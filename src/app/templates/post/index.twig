@@ -4,16 +4,30 @@
     <title>Лента постов</title>
 </head>
 <body>
+
+<h1>Лента постов</h1>
+
+
 <div style="display: flex; justify-content: space-between; align-items: center;">
   <h1>Лента постов</h1>
-  <form action="/logout" method="post">
-    <button type="submit">Выход</button>
-  </form>
+  <div>
+        {% if userRole in ['writer','moder', 'admin'] %}
+            <form action="/logout" method="post">
+                <button type="submit">Выход</button>
+            </form>
+        {% elseif userRole == 'reader' %}
+            <a href="/register">
+                <button type="button">Регистрация</button>
+            </a>
+        {% endif %}
+     </div>
 </div>
 
 <p>
-    <a href="/account">Аккаунт</a> 
+    {% if userRole in ['writer','moder', 'admin'] %}
+    <a href="/account">Аккаунт</a>
     |
+    {% endif %}
     {% if userRole in ['moderator', 'admin'] %}
         <a href="/post-non-publish">Неопубликованные посты</a>
     {% endif %} 

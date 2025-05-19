@@ -643,14 +643,13 @@ class DatabaseService
     }
 
     // Метод для добавления нового пользователя
-    public function addUser($nickname, $password, $role_id)
+    public function addUser($nickname, $password)
     {
         try {
-            $stmt = $this->pdo->prepare("INSERT INTO users (nickname, password, role_id) VALUES (:nickname, :password, :role_id)");
+            $stmt = $this->pdo->prepare("INSERT INTO users (nickname, password, role_id) VALUES (:nickname, :password, 2)");
             $stmt->execute([
                 'nickname' => $nickname,
-                'password' => password_hash($password, PASSWORD_DEFAULT), // Хэшируем пароль
-                'role_id' => $role_id
+                'password' => password_hash($password, PASSWORD_DEFAULT) // Хэшируем пароль
             ]);
             return true;
         } catch (PDOException $e) {

@@ -24,7 +24,7 @@ class AuthService
      */
     public function registerUser(string $username, string $password, string $roleId): bool
     {
-        return $this->databaseService->addUser($username, $password, $roleId);
+        return $this->databaseService->addUser($username, $password);
     }
 
     public function checkUserRegistration(string $username): bool
