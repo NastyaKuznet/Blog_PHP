@@ -20,10 +20,24 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS posts (
     id SERIAL PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
-    content TEXT NOT NULL,
-    likes INTEGER DEFAULT 0,
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    preview TEXT NOT NULL,
+    author_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    create_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    publish_date TIMESTAMP,
+    edit_date TIMESTAMP,
+    delete_date TIMESTAMP,
+    is_publish BOOLEAN NOT NULL DEFAULT FALSE,
+    is_delete BOOLEAN NOT NULL DEFAULT FALSE,
+    last_editor_id INTEGER NOT NULL REFERENCES users(id),
+    content TEXT NOT NULL
+);
+
+-- Создаем таблицу likes
+CREATE TABLE IF NOT EXISTS likes (
+    id SERIAL PRIMARY KEY,
+    create_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- Создаем таблицу comments
@@ -32,14 +46,11 @@ CREATE TABLE IF NOT EXISTS comments (
     content TEXT NOT NULL,
     post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-
--- Создаем роли
-CREATE TABLE IF NOT EXISTS roles (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(50) NOT NULL UNIQUE
+    created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    edit_date TIMESTAMP,
+    delete_date TIMESTAMP,
+    is_edit BOOLEAN NOT NULL DEFAULT FALSE,
+    is_delete BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 -- Таблица categories

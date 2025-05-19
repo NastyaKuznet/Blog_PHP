@@ -25,12 +25,7 @@ class PostService
         switch ($sortBy) {
             case 'author':
                 if($order === 'asc'){
-                    echo('lol2');
                     $postsFromDb = $this->databaseService->getPostsByAuthorAlphabetical();
-                    echo(count($postsFromDb));
-                    foreach($postsFromDb as $d){
-                        echo($d['id']);
-                    }
                     return $postsFromDb;
                 } else {
                     $postsFromDb = $this->databaseService->getPostsByAuthorReverseAlphabetical();
@@ -68,11 +63,39 @@ class PostService
             $posts[] = new Post(
                 $postData['id'],
                 $postData['title'],
+                $postData['preview'],
                 $postData['content'],
-                $postData['likes'],
-                $postData['user_id'],
+                $postData['author_id'],
                 $postData['user_nickname'],
-                $postData['created_at'],
+                $postData['last_editor_id'],
+                $postData['last_editor_nickname'],
+                $postData['create_date'],
+                $postData['publish_date'],
+                $postData['edit_date'],
+                $postData['like_count'],
+                $postData['comment_count']
+            );
+        }
+        return $posts;
+    }
+
+    public function getAllNonPublishPosts(): array
+    {
+        $postsFromDb = $this->databaseService->getAllNonPublishPosts();
+        $posts = [];
+        foreach ($postsFromDb as $postData) {
+            $posts[] = new Post(
+                $postData['id'],
+                $postData['title'],
+                $postData['preview'],
+                $postData['content'],
+                $postData['author_id'],
+                $postData['user_nickname'],
+                $postData['last_editor_id'],
+                $postData['last_editor_nickname'],
+                $postData['create_date'],
+                $postData['publish_date'],
+                $postData['edit_date'],
                 $postData['comment_count']
             );
         }
@@ -89,14 +112,19 @@ class PostService
 
         try {
             return new Post(
-                (int)$postFromDb['id'],
-                $postFromDb['title'],
-                $postFromDb['content'],
-                (int)$postFromDb['likes'],
-                (int)$postFromDb['user_id'],
-                $postFromDb['user_nickname'],
-                $postFromDb['created_at'],
-                (int)$postFromDb['comment_count']
+                $postFromDb['post']['id'],
+                $postFromDb['post']['title'],
+                $postFromDb['post']['preview'],
+                $postFromDb['post']['content'],
+                $postFromDb['post']['author_id'],
+                $postFromDb['author_nickname'],
+                $postFromDb['post']['last_editor_id'],
+                $postFromDb['last_editor_nickname'],
+                $postFromDb['post']['create_date'],
+                $postFromDb['post']['publish_date'],
+                $postFromDb['post']['edit_date'],
+                $postFromDb['like_count'],
+                $postFromDb['comment_count']
             );
         } catch (\Exception $e) {
             error_log("Ошибка при создании объекта Post: " . $e->getMessage());
@@ -104,19 +132,52 @@ class PostService
         }
     }
 
-    public function addPost(string $title, string $content, $userId): bool 
+    public function getNonPublishPostById(int $id): ?Post
     {
-        return $this->databaseService->addPost($title, $content, $userId); 
+        $postFromDb = $this->databaseService->getNonPublishPostById($id);
+
+        if (!$postFromDb) {
+            return null;
+        }
+
+        try {
+            return new Post(
+                $postFromDb['post']['id'],
+                $postFromDb['post']['title'],
+                $postFromDb['post']['preview'],
+                $postFromDb['post']['content'],
+                $postFromDb['post']['author_id'],
+                $postFromDb['author_nickname'],
+                $postFromDb['post']['last_editor_id'],
+                $postFromDb['last_editor_nickname'],
+                $postFromDb['post']['create_date'],
+                $postFromDb['post']['publish_date'],
+                $postFromDb['post']['edit_date']
+            );
+        } catch (\Exception $e) {
+            error_log("Ошибка при создании объекта Post: " . $e->getMessage());
+            return null;
+        }
     }
 
-    public function editPost(int $id, string $title, string $content): bool 
+    public function addPost(string $title, string $preview, string $content, $userId): bool 
     {
-        return $this->databaseService->editPost($id, $title, $content); 
+        return $this->databaseService->addPost($title, $preview, $content, $userId); 
     }
 
-    public function deletePostAndComments(int $id): bool 
+    public function editPost(int $id, string $title, string $preview, string $content, int $editorId): bool 
     {
-        return $this->databaseService->deletePostAndComments($id); 
+        return $this->databaseService->editPost($id, $title, $preview, $content, $editorId); 
+    }
+
+    public function publishPost(int $id): bool 
+    {
+        return $this->databaseService->publishPost($id); 
+    }
+
+    public function deletePost(int $id): bool 
+    {
+        return $this->databaseService->deletePost($id); 
     }
 
     public function getCommentsByPostId(int $postId): array
@@ -130,7 +191,11 @@ class PostService
                 $commentData['post_id'],
                 $commentData['user_id'],
                 $commentData['user_nickname'],
-                $commentData['created_at']
+                $commentData['created_date'],
+                $commentData['edit_date'],
+                $commentData['delete_date'],
+                $commentData['is_edit'],
+                $commentData['is_delete'] 
             );
         }
         return $comments;
@@ -141,9 +206,19 @@ class PostService
         return $this->databaseService->addComment($content, $postId, $userId);
     }
 
-    public function addLike(int $postId): bool 
+    public function checkLikeByPostIdAndUserId(int $postId, int $userId): bool 
     {
-        return $this->databaseService->addLike($postId);
+        return $this->databaseService->checkLikeByPostIdAndUserId($postId, $userId);
+    }
+
+    public function addLike(int $postId, int $userId): bool 
+    {
+        return $this->databaseService->addLike($postId, $userId);
+    }
+
+    public function deleteLike(int $postId, int $userId): bool
+    {
+        return $this->databaseService->deleteLike($postId, $userId);
     }
 
     public function getCountPosts (int $userId) : int 
@@ -159,11 +234,15 @@ class PostService
             $posts[] = new Post(
                 $postData['id'],
                 $postData['title'],
+                $postData['preview'],
                 $postData['content'],
-                $postData['likes'],
-                $postData['user_id'],
+                $postData['author_id'],
                 $postData['user_nickname'],
-                $postData['created_at'],
+                $postData['last_editor_id'],
+                $postData['last_editor_nickname'],
+                $postData['create_date'],
+                $postData['publish_date'],
+                $postData['edit_date'],
                 $postData['comment_count']
             );
         }
