@@ -22,7 +22,7 @@ class AuthService
      * @param string $roleName
      * @return bool
      */
-    public function registerUser(string $username, string $password, string $roleId): bool
+    public function registerUser(string $username, string $password): bool
     {
         return $this->databaseService->addUser($username, $password);
     }

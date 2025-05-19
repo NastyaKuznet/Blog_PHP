@@ -62,8 +62,11 @@ class PostController
             $response->getBody()->write("Пост не найден.");
             return $response->withStatus(404)->withHeader('Content-Type', 'text/plain');
         }
-
-        $isLikedByUser = $this->postService->checkLikeByPostIdAndUserId($postId, $user['id']);
+        $isLikedByUser = null;
+        if($user)
+        {
+            $isLikedByUser = $this->postService->checkLikeByPostIdAndUserId($postId, $user['id']);
+        }
         $comments = $this->postService->getCommentsByPostId($postId);
 
         if ($request->getMethod() === 'GET') {

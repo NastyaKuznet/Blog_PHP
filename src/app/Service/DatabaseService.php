@@ -32,7 +32,7 @@ class DatabaseService
                                             u.nickname as user_nickname, 
                                             u2.nickname as last_editor_nickname,
                                             COUNT(l.id) as like_count,
-                                            COUNT(c.id) as comment_count
+                                            COUNT(CASE WHEN c.is_delete = false THEN c.id ELSE NULL END) as comment_count
                                         FROM posts p
                                         LEFT JOIN comments c ON p.id = c.post_id
                                         LEFT JOIN likes l ON p.id = l.post_id

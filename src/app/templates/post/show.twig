@@ -4,6 +4,7 @@
     <title>{{ post.title|escape }}</title>
 </head>
 <body>
+<a href="/">Лента</a>
 <h1>{{ post.title|escape }}</h1>
 <h2>{{ post.preview|escape }}</h2>
 <p>{{ post.content|escape }}</p>
@@ -18,14 +19,16 @@
     <p>Дата редактирования поста: {{ post.editDate|date('H:i d.m.Y', 'Asia/Yekaterinburg') }}</p>
 {% endif %}
 
-{% if isLikedByUser %}
-    <form action="/post/{{ post.id|escape }}/like" method="post">
-        <button type="submit">Снять лайк</button>
-    </form>
-{% else %}
-    <form action="/post/{{ post.id|escape }}/like" method="post">
-        <button type="submit">Поставить лайк</button>
-    </form>
+{% if app.user %}
+    {% if isLikedByUser %}
+        <form action="/post/{{ post.id|escape }}/like" method="post">
+            <button type="submit">Снять лайк</button>
+        </form>
+    {% else %}
+        <form action="/post/{{ post.id|escape }}/like" method="post">
+            <button type="submit">Поставить лайк</button>
+        </form>
+    {% endif %}
 {% endif %}
 
 <h2>Комментарии:</h2>
@@ -52,13 +55,14 @@
     <p>Нет комментариев.</p>
 {% endif %}
 
-<h2>Добавить комментарий:</h2>
-<form action="/post/{{ post.id|escape }}" method="POST">
-    <label for="comment">Комментарий:</label><br>
-    <textarea id="comment" name="comment" rows="4" cols="50" required></textarea><br>
-    <button type="submit">Отправить комментарий</button>
-    <a href="/">Лента</a>
-</form>
+{% if app.user %}
+    <h2>Добавить комментарий:</h2>
+    <form action="/post/{{ post.id|escape }}" method="POST">
+        <label for="comment">Комментарий:</label><br>
+        <textarea id="comment" name="comment" rows="4" cols="50" required></textarea><br>
+        <button type="submit">Отправить комментарий</button>
+    </form>
+{% endif %}
 
 </body>
 </html>

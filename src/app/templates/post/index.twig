@@ -5,13 +5,10 @@
 </head>
 <body>
 
-<h1>Лента постов</h1>
-
-
 <div style="display: flex; justify-content: space-between; align-items: center;">
   <h1>Лента постов</h1>
   <div>
-        {% if userRole in ['writer','moder', 'admin'] %}
+        {% if userRole in ['writer','moderator', 'admin'] %}
             <form action="/logout" method="post">
                 <button type="submit">Выход</button>
             </form>
