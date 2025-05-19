@@ -5,6 +5,7 @@ namespace NastyaKuznet\Blog\Controller;
 use NastyaKuznet\Blog\Model\Comment;
 use NastyaKuznet\Blog\Model\Post;
 use NastyaKuznet\Blog\Service\PostService;
+use NastyaKuznet\Blog\Service\CategoryService;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Psr7\Response as SlimResponse;
@@ -13,11 +14,13 @@ use Slim\Views\Twig;
 class PostController
 {
     private PostService $postService;
+    private CategoryService $categoryService;
     private Twig $view;
 
-    public function __construct(PostService $postService, Twig $view)
+    public function __construct(PostService $postService, CategoryService $categoryService, Twig $view )
     {
         $this->postService = $postService;
+        $this->categoryService = $categoryService;
         $this->view = $view;
     }
 
@@ -28,8 +31,14 @@ class PostController
         $sortBy = $queryParams['sort_by'] ?? null;
         $order = $queryParams['order'] ?? 'asc';
         $authorNickname = $queryParams['author_nickname'] ?? null;
+        $categoryId = $queryParams['category_id'] ?? null;
 
-        $posts = $this->postService->getAllPosts($sortBy, $order, $authorNickname);
+        $categories = $this->categoryService->getCategoriesTree();
+        if ($categoryId) {
+            $posts = $this->postService->getPostsByCategoryId($categoryId);
+        } else {
+            $posts = $this->postService->getAllPosts($sortBy, $order, $authorNickname);
+        }
 
         return $this->view->render($response, 'post/index.twig', [
             'posts' => $posts,
@@ -49,6 +58,7 @@ class PostController
             'app' => [  
                 'request' => $request,
             ],
+            'categories' => $categories,
         ]);
     }
 

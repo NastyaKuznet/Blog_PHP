@@ -755,4 +755,108 @@ class DatabaseService
             return [];
         }
     }
+
+    // Метод для получения всех категорий
+    public function getAllCategories(): array
+    {
+        try {
+            $stmt = $this->pdo->query("SELECT * FROM categories ORDER BY id ASC");
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            echo "Ошибка при получении категорий: " . $e->getMessage();
+            return [];
+        }
+    }
+
+    // Метод для получения категории по id
+    public function getCategoryById(int $categoryId): ?array
+    {
+        try {
+            $stmt = $this->pdo->prepare("SELECT * FROM categories WHERE id = :category_id");
+            $stmt->execute(['category_id' => $categoryId]);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            echo "Ошибка при получении категории: " . $e->getMessage();
+            return null;
+        }
+    }
+
+    // Метод для добавления категории
+    public function addCategory(string $name, ?int $parentId): bool
+    {
+        try {
+            $stmt = $this->pdo->prepare("INSERT INTO categories (name, parent_id) VALUES (:name, :parent_id)");
+            $stmt->execute([
+                'name' => $name,
+                'parent_id' => $parentId
+            ]);
+            return true;
+        } catch (PDOException $e) {
+            echo "Ошибка при добавлении категории: " . $e->getMessage();
+            return false;
+        }
+    }
+
+    // Метод для получения категории поста
+    public function getCategoriesByPostId(int $postId): array
+    {
+        try {
+            $stmt = $this->pdo->prepare("
+                SELECT c.*
+                FROM categories c
+                JOIN category_posts cp ON c.id = cp.category_id
+                WHERE cp.post_id = :post_id
+            ");
+            $stmt->execute(['post_id' => $postId]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            echo "Ошибка при получении категорий поста: " . $e->getMessage();
+            return [];
+        }
+    }
+
+    // Метод для получения постов по id категории
+    public function getPostsByCategoryId(int $categoryId): array
+    {
+        try {
+            $stmt = $this->pdo->prepare("
+                WITH RECURSIVE category_tree AS (
+                SELECT id FROM categories WHERE id = :category_id
+                UNION ALL
+                SELECT c.id 
+                FROM categories c
+                INNER JOIN category_tree ct ON c.parent_id = ct.id
+            )
+            SELECT p.*, u.nickname as user_nickname, COUNT(c.id) as comment_count
+            FROM posts p
+            JOIN category_posts cp ON p.id = cp.post_id
+            JOIN users u ON p.user_id = u.id
+            LEFT JOIN comments c ON p.id = c.post_id
+            WHERE cp.category_id IN (SELECT id FROM category_tree)
+            GROUP BY p.id, u.nickname;
+            ");
+            $stmt->execute(['category_id' => $categoryId]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            echo "Ошибка при получении постов по категории: " . $e->getMessage();
+            return [];
+        }
+    }
+
+    // Метод для удаления категории
+    public function deleteCategory(int $categoryId): bool
+    {
+        try {
+            $stmt = $this->pdo->prepare("DELETE FROM category_posts WHERE category_id = :category_id");
+            $stmt->execute(['category_id' => $categoryId]);
+
+            $stmt = $this->pdo->prepare("DELETE FROM categories WHERE id = :category_id");
+            $stmt->execute(['category_id' => $categoryId]);
+
+            return true;
+        } catch (\PDOException $e) {
+            error_log("Ошибка удаления категории: " . $e->getMessage());
+            return false;
+        }
+    }
 }

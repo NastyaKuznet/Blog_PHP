@@ -5,6 +5,7 @@ use NastyaKuznet\Blog\Controller\AuthController;
 use NastyaKuznet\Blog\Controller\CommentController;
 use NastyaKuznet\Blog\Middleware\RoleMiddleware;
 use NastyaKuznet\Blog\Middleware\AuthMiddleware;
+use NastyaKuznet\Blog\Controller\CategoryController;
 use Slim\Views\TwigMiddleware;
 use Slim\Routing\RouteCollectorProxy;
 use NastyaKuznet\Blog\Controller\UserAccountController;
@@ -40,10 +41,8 @@ $errorMiddleware = $app->addErrorMiddleware(true, true, true);
 // Dependency Injection Container (DI Container)
 $container = $app->getContainer();
 
-$app->add($container->get(RoleMiddleware::class));
-$app->add($container->get(AuthMiddleware::class));
-
-
+//$app->add($container->get(RoleMiddleware::class));
+//$app->add($container->get(AuthMiddleware::class));
 
 $app->get('/login', [AuthController::class, 'login']);
 $app->post('/login', [AuthController::class, 'login']);
@@ -74,6 +73,11 @@ $app->group('/admin', function (RouteCollectorProxy $group) use ($container) {
     $group->get('/users', [UsersAdminController::class, 'index']);
     $group->post('/change_role', [UsersAdminController::class, 'changeRole']);
     $group->post('/delete_user', [UsersAdminController::class, 'deleteUser']);
+    $group->get('/categories', [CategoryController::class, 'index']);
+    $group->get('/category/create', [CategoryController::class, 'create']);
+    $group->post('/category/create', [CategoryController::class, 'create']);
+    $group->post('/category/delete/{id}', [CategoryController::class, 'delete']);
+
 });
 
 $app->get('/', [PostController::class, 'index']);

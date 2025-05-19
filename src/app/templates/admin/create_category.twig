@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ru">
+    <head>
+        <meta charset="UTF-8">
+        <title>Создание категории</title>
+        <link rel="stylesheet" href="/style.css">
+    </head>
+    <body>
+        <h1>Создание категории</h1>
+        {% if error %}
+            <div class="error">{{ error|raw }}</div>
+        {% endif %}
+        <form method="POST" action="/admin/category/create">
+            <label for="name">Название категории:</label><br>
+            <input type="text" id="name" name="name" required><br><br>
+
+            <label for="parent_id">Родительская категория:</label><br>
+            <select id="parent_id" name="parent_id">
+                <option value="">Нет</option>
+                {% for category in categories %}
+                    <option value="{{ category.id }}">{{ category.name }}</option>
+                {% endfor %}
+            </select><br><br>
+
+            <button type="submit">Создать</button>
+        </form>
+        <a href="/">← На главную</a>
+    </body>
+</html>

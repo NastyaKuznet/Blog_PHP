@@ -60,6 +60,25 @@
             <button type="submit">Применить</button>
             <a href="/">Сбросить фильтры</a>
         </form>
+        <h2>Категории</h2>
+        <ul>
+            {% import _self as self %}
+            {{ self.recursive_print(categories) }}
+        </ul>
+
+        {% macro recursive_print(categories) %}
+            {% import _self as self %}
+            {% for category in categories %}
+                <li>
+                    <a href="/post?category_id={{ category.id }}">{{ category.name|escape }}</a>
+                    {% if category.children is defined and category.children|length > 0 %}
+                        <ul>
+                            {{ self.recursive_print(category.children) }}
+                        </ul>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        {% endmacro %}
     </div>
      
     <div style="width: calc(100% - 240px); margin: 0 auto; padding: 0 20px;">
