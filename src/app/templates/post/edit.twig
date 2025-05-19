@@ -17,6 +17,12 @@
                 <textarea id="content" name="content" rows="5" cols="50" required>{{ post.content|escape }}</textarea>
             </div>
             <div>
+                <label for="tags">Теги:</label><br>
+                {% for tag in tags %}
+                    <input type="checkbox" name="tag_ids[]" value="{{ tag.id }}" {% if tag.id in postTags|map(attribute='id') %}checked{% endif %} /> {{ tag.name }}<br>
+                {% endfor %}
+            </div>
+            <div>
                 <button type="submit" name="action" value="save">Сохранить изменения</button>
                 <button type="submit" name="action" value="delete">Удалить пост</button>
                 <a href="/">Лента</a>

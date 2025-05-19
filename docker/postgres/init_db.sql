@@ -42,6 +42,19 @@ CREATE TABLE IF NOT EXISTS roles (
     name VARCHAR(50) NOT NULL UNIQUE
 );
 
+-- Создаем таблицу tags
+CREATE TABLE IF NOT EXISTS tags (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE
+);
+
+-- Создаем связующую таблицу post_tags
+CREATE TABLE IF NOT EXISTS post_tags (
+    post_id INTEGER REFERENCES posts(id) ON DELETE CASCADE,
+    tag_id INTEGER REFERENCES tags(id) ON DELETE CASCADE,
+    PRIMARY KEY (post_id, tag_id)
+);
+
 -- Добавляем тестовых пользователей, если их нет
 INSERT INTO users (nickname, password, role_id) VALUES ('reader', 'reader', 1)
 ON CONFLICT DO NOTHING;

@@ -217,7 +217,7 @@ class DatabaseService
     }
 
     // Метод для добавления нового поста
-    public function addPost(string $title, string $content, int $userId): bool
+    public function addPost(string $title, string $content, int $userId): int
     {
         try {
             $stmt = $this->pdo->prepare("INSERT INTO posts (title, content, user_id) VALUES (:title, :content, :user_id)");
@@ -226,10 +226,10 @@ class DatabaseService
                 'content' => $content,
                 'user_id' => $userId
             ]);
-            return true;
+            return $this->pdo->lastInsertId();
         } catch (PDOException $e) {
             echo "Ошибка при добавлении поста: " . $e->getMessage();
-            return false;
+            return 0;
         }
     }
 
@@ -502,6 +502,118 @@ class DatabaseService
         } catch (PDOException $e) {
             echo "Ошибка при получении списка ролей: " . $e->getMessage();
             return [];
+        }
+    }
+
+    // Метод для получения всех тегов
+    public function getAllTags(): array
+    {
+        try {
+            $stmt = $this->pdo->query("SELECT * FROM tags");
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            echo "Ошибка при получении тегов: " . $e->getMessage();
+            return [];
+        }
+    }
+
+    // Метод для получения тегов поста
+    public function getTagsByPostId(int $postId): array
+    {
+        try {
+            $stmt = $this->pdo->prepare("
+                SELECT t.*
+                FROM tags t
+                JOIN post_tags pt ON t.id = pt.tag_id
+                WHERE pt.post_id = :post_id
+            ");
+            $stmt->execute(['post_id' => $postId]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            echo "Ошибка при получении тегов поста: " . $e->getMessage();
+            return [];
+        }
+    }
+
+    // Метод для добавления связи между постом и тегами
+    public function addTagsToPost(int $postId, array $tagIds): bool
+    {
+        try {
+            // Удаляем существующие теги для данного поста
+            $this->pdo->prepare("DELETE FROM post_tags WHERE post_id = :post_id")->execute(['post_id' => $postId]);
+
+            // Добавляем новые теги
+            if (!empty($tagIds)) {
+                $placeholders = str_repeat('?,', count($tagIds) - 1) . '?';
+                $stmt = $this->pdo->prepare("INSERT INTO post_tags (post_id, tag_id) VALUES (:post_id, ?)" . str_repeat(", (:post_id, ?)", count($tagIds) - 1));
+                $params = array_merge([$postId], $tagIds);
+                $stmt->execute($params);
+            }
+
+            return true;
+        } catch (PDOException $e) {
+            echo "Ошибка при добавлении тегов к посту: " . $e->getMessage();
+            return false;
+        }
+    }
+
+    public function addTag(string $name): ?int
+    {
+        try {
+            $stmt = $this->pdo->prepare("INSERT INTO tags (name) VALUES (:name) ON CONFLICT (name) DO NOTHING RETURNING id");
+            $stmt->execute(['name' => $name]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $result ? (int)$result['id'] : null;
+        } catch (PDOException $e) {
+            error_log("Ошибка при добавлении тега: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    // Получить ID тега по имени
+    public function getTagIdByName(string $name): ?int
+    {
+        try {
+            $stmt = $this->pdo->prepare("SELECT id FROM tags WHERE name = :name LIMIT 1");
+            $stmt->execute(['name' => $name]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $result ? (int)$result['id'] : null;
+        } catch (PDOException $e) {
+            error_log("Ошибка при получении ID тега: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    // Связать тег с постом
+    public function addTagToPost(int $postId, int $tagId): bool
+    {
+        try {
+            $stmt = $this->pdo->prepare("INSERT INTO post_tags (post_id, tag_id) VALUES (:post_id, :tag_id)");
+            return $stmt->execute([
+                'post_id' => $postId,
+                'tag_id' => $tagId
+            ]);
+        } catch (PDOException $e) {
+            error_log("Ошибка при связывании тега с постом: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    // Добавить пост и вернуть его ID
+    public function addPostAndGetId(string $title, string $content, int $userId): ?int
+    {
+        try {
+            $stmt = $this->pdo->prepare("INSERT INTO posts (title, content, user_id) VALUES (:title, :content, :user_id) RETURNING id");
+            $stmt->execute([
+                'title' => $title,
+                'content' => $content,
+                'user_id' => $userId
+            ]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $result ? (int)$result['id'] : null;
+        } catch (PDOException $e) {
+            error_log("Ошибка при добавлении поста: " . $e->getMessage());
+            return null;
         }
     }
 }

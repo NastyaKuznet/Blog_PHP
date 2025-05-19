@@ -104,9 +104,9 @@ class PostService
         }
     }
 
-    public function addPost(string $title, string $content, $userId): bool 
+    public function addPost(string $title, string $content, int $userId): int
     {
-        return $this->databaseService->addPost($title, $content, $userId); 
+        return $this->databaseService->addPost($title, $content, $userId);
     }
 
     public function editPost(int $id, string $title, string $content): bool 
@@ -168,5 +168,63 @@ class PostService
             );
         }
         return $posts;
+    }
+
+    // Метод для получения тегов поста
+    public function getTagsByPostId(int $postId): array
+    {
+        $tagsFromDb = $this->databaseService->getTagsByPostId($postId);
+        $tags = [];
+        foreach ($tagsFromDb as $tagData) {
+            $tags[] = [
+                'id' => $tagData['id'],
+                'name' => $tagData['name']
+            ];
+        }
+        return $tags;
+    }
+
+    // Метод для добавления тегов к посту
+    public function addTagsToPost(int $postId, array $tagIds): bool
+    {
+        return $this->databaseService->addTagsToPost($postId, $tagIds);
+    }
+
+    // Метод для получения всех тегов
+    public function getAllTags(): array
+    {
+        $tagsFromDb = $this->databaseService->getAllTags();
+        $tags = [];
+        foreach ($tagsFromDb as $tagData) {
+            $tags[] = [
+                'id' => $tagData['id'],
+                'name' => $tagData['name']
+            ];
+        }
+        return $tags;
+    }
+
+    // Метод для добавления нового тега
+    public function addTag(string $tagName): int
+    {
+        return $this->databaseService->addTag($tagName);
+    }
+
+    public function addPostWithTags(string $title, string $content, int $userId, array $tags): bool
+    {
+        $postId = $this->databaseService->addPostAndGetId($title, $content, $userId);
+        if (!$postId) return false;
+
+        foreach ($tags as $tagName) {
+            $tagId = $this->databaseService->getTagIdByName($tagName);
+            if (!$tagId) {
+                $tagId = $this->databaseService->addTag($tagName);
+            }
+            if ($tagId) {
+                $this->databaseService->addTagToPost($postId, $tagId);
+            }
+        }
+
+        return true;
     }
 }

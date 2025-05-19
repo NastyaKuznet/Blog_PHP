@@ -12,8 +12,9 @@ class Post
     public $userNickname;
     public $commentCount;
     public $createdAt;
+    public $tags;
 
-    public function __construct(int $id, string $title, string $content, int $likes, int $userId, string $userNickname, string $createdAt, int $commentCount = 0)
+    public function __construct(int $id, string $title, string $content, int $likes, int $userId, string $userNickname, string $createdAt, int $commentCount = 0, array $tags = [])
     {
         $this->id = $id;
         $this->title = $title;
@@ -23,5 +24,6 @@ class Post
         $this->userNickname = $userNickname;
         $this->commentCount = $commentCount;
         $this->createdAt = $createdAt;
+        $this->tags = $tags;
     }
 }

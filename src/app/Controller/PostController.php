@@ -115,15 +115,13 @@ class PostController
         $data = $request->getParsedBody();
         $title = trim($data['title'] ?? '');
         $content = trim($data['content'] ?? '');
+        $tagIds = $data['tag_ids'] ?? [];
 
         if (!empty($title) && !empty($content)) {
-            $success = $this->postService->addPost($title, $content, $user['id']);
+            $success = $this->postService->addPostWithTags($title, $content, $user['id'], $tagIds);
+
             if ($success) {
-                $response = new SlimResponse();
                 return $response->withHeader('Location', '/')->withStatus(302);
-            } else {
-                $response->getBody()->write("Ошибка при создании поста.");
-                return $response->withStatus(500)->withHeader('Content-Type', 'text/plain');
             }
         }
 
@@ -147,6 +145,8 @@ class PostController
             try {
                 return $this->view->render($response, 'post/edit.twig', [
                     'post' => $post,
+                    'tags' => $this->postService->getAllTags(),
+                    'postTags' => $this->postService->getTagsByPostId($postId),
                 ]);
             } catch (\Twig\Error\LoaderError $e) {
                 $response->getBody()->write("Ошибка загрузки шаблона: " . $e->getMessage());
@@ -165,12 +165,12 @@ class PostController
         if ($action === 'save') {
             $title = $data['title'] ?? '';
             $content = $data['content'] ?? '';
+            $tagIds = $data['tag_ids'] ?? [];
 
             if (!empty($title) && !empty($content)) {
                 $isSuccess = $this->postService->editPost($postId, $title, $content);
-                if ($isSuccess)
-                {
-                    $response = new SlimResponse();
+                if ($isSuccess) {
+                    $this->postService->addTagsToPost($postId, $tagIds);
                     return $response->withHeader('Location', '/')->withStatus(302);
                 }
                 $response->getBody()->write("Неудалось сохранить пост.");
