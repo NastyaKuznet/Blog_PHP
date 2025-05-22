@@ -10,7 +10,7 @@
         {% if error %}
             <div class="error">{{ error|raw }}</div>
         {% endif %}
-        <form method="POST" action="/admin/category/create">
+        <form method="POST" action="/category/create">
             <label for="name">Название категории:</label><br>
             <input type="text" id="name" name="name" required><br><br>
 
@@ -25,5 +25,7 @@
             <button type="submit">Создать</button>
         </form>
         <a href="/">← На главную</a>
+        <br />
+        <a href="/categories">← Категории</a>
     </body>
 </html>

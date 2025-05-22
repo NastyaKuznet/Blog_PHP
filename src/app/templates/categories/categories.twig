@@ -33,14 +33,14 @@
                     <td>{{ category.created_date|date('H:i d.m.Y', 'Asia/Yekaterinburg') }}</td>
                     <td>
                         <!-- Форма для удаления категории -->
-                        <form method="POST" action="/admin/category/delete/{{ category.id }}">
+                        <form method="POST" action="/category/delete/{{ category.id }}">
                             <button type="submit">Удалить</button>
                         </form>
                     </td>
                 </tr>
             {% endfor %}
         </table>
-        <a href="/admin/category/create">Добавить категорию</a>
+        <a href="/category/create">Добавить категорию</a>
         <a href="/">← На главную</a>
     </body>
 </html>

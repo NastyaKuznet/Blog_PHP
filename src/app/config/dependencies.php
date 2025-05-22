@@ -36,6 +36,9 @@ return [
     AuthService::class => create(AuthService::class)
         ->constructor(get(DatabaseService::class)),
 
+    CategoryService::class => create(CategoryService::class)
+        ->constructor(get(DatabaseService::class)),
+
     CommentService::class => create(CommentService::class)
         ->constructor(get(DatabaseService::class)),
 
@@ -47,9 +50,6 @@ return [
     
     UserService::class => create(UserService::class)
         ->constructor(get(DatabaseService::class)),
-
-    CategoryService::class => create(CategoryService::class)
-        ->constructor(get(DatabaseService::class)),
     
     AuthMiddleware::class => create(AuthMiddleware::class)
         ->constructor(get(AuthService::class), get('config.jwt_secret')),
@@ -59,6 +59,9 @@ return [
 
     AuthController::class => create(AuthController::class)
         ->constructor(get(AuthService::class), get('view')),
+    
+    CategoryController::class => create(CategoryController::class)
+        ->constructor(get(CategoryService::class), get('view')),
 
     CommentController::class => create(CommentController::class)
         ->constructor(get(CommentService::class), get('view')),
@@ -71,7 +74,4 @@ return [
     
     UsersAdminController::class => create(UsersAdminController::class)
         ->constructor(get(DatabaseService::class), get(UserService::class), get('view')),
-
-    CategoryController::class => create(CategoryController::class)
-        ->constructor(get(CategoryService::class), get('view')),
 ];

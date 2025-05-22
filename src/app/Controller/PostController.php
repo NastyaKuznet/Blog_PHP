@@ -2,8 +2,6 @@
 
 namespace NastyaKuznet\Blog\Controller;
 
-use NastyaKuznet\Blog\Model\Comment;
-use NastyaKuznet\Blog\Model\Post;
 use NastyaKuznet\Blog\Service\PostService;
 use NastyaKuznet\Blog\Service\CategoryService;
 use Psr\Http\Message\ResponseInterface as Response;
@@ -17,7 +15,7 @@ class PostController
     private CategoryService $categoryService;
     private Twig $view;
 
-    public function __construct(PostService $postService, CategoryService $categoryService, Twig $view )
+    public function __construct(PostService $postService, CategoryService $categoryService, Twig $view)
     {
         $this->postService = $postService;
         $this->categoryService = $categoryService;
@@ -27,6 +25,7 @@ class PostController
     public function index(Request $request, Response $response): Response
     {
         $user = $request->getAttribute('user');
+        var_dump($user);
         $queryParams = $request->getQueryParams();
         $sortBy = $queryParams['sort_by'] ?? null;
         $order = $queryParams['order'] ?? 'asc';
@@ -46,6 +45,7 @@ class PostController
             'app' => [  
                 'request' => $request,
             ],
+            'categories' => $categories,
         ]);
     }
 
@@ -58,7 +58,6 @@ class PostController
             'app' => [  
                 'request' => $request,
             ],
-            'categories' => $categories,
         ]);
     }
 
@@ -174,11 +173,13 @@ class PostController
             $response->getBody()->write("Пост не найден.");
             return $response->withStatus(404);
         }
+        $categories = $this->categoryService->getAllCategories();
 
         if ($request->getMethod() === 'GET') {
             try {
                 return $this->view->render($response, 'post/edit.twig', [
                     'post' => $post,
+                    'categories' => $categories,
                 ]);
             } catch (\Twig\Error\LoaderError $e) {
                 $response->getBody()->write("Ошибка загрузки шаблона: " . $e->getMessage());
@@ -198,10 +199,12 @@ class PostController
             $title = $data['title'] ?? '';
             $preview = $data['preview'] ?? '';
             $content = $data['content'] ?? '';
+            $categoryId = $data['category_id'] ? (int)$data['category_id'] : null;
 
             if (!empty($title) && !empty($content)) {
                 $isSuccess = $this->postService->editPost($postId, $title, $preview, $content, $user['id']);
-                if ($isSuccess)
+                $isSuccessCategory = $this->categoryService->connectPostAndCategory($postId, $categoryId);
+                if ($isSuccess && $isSuccessCategory)
                 {
                     $response = new SlimResponse();
                     return $response->withHeader('Location', '/')->withStatus(302);
@@ -238,11 +241,13 @@ class PostController
             $response->getBody()->write("Пост не найден.");
             return $response->withStatus(404);
         }
+        $categories = $this->categoryService->getAllCategories();
 
         if ($request->getMethod() === 'GET') {
             try {
                 return $this->view->render($response, 'post/nonPublish/edit.twig', [
                     'post' => $post,
+                    'categories' => $categories,
                 ]);
             } catch (\Twig\Error\LoaderError $e) {
                 $response->getBody()->write("Ошибка загрузки шаблона: " . $e->getMessage());
@@ -257,15 +262,16 @@ class PostController
         }
 
         $action = $data['action'] ?? null;
+        $title = $data['title'] ?? '';
+        $preview = $data['preview'] ?? '';
+        $content = $data['content'] ?? '';
+        $categoryId = $data['category_id'] ? (int)$data['category_id'] : null;
 
         if ($action === 'save') {
-            $title = $data['title'] ?? '';
-            $preview = $data['preview'] ?? '';
-            $content = $data['content'] ?? '';
-
-            if (!empty($title) && !empty($content)) {
-                $isSuccess = $this->postService->editPost($postId, $title, $preview, $content, $user['id']);
-                if ($isSuccess)
+            if (!empty($title) && !empty($preview) && !empty($content)) {
+                $isSuccessEditPost = $this->postService->editPost($postId, $title, $preview, $content, $user['id']);
+                $isSuccessCategory = $this->categoryService->connectPostAndCategory($postId, $categoryId);
+                if ($isSuccessEditPost && $isSuccessCategory)
                 {
                     $response = new SlimResponse();
                     return $response->withHeader('Location', '/post-non-publish')->withStatus(302);
@@ -286,13 +292,17 @@ class PostController
             $response->getBody()->write("Неудалось удалить пост.");
             return $response->withStatus(500);
         } elseif ($action === 'publish') {
-            $isSuccess = $this->postService->publishPost($postId);
-            if ($isSuccess)
-            {
-                $response = new SlimResponse();
-                return $response->withHeader('Location', '/post-non-publish')->withStatus(302);
+            if (!empty($title) && !empty($preview) && !empty($content)) {
+                $isSuccessEditPost = $this->postService->editPost($postId, $title, $preview, $content, $user['id']);
+                $isSuccess = $this->postService->publishPost($postId);
+                $isSuccessCategory = $this->categoryService->connectPostAndCategory($postId, $categoryId);
+                if ($isSuccessEditPost && $isSuccess && $isSuccessCategory)
+                {
+                    $response = new SlimResponse();
+                    return $response->withHeader('Location', '/post-non-publish')->withStatus(302);
+                }
             }
-            $response->getBody()->write("Неудалось удалить пост.");
+            $response->getBody()->write("Неудалось опубликовать пост.");
             return $response->withStatus(500);
         }else {
             $response->getBody()->write("Недопустимое действие.");

@@ -72,6 +72,8 @@ class PostService
                 $postData['create_date'],
                 $postData['publish_date'],
                 $postData['edit_date'],
+                $postData['category_id'],
+                $postData['category_name'],
                 $postData['like_count'],
                 $postData['comment_count']
             );
@@ -96,7 +98,8 @@ class PostService
                 $postData['create_date'],
                 $postData['publish_date'],
                 $postData['edit_date'],
-                $postData['comment_count']
+                null,
+                null
             );
         }
         return $posts;
@@ -123,6 +126,8 @@ class PostService
                 $postFromDb['post']['create_date'],
                 $postFromDb['post']['publish_date'],
                 $postFromDb['post']['edit_date'],
+                $postFromDb['category_id'],
+                $postFromDb['category_name'],
                 $postFromDb['like_count'],
                 $postFromDb['comment_count']
             );
@@ -152,7 +157,9 @@ class PostService
                 $postFromDb['last_editor_nickname'],
                 $postFromDb['post']['create_date'],
                 $postFromDb['post']['publish_date'],
-                $postFromDb['post']['edit_date']
+                $postFromDb['post']['edit_date'],
+                $postFromDb['category_id'],
+                $postFromDb['category_name']
             );
         } catch (\Exception $e) {
             error_log("Ошибка при создании объекта Post: " . $e->getMessage());
@@ -243,6 +250,9 @@ class PostService
                 $postData['create_date'],
                 $postData['publish_date'],
                 $postData['edit_date'],
+                $postData['category_id'],
+                $postData['category_name'],
+                $postData['like_count'],
                 $postData['comment_count']
             );
         }
@@ -257,11 +267,18 @@ class PostService
             $posts[] = new Post(
                 $postData['id'],
                 $postData['title'],
+                $postData['preview'],
                 $postData['content'],
-                $postData['likes'],
-                $postData['user_id'],
+                $postData['author_id'],
                 $postData['user_nickname'],
-                $postData['created_at'],
+                $postData['last_editor_id'],
+                $postData['last_editor_nickname'],
+                $postData['create_date'],
+                $postData['publish_date'],
+                $postData['edit_date'],
+                $postData['category_id'],
+                $postData['category_name'],
+                $postData['like_count'],
                 $postData['comment_count']
             );
         }

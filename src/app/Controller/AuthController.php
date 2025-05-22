@@ -5,7 +5,6 @@ namespace NastyaKuznet\Blog\Controller;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Http\Message\ResponseInterface as Response;
 use NastyaKuznet\Blog\Service\AuthService;
-use Slim\Psr7\Response as SlimResponse;
 use Slim\Views\Twig;
 
 class AuthController

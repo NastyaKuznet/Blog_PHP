@@ -2,6 +2,7 @@
 <html>
     <head>
         <title>Редактирование поста</title>
+        <link rel="stylesheet" href="/style.css">
     </head>
     <body>
         <h1>Редактирование поста</h1>
@@ -19,6 +20,14 @@
                 <label for="content">Содержание:</label><br>
                 <textarea id="content" name="content" rows="5" cols="50" required>{{ post.content|escape }}</textarea>
             </div>
+            <label for="category_id">Категория:</label><br>
+            <select id="category_id" name="category_id">
+                {% for category in categories %}
+                    <option value="{{ category.id }}" {% if category.id == post.categoryId %}selected{% endif %}>
+                        {{ category.name }}
+                    </option>
+                {% endfor %}
+            </select>
             <div>
                 <button type="submit" name="action" value="save">Сохранить изменения</button>
                 <button type="submit" name="action" value="delete">Удалить пост</button>

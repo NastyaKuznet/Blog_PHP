@@ -2,6 +2,7 @@
 <html>
 <head>
     <title>Лента постов</title>
+    <link rel="stylesheet" href="/style.css">
 </head>
 <body>
 
@@ -26,6 +27,10 @@
     |
     {% endif %}
     {% if userRole in ['moderator', 'admin'] %}
+        <a href="/post/create">Написать пост</a>
+        |
+        <a href="/categories">Категории</a>
+        |
         <a href="/post-non-publish">Неопубликованные посты</a>
     {% endif %} 
     {% if userRole == 'admin' %}
@@ -70,7 +75,7 @@
             {% import _self as self %}
             {% for category in categories %}
                 <li>
-                    <a href="/post?category_id={{ category.id }}">{{ category.name|escape }}</a>
+                    <a href="/?category_id={{ category.id }}">{{ category.name|escape }}</a>
                     {% if category.children is defined and category.children|length > 0 %}
                         <ul>
                             {{ self.recursive_print(category.children) }}
@@ -82,14 +87,11 @@
     </div>
      
     <div style="width: calc(100% - 240px); margin: 0 auto; padding: 0 20px;">
-        {% if userRole in ['writer', 'moder', 'admin'] %}
-            <a href="/post/create">Написать пост</a>
-        {% endif %}
-
         {% for post in posts %}
             <div style="margin-bottom: 20px; border: 1px solid #ccc; padding: 10px; word-wrap: break-word;">
                 <h3>{{ post.title|escape }}</h3>
                 <p>{{ post.preview|nl2br }}</p>
+                <p>Категория: {{ post.categoryName|nl2br }}</p>
                 <p>Дата публикации поста: {{ post.publishDate|date('H:i d.m.Y', 'Asia/Yekaterinburg') }}</p>
                 <p>Автор: {{ post.userNickname|escape }}</p>
                 <p>Лайков: {{ post.likes|escape }}</p>

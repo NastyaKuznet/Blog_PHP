@@ -2,12 +2,14 @@
 <html>
 <head>
     <title>{{ post.title|escape }}</title>
+    <link rel="stylesheet" href="/style.css">
 </head>
 <body>
 <a href="/">Лента</a>
 <h1>{{ post.title|escape }}</h1>
 <h2>{{ post.preview|escape }}</h2>
 <p>{{ post.content|escape }}</p>
+<p>Категория: {{ post.categoryName|nl2br }}</p>
 <p>Автор поста: {{ post.userNickname|escape }}</p>
 <p>Дата создания поста: {{ post.createDate|date('H:i d.m.Y', 'Asia/Yekaterinburg') }}</p>
 <p>Дата публикации поста: {{ post.publishDate|date('H:i d.m.Y', 'Asia/Yekaterinburg') }}</p>

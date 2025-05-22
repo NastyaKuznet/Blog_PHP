@@ -31,15 +31,19 @@ class DatabaseService
             $stmt = $this->pdo->query("SELECT p.*, 
                                             u.nickname as user_nickname, 
                                             u2.nickname as last_editor_nickname,
+                                            ca.id as category_id,
+                                            ca.name as category_name,
                                             COUNT(l.id) as like_count,
                                             COUNT(CASE WHEN c.is_delete = false THEN c.id ELSE NULL END) as comment_count
                                         FROM posts p
                                         LEFT JOIN comments c ON p.id = c.post_id
                                         LEFT JOIN likes l ON p.id = l.post_id
+                                        LEFT JOIN category_posts cp ON cp.post_id = p.id
+                                        LEFT JOIN categories ca ON ca.id = cp.category_id
                                         JOIN users u ON p.author_id = u.id
                                         JOIN users u2 ON p.last_editor_id = u2.id
                                         WHERE p.is_publish = true and p.is_delete = false
-                                        GROUP BY p.id, u.nickname, u2.nickname;");
+                                        GROUP BY p.id, u.nickname, u2.nickname, ca.id;");
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             echo "Ошибка при получении постов: " . $e->getMessage();
@@ -54,15 +58,19 @@ class DatabaseService
             $stmt = $this->pdo->query("SELECT p.* , 
                                                 u.nickname as user_nickname, 
                                                 u2.nickname as last_editor_nickname,
+                                                ca.id as category_id,
+                                                ca.name as category_name,
                                                 COUNT(l.id) as like_count,
                                                 COUNT(CASE WHEN c.is_delete = false THEN c.id ELSE NULL END) as comment_count
                                         FROM posts p 
                                         LEFT JOIN comments c ON p.id = c.post_id
                                         LEFT JOIN likes l ON p.id = l.post_id
+                                        LEFT JOIN category_posts cp ON cp.post_id = p.id
+                                        LEFT JOIN categories ca ON ca.id = cp.category_id
                                         JOIN users u ON p.author_id = u.id  
                                         JOIN users u2 ON p.last_editor_id = u2.id
                                         WHERE p.is_publish = true and p.is_delete = false
-                                        GROUP BY p.id, u.nickname, u2.nickname
+                                        GROUP BY p.id, u.nickname, u2.nickname, ca.id
                                         ORDER BY u.nickname ASC;");
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
@@ -78,15 +86,19 @@ class DatabaseService
             $stmt = $this->pdo->query("SELECT p.*, 
                                             u.nickname as user_nickname, 
                                             u2.nickname as last_editor_nickname,
+                                            ca.id as category_id,
+                                            ca.name as category_name,
                                             COUNT(l.id) as like_count,
                                             COUNT(CASE WHEN c.is_delete = false THEN c.id ELSE NULL END) as comment_count
                                         FROM posts p 
                                         LEFT JOIN comments c ON p.id = c.post_id
                                         LEFT JOIN likes l ON p.id = l.post_id
+                                        LEFT JOIN category_posts cp ON cp.post_id = p.id
+                                        LEFT JOIN categories ca ON ca.id = cp.category_id
                                         JOIN users u ON p.author_id = u.id
                                         JOIN users u2 ON p.last_editor_id = u2.id
                                         WHERE p.is_publish = true and p.is_delete = false
-                                        GROUP BY p.id, u.nickname, u2.nickname
+                                        GROUP BY p.id, u.nickname, u2.nickname, ca.id
                                         ORDER BY u.nickname DESC;");
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
@@ -102,15 +114,19 @@ class DatabaseService
             $stmt = $this->pdo->prepare("SELECT p.*, 
                                             u.nickname as user_nickname, 
                                             u2.nickname as last_editor_nickname,
+                                            ca.id as category_id,
+                                            ca.name as category_name,
                                             COUNT(l.id) as like_count,
                                             COUNT(CASE WHEN c.is_delete = false THEN c.id ELSE NULL END) as comment_count
                                         FROM posts p 
                                         LEFT JOIN comments c ON p.id = c.post_id
                                         LEFT JOIN likes l ON p.id = l.post_id
+                                        LEFT JOIN category_posts cp ON cp.post_id = p.id
+                                        LEFT JOIN categories ca ON ca.id = cp.category_id
                                         JOIN users u ON p.author_id = u.id
                                         JOIN users u2 ON p.last_editor_id = u2.id 
                                         WHERE u.nickname = :author_nickname AND p.is_publish = true AND p.is_delete = false
-                                        GROUP BY p.id, u.nickname, u2.nickname;");
+                                        GROUP BY p.id, u.nickname, u2.nickname, ca.id;");
             $stmt->execute(['author_nickname' => $author_nickname]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
@@ -126,15 +142,19 @@ class DatabaseService
             $stmt = $this->pdo->query("SELECT p.*, 
                                             u.nickname as user_nickname,
                                             u2.nickname as last_editor_nickname,
+                                            ca.id as category_id,
+                                            ca.name as category_name,
                                             COUNT(l.id) as like_count,
                                             COUNT(CASE WHEN c.is_delete = false THEN c.id ELSE NULL END) as comment_count
                                         FROM posts p 
                                         LEFT JOIN comments c ON p.id = c.post_id
                                         LEFT JOIN likes l ON p.id = l.post_id
+                                        LEFT JOIN category_posts cp ON cp.post_id = p.id
+                                        LEFT JOIN categories ca ON ca.id = cp.category_id
                                         JOIN users u ON p.author_id = u.id
                                         JOIN users u2 ON p.last_editor_id = u2.id 
                                         WHERE p.is_publish = true and p.is_delete = false
-                                        GROUP BY p.id, u.nickname, u2.nickname
+                                        GROUP BY p.id, u.nickname, u2.nickname, ca.id
                                         ORDER BY like_count ASC;");
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
@@ -150,6 +170,8 @@ class DatabaseService
             $stmt = $this->pdo->query("SELECT p.*, 
                                             u.nickname as user_nickname, 
                                             u2.nickname as last_editor_nickname,
+                                            ca.id as category_id,
+                                            ca.name as category_name,
                                             COUNT(l.id) as like_count,
                                             COUNT(CASE WHEN c.is_delete = false THEN c.id ELSE NULL END) as comment_count
                                         FROM posts p 
@@ -157,8 +179,10 @@ class DatabaseService
                                         LEFT JOIN likes l ON p.id = l.post_id
                                         JOIN users u ON p.author_id = u.id  
                                         JOIN users u2 ON p.last_editor_id = u2.id
+                                        LEFT JOIN category_posts cp ON cp.post_id = p.id
+                                        LEFT JOIN categories ca ON ca.id = cp.category_id
                                         WHERE p.is_publish = true and p.is_delete = false
-                                        GROUP BY p.id, u.nickname, u2.nickname
+                                        GROUP BY p.id, u.nickname, u2.nickname, ca.id
                                         ORDER BY like_count DESC;");
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
@@ -174,15 +198,19 @@ class DatabaseService
             $stmt = $this->pdo->query("SELECT p.*, 
                                             u.nickname as user_nickname,
                                             u2.nickname as last_editor_nickname,
+                                            ca.id as category_id,
+                                            ca.name as category_name,
                                             COUNT(l.id) as like_count,
                                             COUNT(CASE WHEN c.is_delete = false THEN c.id ELSE NULL END) as comment_count
                                         FROM posts p 
                                         LEFT JOIN comments c ON p.id = c.post_id
                                         LEFT JOIN likes l ON p.id = l.post_id
+                                        LEFT JOIN category_posts cp ON cp.post_id = p.id
+                                        LEFT JOIN categories ca ON ca.id = cp.category_id
                                         JOIN users u ON p.author_id = u.id
                                         JOIN users u2 ON p.last_editor_id = u2.id
                                         WHERE p.is_publish = true and p.is_delete = false
-                                        GROUP BY p.id, u.nickname, u2.nickname
+                                        GROUP BY p.id, u.nickname, u2.nickname, ca.id
                                         ORDER BY comment_count ASC;");
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
@@ -198,15 +226,19 @@ class DatabaseService
             $stmt = $this->pdo->query("SELECT p.*, 
                                             u.nickname as user_nickname, 
                                             u2.nickname as last_editor_nickname,
+                                            ca.id as category_id,
+                                            ca.name as category_name,
                                             COUNT(l.id) as like_count,
                                             COUNT(CASE WHEN c.is_delete = false THEN c.id ELSE NULL END) as comment_count
                                         FROM posts p 
                                         LEFT JOIN comments c ON p.id = c.post_id
                                         LEFT JOIN likes l ON p.id = l.post_id
+                                        LEFT JOIN category_posts cp ON cp.post_id = p.id
+                                        LEFT JOIN categories ca ON ca.id = cp.category_id
                                         JOIN users u ON p.author_id = u.id 
                                         JOIN users u2 ON p.last_editor_id = u2.id 
                                         WHERE p.is_publish = true and p.is_delete = false
-                                        GROUP BY p.id, u.nickname, u2.nickname
+                                        GROUP BY p.id, u.nickname, u2.nickname, ca.id
                                         ORDER BY comment_count DESC;");
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
@@ -222,15 +254,19 @@ class DatabaseService
             $stmt = $this->pdo->prepare("SELECT p.*, 
                                             u.nickname as user_nickname,
                                             u2.nickname as last_editor_nickname, 
+                                            ca.id as category_id,
+                                            ca.name as category_name,
                                             COUNT(l.id) as like_count,
                                             COUNT(CASE WHEN c.is_delete = false THEN c.id ELSE NULL END) as comment_count
                                         FROM posts p 
                                         LEFT JOIN comments c ON p.id = c.post_id
                                         LEFT JOIN likes l ON p.id = l.post_id
+                                        LEFT JOIN category_posts cp ON cp.post_id = p.id
+                                        LEFT JOIN categories ca ON ca.id = cp.category_id
                                         JOIN users u ON p.author_id = u.id  
                                         JOIN users u2 ON p.last_editor_id = u2.id
-                                        WHERE u.author_id = :user_id and p.is_publish = true
-                                        GROUP BY p.id, u.nickname, u2.nickname;");
+                                        WHERE u.id = :user_id and p.is_publish = true
+                                        GROUP BY p.id, u.nickname, u2.nickname, ca.id;");
             $stmt->execute(['user_id' => $userId]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
@@ -294,6 +330,13 @@ class DatabaseService
                 $stmt->execute([':lastEditorId' => $lastEditorId]);
                 $editorNickname = $stmt->fetchColumn();
             }
+            $stmt = $this->pdo->prepare("SELECT category_id FROM category_posts WHERE post_id = :post_id");
+            $stmt->execute([':post_id' => $postId]);
+            $categoryId = $stmt->fetchColumn();
+
+            $stmt = $this->pdo->prepare("SELECT name FROM categories WHERE id = :category_id");
+            $stmt->execute([':category_id' => $categoryId]);
+            $categoryName = $stmt->fetchColumn();
 
             $this->pdo->commit();
 
@@ -303,6 +346,8 @@ class DatabaseService
                 'comment_count' => $commentCount,
                 'author_nickname' => $authorNickname,
                 'last_editor_nickname' => $editorNickname,
+                'category_id' => $categoryId,
+                'category_name' => $categoryName,
             ];
 
             return $result;
@@ -345,12 +390,22 @@ class DatabaseService
                 $editorNickname = $stmt->fetchColumn();
             }
 
+            $stmt = $this->pdo->prepare("SELECT category_id FROM category_posts WHERE post_id = :post_id");
+            $stmt->execute([':post_id' => $postId]);
+            $categoryId = $stmt->fetchColumn();
+
+            $stmt = $this->pdo->prepare("SELECT name FROM categories WHERE id = :category_id");
+            $stmt->execute([':category_id' => $categoryId]);
+            $categoryName = $stmt->fetchColumn();
+
             $this->pdo->commit();
 
             $result = [
                 'post' => $post,
                 'author_nickname' => $authorNickname,
                 'last_editor_nickname' => $editorNickname,
+                'category_id' => $categoryId,
+                'category_name' => $categoryName,
             ];
 
             return $result;
@@ -369,8 +424,8 @@ class DatabaseService
     {
         try {
             $stmt = $this->pdo->prepare("SELECT COUNT(*) 
-                                        FROM posts 
-                                        WHERE user_id = :user_id and p.is_publish = true");
+                                        FROM posts p
+                                        WHERE p.author_id = :user_id and p.is_publish = true");
             $stmt->execute(['user_id' => $userId]);
             return (int) $stmt->fetchColumn();
         } catch (PDOException $e) {
@@ -827,21 +882,31 @@ class DatabaseService
                 FROM categories c
                 INNER JOIN category_tree ct ON c.parent_id = ct.id
             )
-            SELECT p.*, u.nickname as user_nickname, COUNT(c.id) as comment_count
+            SELECT p.*, 
+                u.nickname as user_nickname,
+                u2.nickname as last_editor_nickname,
+                ca.id as category_id,
+                ca.name as category_name,  
+                COUNT(l.id) as like_count,
+                COUNT(CASE WHEN c.is_delete = false THEN c.id ELSE NULL END) as comment_count
             FROM posts p
-            JOIN category_posts cp ON p.id = cp.post_id
-            JOIN users u ON p.user_id = u.id
             LEFT JOIN comments c ON p.id = c.post_id
-            WHERE cp.category_id IN (SELECT id FROM category_tree)
-            GROUP BY p.id, u.nickname;
+            LEFT JOIN likes l ON p.id = l.post_id
+            JOIN category_posts cp ON p.id = cp.post_id
+             LEFT JOIN categories ca ON ca.id = cp.category_id
+            JOIN users u ON p.author_id = u.id
+            JOIN users u2 ON p.last_editor_id = u2.id
+            WHERE cp.category_id IN (SELECT id FROM category_tree) AND p.is_publish = true
+            GROUP BY p.id, u.nickname, u2.nickname, ca.id;
             ");
+
             $stmt->execute(['category_id' => $categoryId]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             echo "Ошибка при получении постов по категории: " . $e->getMessage();
             return [];
         }
-    }
+    }                         
 
     // Метод для удаления категории
     public function deleteCategory(int $categoryId): bool
@@ -854,8 +919,34 @@ class DatabaseService
             $stmt->execute(['category_id' => $categoryId]);
 
             return true;
-        } catch (\PDOException $e) {
+        } catch (PDOException $e) {
             error_log("Ошибка удаления категории: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function connectPostAndCategory(int $postId, int $categoryId): bool
+    {
+        try {
+            $this->pdo->beginTransaction();
+            $stmt = $this->pdo->prepare("DELETE FROM category_posts 
+                                        WHERE post_id = :post_id;");
+
+            $stmt->execute(['post_id' => $postId]);
+
+            $stmt = $this->pdo->prepare("INSERT INTO category_posts (category_id, post_id)
+                                        VALUES (:category_id, :post_id);");
+
+            $stmt->execute(['category_id' => $categoryId,
+                            'post_id' => $postId]);
+            $this->pdo->commit();
+
+            return true;
+        } catch (PDOException $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            error_log("Ошибка добавления связи между постом и категорией: " . $e->getMessage());
             return false;
         }
     }

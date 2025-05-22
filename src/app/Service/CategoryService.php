@@ -83,4 +83,9 @@ class CategoryService
     {
         return $this->databaseService->deleteCategory($categoryId);
     }
+
+    public function connectPostAndCategory(int $postId, int $categoryId): bool
+    {
+        return $this->databaseService->connectPostAndCategory($postId, $categoryId);
+    }
 }
