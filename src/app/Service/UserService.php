@@ -14,29 +14,33 @@ class UserService
         $this->databaseService = $databaseService;
     }
 
-    public function getUser (int $userId) : User 
+    public function getUser(int $userId): User
     {
         $userFromDB = $this->databaseService->getUserInfo($userId);
         return new User(
-            $userFromDB["id"], 
+            $userFromDB["id"],
             $userFromDB["nickname"],
             $userFromDB["password"],
             $userFromDB["role_id"],
-            $userFromDB["role_name"]
+            $userFromDB["role_name"],
+            $userFromDB["register_date"],
+            $userFromDB["is_banned"]
         );
     }
 
-    public function getAllUsers () : array 
+    public function getAllUsers(): array
     {
         $usersFromDb = $this->databaseService->getAllUsers();
         $users = [];
-        foreach ($usersFromDb as $usersData) {
+        foreach ($usersFromDb as $userData) {
             $users[] = new User(
-                $usersData["id"], 
-                $usersData["nickname"],
-                $usersData["password"],
-                $usersData["role_id"],
-                $usersData["role_name"]
+                $userData["id"],
+                $userData["nickname"],
+                $userData["password"],
+                $userData["role_id"],
+                $userData["role_name"],
+                $userData["register_date"],
+                $userData["is_banned"]
             );
         }
         return $users;

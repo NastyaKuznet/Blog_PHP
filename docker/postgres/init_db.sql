@@ -13,7 +13,9 @@ CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     nickname VARCHAR(50) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
-    role_id INTEGER NOT NULL REFERENCES roles(id) ON DELETE CASCADE
+    role_id INTEGER NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+    register_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_banned BOOLEAN DEFAULT FALSE
 );
 
 -- Создаем таблицу posts

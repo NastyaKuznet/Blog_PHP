@@ -32,7 +32,7 @@ class UserAccountController
             'posts' => $posts,
             'user' => $user,
             'countPosts' => $countPosts,
-            'app' => [  
+            'app' => [
                 'request' => $request,
             ],
         ]);

@@ -72,7 +72,7 @@ $app->group('/post', function (RouteCollectorProxy $group) use ($container) {
 $app->group('/admin', function (RouteCollectorProxy $group) use ($container) {
     $group->get('/users', [UsersAdminController::class, 'index']);
     $group->post('/change_role', [UsersAdminController::class, 'changeRole']);
-    $group->post('/delete_user', [UsersAdminController::class, 'deleteUser']);
+    $group->post('/toggle_ban', [UsersAdminController::class, 'toggleBan']); 
 });
 
 $app->get('/categories', [CategoryController::class, 'index']);
