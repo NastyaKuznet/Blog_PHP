@@ -2,32 +2,69 @@
 <html>
 <head>
     <title>{{ post.title|escape }}</title>
+    <link rel="stylesheet" href="/style.css">
 </head>
 <body>
+<a href="/">Лента</a>
 <h1>{{ post.title|escape }}</h1>
-
+<h2>{{ post.preview|escape }}</h2>
 <p>{{ post.content|escape }}</p>
-<p>Автор: {{ post.userNickname|escape }}</p>
+<p>Категория: {{ post.categoryName|nl2br }}</p>
+<p>Автор поста: {{ post.userNickname|escape }}</p>
+<p>Дата создания поста: {{ post.createDate|date('H:i d.m.Y', 'Asia/Yekaterinburg') }}</p>
+<p>Дата публикации поста: {{ post.publishDate|date('H:i d.m.Y', 'Asia/Yekaterinburg') }}</p>
+<p>Лайков: {{ post.likes|escape }}</p>
+<p>Комментариев: {{ post.commentCount|escape }}</p>
+
+{% if post.editDate %}
+    <p>Пост был редактирован: {{ post.lastEditorNickname|escape }}</p>
+    <p>Дата редактирования поста: {{ post.editDate|date('H:i d.m.Y', 'Asia/Yekaterinburg') }}</p>
+{% endif %}
+
+{% if app.user %}
+    {% if isLikedByUser %}
+        <form action="/post/{{ post.id|escape }}/like" method="post">
+            <button type="submit">Снять лайк</button>
+        </form>
+    {% else %}
+        <form action="/post/{{ post.id|escape }}/like" method="post">
+            <button type="submit">Поставить лайк</button>
+        </form>
+    {% endif %}
+{% endif %}
 
 <h2>Комментарии:</h2>
 {% if comments %}
     {% for comment in comments %}
         <div style="margin-bottom: 10px; border: 1px solid #eee; padding: 5px;">
             <p><b>{{ comment.userNickname|escape }}:</b> {{ comment.content|escape }}</p>
-            <p>{{ comment.createdAt|date('H:i d.m.Y', 'Asia/Yekaterinburg') }}</p>
+            <p>Дата добавления: {{ comment.createdDate|date('H:i d.m.Y', 'Asia/Yekaterinburg') }}</p>
+
+            {% if comment.editDate %}
+                <p style="color: gray;">(редактировано {{ comment.editDate|date('H:i d.m.Y', 'Asia/Yekaterinburg') }})</p>
+            {% endif %}
+            {% if app.user and (comment.userNickname == app.user.nickname or app.user.role in ['admin']) %}
+                <form action="/comment/edit/{{ comment.id }}" method="GET">
+                    <button type="submit">Редактировать</button>
+                </form>
+                <form action="/comment/delete/{{ comment.id }}" method="POST">
+                    <button type="submit">Удалить</button>
+                </form>
+            {% endif %}
         </div>
     {% endfor %}
 {% else %}
     <p>Нет комментариев.</p>
 {% endif %}
 
-<h2>Добавить комментарий:</h2>
-<form action="/post/{{ post.id|escape }}" method="POST">
-    <label for="comment">Комментарий:</label><br>
-    <textarea id="comment" name="comment" rows="4" cols="50" required></textarea><br>
-    <button type="submit">Отправить комментарий</button>
-    <a href="/">Лента</a>
-</form>
+{% if app.user %}
+    <h2>Добавить комментарий:</h2>
+    <form action="/post/{{ post.id|escape }}" method="POST">
+        <label for="comment">Комментарий:</label><br>
+        <textarea id="comment" name="comment" rows="4" cols="50" required></textarea><br>
+        <button type="submit">Отправить комментарий</button>
+    </form>
+{% endif %}
 
 </body>
 </html>

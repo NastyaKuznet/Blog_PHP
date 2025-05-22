@@ -23,7 +23,8 @@ class UserAccountController
 
     public function index(Request $request, Response $response): Response
     {
-        $userId = 4; // потом убрать хардкод!
+        $user = $request->getAttribute('user');
+        $userId = $user['id'];
         $user = $this->userService->getUser($userId);
         $countPosts = $this->postService->getCountPosts($userId);
         $posts = $this->postService->getPostsByUserId($userId);

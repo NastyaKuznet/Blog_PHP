@@ -2,21 +2,49 @@
 <html>
 <head>
     <title>Лента постов</title>
+    <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-<h1>Лента постов</h1>
-<a href="/account">Аккаунт</a>
 
-{% if userRole == 'admin' %}
-    <a href="/admin/users">Перейти к управлению пользователями</a>
-{% endif %}
+<div style="display: flex; justify-content: space-between; align-items: center;">
+  <h1>Лента постов</h1>
+  <div>
+        {% if userRole in ['writer','moderator', 'admin'] %}
+            <form action="/logout" method="post">
+                <button type="submit">Выход</button>
+            </form>
+        {% elseif userRole == 'reader' %}
+            <a href="/register">
+                <button type="button">Регистрация</button>
+            </a>
+        {% endif %}
+     </div>
+</div>
+
+<p>
+    {% if userRole in ['writer','moderator', 'admin'] %}
+    <a href="/account">Аккаунт</a>
+    |
+    {% endif %}
+    {% if userRole in ['moderator', 'admin'] %}
+        <a href="/post/create">Написать пост</a>
+        |
+        <a href="/categories">Категории</a>
+        |
+        <a href="/post-non-publish">Неопубликованные посты</a>
+    {% endif %} 
+    {% if userRole == 'admin' %}
+        |
+        <a href="/admin/users">Перейти к управлению пользователями</a>
+    {% endif %}
+</p>
 
 <div style="display: flex;">
 
     <div style="width: 200px; padding-right: 20px;">
         <h2>Фильтры</h2>
 
-        <form action="/post" method="GET">
+        <form action="/" method="GET">
             <label for="author_nickname">Фильтр по никнейму автора:</label><br>
             <input type="text" id="author_nickname" name="author_nickname" value="{{ app.request.get('author_nickname')|escape }}"><br><br>
 
@@ -35,36 +63,43 @@
             </select><br><br>
 
             <button type="submit">Применить</button>
-            <a href="/post">Сбросить фильтры</a>
+            <a href="/">Сбросить фильтры</a>
         </form>
-    </div>
+        <h2>Категории</h2>
+        <ul>
+            {% import _self as self %}
+            {{ self.recursive_print(categories) }}
+        </ul>
 
-    <div>
-        <form action="/logout" method="post">
-            <button type="submit">Выход</button>
-        </form>
-     </div>
+        {% macro recursive_print(categories) %}
+            {% import _self as self %}
+            {% for category in categories %}
+                <li>
+                    <a href="/?category_id={{ category.id }}">{{ category.name|escape }}</a>
+                    {% if category.children is defined and category.children|length > 0 %}
+                        <ul>
+                            {{ self.recursive_print(category.children) }}
+                        </ul>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        {% endmacro %}
+    </div>
      
     <div style="width: calc(100% - 240px); margin: 0 auto; padding: 0 20px;">
-        {% if userRole in ['writer', 'moder', 'admin'] %}
-            <a href="/post/create">Написать пост</a>
-        {% endif %}
-
         {% for post in posts %}
             <div style="margin-bottom: 20px; border: 1px solid #ccc; padding: 10px; word-wrap: break-word;">
                 <h3>{{ post.title|escape }}</h3>
-                <p>{{ post.content|nl2br }}</p>
-                <p>{{ post.createdAt|date('H:i d.m.Y', 'Asia/Yekaterinburg') }}</p>
+                <p>{{ post.preview|nl2br }}</p>
+                <p>Категория: {{ post.categoryName|nl2br }}</p>
+                <p>Дата публикации поста: {{ post.publishDate|date('H:i d.m.Y', 'Asia/Yekaterinburg') }}</p>
                 <p>Автор: {{ post.userNickname|escape }}</p>
                 <p>Лайков: {{ post.likes|escape }}</p>
                 <p>Комментариев: {{ post.commentCount|escape }}</p>
-                <form action="/post/{{ post.id|escape }}/like" method="post">
-                    <button type="submit">Лайк</button>
-                </form>
-                <a href="/post/{{ post.id|escape }}">Комментарии</a>
+                <a href="/post/{{ post.id|escape }}">Открыть пост</a>
 
-                {% if userRole in ['moder', 'admin'] %}
-                    <a href="/post/edit/{{ post.id|escape }}">Редактировать</a>
+                {% if userRole in ['moderator', 'admin'] %}
+                    <a href="/post/edit/{{ post.id|escape }}">Редактировать пост</a>
                 {% endif %}
             </div>
         {% endfor %}

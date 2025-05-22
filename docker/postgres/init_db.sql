@@ -22,10 +22,24 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS posts (
     id SERIAL PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
-    content TEXT NOT NULL,
-    likes INTEGER DEFAULT 0,
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    preview TEXT NOT NULL,
+    author_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    create_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    publish_date TIMESTAMP,
+    edit_date TIMESTAMP,
+    delete_date TIMESTAMP,
+    is_publish BOOLEAN NOT NULL DEFAULT FALSE,
+    is_delete BOOLEAN NOT NULL DEFAULT FALSE,
+    last_editor_id INTEGER NOT NULL REFERENCES users(id),
+    content TEXT NOT NULL
+);
+
+-- Создаем таблицу likes
+CREATE TABLE IF NOT EXISTS likes (
+    id SERIAL PRIMARY KEY,
+    create_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- Создаем таблицу comments
@@ -34,14 +48,26 @@ CREATE TABLE IF NOT EXISTS comments (
     content TEXT NOT NULL,
     post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    edit_date TIMESTAMP,
+    delete_date TIMESTAMP,
+    is_edit BOOLEAN NOT NULL DEFAULT FALSE,
+    is_delete BOOLEAN NOT NULL DEFAULT FALSE
 );
 
-
--- Создаем роли
-CREATE TABLE IF NOT EXISTS roles (
+-- Таблица categories
+CREATE TABLE IF NOT EXISTS categories (
     id SERIAL PRIMARY KEY,
-    name VARCHAR(50) NOT NULL UNIQUE
+    name VARCHAR(255) NOT NULL,
+    parent_id INTEGER REFERENCES categories(id) ON DELETE SET NULL,
+    created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Таблица category_posts
+CREATE TABLE IF NOT EXISTS category_posts (
+    category_id INTEGER REFERENCES categories(id) ON DELETE CASCADE,
+    post_id INTEGER REFERENCES posts(id) ON DELETE CASCADE,
+    PRIMARY KEY (category_id, post_id)
 );
 
 -- Добавляем тестовых пользователей, если их нет

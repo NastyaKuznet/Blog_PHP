@@ -1,20 +1,26 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>Редактирование поста</title>
+        <title>Редактирование неопубликованного поста</title>
         <link rel="stylesheet" href="/style.css">
     </head>
     <body>
-        <h1>Редактирование поста</h1>
+        <a href="/post-non-publish">Лента неопубликованных постов</a>
+        <h1>Редактирование неопубликованного поста</h1>
         <p>Автор поста: {{ post.userNickname|escape }}</p>
-        <form action="/post/edit/{{ post.id }}" method="POST">
+        <p>Дата создания поста: {{ post.createDate|date('H:i d.m.Y', 'Asia/Yekaterinburg') }}</p>
+        {% if post.editDate %}
+            <p>Пост был редактирован: {{ post.lastEditorNickname|escape }}</p>
+            <p>Дата редактирования поста: {{ post.editDate|date('H:i d.m.Y', 'Asia/Yekaterinburg') }}</p>
+        {% endif %}
+        <form action="/post-non-publish/{{ post.id }}" method="POST">
             <div>
                 <label for="title">Заголовок:</label><br>
                 <input type="text" id="title" name="title" value="{{ post.title|escape }}" required>
             </div>
             <div>
-                <label for="content">Превью:</label><br>
-                <textarea id="content" name="content" rows="5" cols="50" required>{{ post.preview|escape }}</textarea>
+                <label for="preview">Превью:</label><br>
+                <textarea id="preview" name="preview" rows="5" cols="50" required>{{ post.preview|escape }}</textarea>
             </div>
             <div>
                 <label for="content">Содержание:</label><br>
@@ -30,10 +36,9 @@
             </select>
             <div>
                 <button type="submit" name="action" value="save">Сохранить изменения</button>
+                <button type="submit" name="action" value="publish">Опубликовать пост</button>
                 <button type="submit" name="action" value="delete">Удалить пост</button>
-                <a href="/">Лента</a>
             </div>
         </form>
-
     </body>
 </html>
