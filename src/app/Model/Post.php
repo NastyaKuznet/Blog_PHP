@@ -17,10 +17,11 @@ class Post
     public $publishDate;
     public $categoryId;
     public $categoryName;
+    public $tags;
     public $editDate;
     public $likes;
 
-    public function __construct(int $id, string $title, string $preview, string $content, int $userId, string $userNickname, int $lastEditorId, string $lastEditorNickname, string $createDate, ?string $publishDate, ?string $editDate, ?int $categoryId, ?string $categoryName, int $likes = 0, int $commentCount = 0)
+    public function __construct(int $id, string $title, string $preview, string $content, int $userId, string $userNickname, int $lastEditorId, string $lastEditorNickname, string $createDate, ?string $publishDate, ?string $editDate, ?int $categoryId, ?string $categoryName, array $tags = [], int $likes = 0, int $commentCount = 0)
     {
         $this->id = $id;
         $this->title = $title;
@@ -36,6 +37,7 @@ class Post
         $this->editDate = $editDate;
         $this->categoryId = $categoryId;
         $this->categoryName = $categoryName;
+        $this->tags = $tags;
         $this->likes = $likes;
     }
 }

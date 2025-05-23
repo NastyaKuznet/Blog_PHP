@@ -5,6 +5,7 @@ namespace NastyaKuznet\Blog\Service;
 use NastyaKuznet\Blog\Model\Comment;
 use NastyaKuznet\Blog\Service\DatabaseService;
 use NastyaKuznet\Blog\Model\Post;
+use NastyaKuznet\Blog\Model\Tag;
 
 class PostService
 {
@@ -15,10 +16,15 @@ class PostService
         $this->databaseService = $databaseService;
     }
 
-    private function getPostsWithFilters(mixed $sortBy, mixed $order, mixed $authorNickname): array
+    private function getPostsWithFilters(?string $sortBy, ?string $order, ?string $authorNickname, ?string $tag): array
     {
         if ($authorNickname) {
             $postsFromDb = $this->databaseService->getPostsByAuthor($authorNickname);
+            return $postsFromDb;
+        }
+
+        if ($tag) {
+            $postsFromDb = $this->databaseService->getPostsByTag($tag);
             return $postsFromDb;
         }
 
@@ -55,11 +61,12 @@ class PostService
         return $postsFromDb;
     }
 
-    public function getAllPosts(mixed $sortBy, mixed $order, mixed $authorNickname): array
+    public function getAllPosts(?string $sortBy, ?string $order, ?string $authorNickname, ?string $tag): array
     {
-        $postsFromDb = $this->getPostsWithFilters($sortBy, $order, $authorNickname);
+        $postsFromDb = $this->getPostsWithFilters($sortBy, $order, $authorNickname, $tag);
         $posts = [];
         foreach ($postsFromDb as $postData) {
+            $tags = $this->getTagsByPostId($postData['id']);
             $posts[] = new Post(
                 $postData['id'],
                 $postData['title'],
@@ -74,10 +81,12 @@ class PostService
                 $postData['edit_date'],
                 $postData['category_id'],
                 $postData['category_name'],
+                $tags,
                 $postData['like_count'],
                 $postData['comment_count']
             );
         }
+        
         return $posts;
     }
 
@@ -112,7 +121,7 @@ class PostService
         if (!$postFromDb) {
             return null;
         }
-
+        $tags = $this->getTagsByPostId($postFromDb['id']);
         try {
             return new Post(
                 $postFromDb['post']['id'],
@@ -128,6 +137,7 @@ class PostService
                 $postFromDb['post']['edit_date'],
                 $postFromDb['category_id'],
                 $postFromDb['category_name'],
+                $tags,
                 $postFromDb['like_count'],
                 $postFromDb['comment_count']
             );
@@ -135,6 +145,46 @@ class PostService
             error_log("Ошибка при создании объекта Post: " . $e->getMessage());
             return null;
         }
+    }
+
+
+    public function addPost(string $title, string $preview, string $content, $userId): bool 
+    {
+        return $this->databaseService->addPost($title, $preview, $content, $userId); 
+    }
+
+    public function editPost(int $id, string $title, string $preview, string $content, int $userId, array $tags): bool 
+    {
+        $oldTagsFromDB = $this->getTagsByPostId($id);
+        $oldTags = [];
+        foreach($oldTagsFromDB as $oldTag)
+        {
+            $oldTags[] = $oldTag->name;
+        }
+
+        $tagsForDelete = array_diff($oldTags, $tags);
+        foreach($tagsForDelete as $tagDel)
+        {
+            $isSuccess = $this->databaseService->deleteTag($tagDel, $id);
+            if(!$isSuccess)
+            {
+                echo('Не удалось удалить тег: ');
+                echo($tagDel);
+            }
+        }
+
+        $tagsForInsert = array_diff($tags, $oldTags);
+        foreach($tagsForInsert as $tagIns)
+        {
+            $isSuccess = $this->databaseService->addTag($tagIns, $id);
+            if(!$isSuccess)
+            {
+                echo('Не удалось вставить тег: ');
+                echo($tagDel);
+            }
+        }
+
+        return $this->databaseService->editPost($id, $title,  $preview, $content, $userId); 
     }
 
     public function getNonPublishPostById(int $id): ?Post
@@ -165,16 +215,6 @@ class PostService
             error_log("Ошибка при создании объекта Post: " . $e->getMessage());
             return null;
         }
-    }
-
-    public function addPost(string $title, string $preview, string $content, $userId): bool 
-    {
-        return $this->databaseService->addPost($title, $preview, $content, $userId); 
-    }
-
-    public function editPost(int $id, string $title, string $preview, string $content, int $editorId): bool 
-    {
-        return $this->databaseService->editPost($id, $title, $preview, $content, $editorId); 
     }
 
     public function publishPost(int $id): bool 
@@ -283,5 +323,50 @@ class PostService
             );
         }
         return $posts;
+    }
+
+    // Метод для получения тегов поста
+    public function getTagsByPostId(int $postId): array
+    {
+        $tagsFromDb = $this->databaseService->getTagsByPostId($postId);
+        $tags = [];
+        foreach ($tagsFromDb as $tagData) {
+            $tags[] = new Tag(
+                $tagData['id'],
+                $tagData['name']
+            );
+        }
+        return $tags;
+    }
+
+    // Метод для получения всех тегов
+    public function getAllTags(): array
+    {
+        $tagsFromDb = $this->databaseService->getAllTags();
+        $tags = [];
+        foreach ($tagsFromDb as $tagData) {
+            $tags[] = [
+                'id' => $tagData['id'],
+                'name' => $tagData['name']
+            ];
+        }
+        return $tags;
+    }
+
+    public function addPostWithTags(string $title, string $content, int $userId, array $tags): bool
+    {
+        $postId = $this->databaseService->addPostAndGetId($title, $content, $userId);
+        if (!$postId) return false;
+
+        foreach ($tags as $tagName) {
+            $tagSaved = $this->databaseService->addTag($tagName, $postId);
+
+            if (!$tagSaved)
+            {
+                echo ('тег не сохранен: ');
+                echo ($tagName);
+            }
+        }
+        return true;
     }
 }

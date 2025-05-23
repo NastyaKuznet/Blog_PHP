@@ -247,6 +247,24 @@ class DatabaseService
         }
     }
 
+    public function getPostsByTag(string $tagName): array
+    {
+        try {
+            $stmt = $this->pdo->prepare("SELECT p.* , u.nickname as user_nickname, COUNT(c.id) as comment_count
+                                        FROM tags t 
+                                        JOIN posts p ON t.post_id = p.id
+                                        LEFT JOIN comments c ON p.id = c.post_id
+                                        JOIN users u ON p.user_id = u.id  
+                                        WHERE t.name = :tag_name
+                                        GROUP BY p.id, u.nickname");
+            $stmt->execute(['tag_name' => $tagName]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            echo "Ошибка при получении постов по тегу: " . $e->getMessage();
+            return [];
+        }
+    }
+
     // Получение всех постов по ид автора
     public function getPostsByUserId(int $userId):array
     {
@@ -449,10 +467,10 @@ class DatabaseService
                 'content' => $content,
                 'author_id' => $userId
             ]);
-            return true;
+            return $this->pdo->lastInsertId();
         } catch (PDOException $e) {
             echo "Ошибка при добавлении поста: " . $e->getMessage();
-            return false;
+            return 0;
         }
     }
 
@@ -800,6 +818,19 @@ class DatabaseService
             return false;
         }
     }
+  
+      // Метод для изменения статуса "забанен"
+    public function toggleUserBan(int $userId, bool $isBanned): bool
+    {
+        try {
+            $stmt = $this->pdo->prepare("UPDATE users SET is_banned = ? WHERE id = ?");
+            $stmt->execute([$isBanned ? 't' : 'f', $userId]);
+            return $stmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            echo "Ошибка при изменении статуса забаненности пользователя: " . $e->getMessage();
+            return false;
+        }
+    }
 
     // Метод для получения списка ролей
     public function getRoles(): array
@@ -815,15 +846,31 @@ class DatabaseService
         }
     }
 
-    // Метод для изменения статуса "забанен"
-    public function toggleUserBan(int $userId, bool $isBanned): bool
+    // Метод для получения всех тегов
+    public function getAllTags(): array
     {
         try {
-            $stmt = $this->pdo->prepare("UPDATE users SET is_banned = ? WHERE id = ?");
-            $stmt->execute([$isBanned ? 't' : 'f', $userId]);
-            return $stmt->rowCount() > 0;
+            $stmt = $this->pdo->query("SELECT * FROM tags");
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
-            echo "Ошибка при изменении статуса забаненности пользователя: " . $e->getMessage();
+            echo "Ошибка при получении тегов: " . $e->getMessage();
+            return [];
+        }
+    }
+
+    // Метод для получения тегов поста
+    public function getTagsByPostId(int $postId): array
+    {
+        try {
+            $stmt = $this->pdo->prepare("
+                SELECT t.*
+                FROM tags t
+                WHERE t.post_id = :post_id
+            ");
+            $stmt->execute(['post_id' => $postId]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            echo "Ошибка при получении тегов поста: " . $e->getMessage();
             return false;
         }
     }
@@ -837,6 +884,35 @@ class DatabaseService
         } catch (PDOException $e) {
             echo "Ошибка при получении категорий: " . $e->getMessage();
             return [];
+        }
+    }
+
+
+    public function addTag(string $name, int $postId): bool
+    {
+        try {
+            $stmt = $this->pdo->prepare("INSERT INTO tags (name, post_id) VALUES (:name, :post_id);");
+            $stmt->execute(['name' => $name, 'post_id' => $postId]);
+            return true;
+        } catch (PDOException $e) {
+            error_log("Ошибка при добавлении тега: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function deleteTag(string $name, int $postId): bool
+    {
+        try {
+            $stmt = $this->pdo->prepare("DELETE FROM tags t
+                                        WHERE t.name = :name AND t.post_id = :post_id;");
+            $stmt->execute([
+                'name' => $name, 
+                'post_id' => $postId
+            ]);
+            return true;
+        } catch (PDOException $e) {
+            error_log("Ошибка при добавлении тега: " . $e->getMessage());
+            return false;
         }
     }
 
@@ -869,6 +945,38 @@ class DatabaseService
         }
     }
 
+    // Получить ID тега по имени
+    public function getTagIdByName(string $name): ?int
+    {
+        try {
+            $stmt = $this->pdo->prepare("SELECT id FROM tags WHERE name = :name LIMIT 1");
+            $stmt->execute(['name' => $name]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $result ? (int)$result['id'] : null;
+        } catch (PDOException $e) {
+            error_log("Ошибка при получении ID тега: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    // Добавить пост и вернуть его ID
+    public function addPostAndGetId(string $title, string $content, int $userId): ?int
+    {
+        try {
+            $stmt = $this->pdo->prepare("INSERT INTO posts (title, content, user_id) VALUES (:title, :content, :user_id) RETURNING id");
+            $stmt->execute([
+                'title' => $title,
+                'content' => $content,
+                'user_id' => $userId
+            ]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $result ? (int)$result['id'] : null;
+        } catch (PDOException $e) {
+            error_log("Ошибка при добавлении поста: " . $e->getMessage());
+            return null;
+        }
+    }
+=======
     // Метод для получения категории поста
     public function getCategoriesByPostId(int $postId): array
     {

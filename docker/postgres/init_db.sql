@@ -55,6 +55,7 @@ CREATE TABLE IF NOT EXISTS comments (
     is_delete BOOLEAN NOT NULL DEFAULT FALSE
 );
 
+
 -- Таблица categories
 CREATE TABLE IF NOT EXISTS categories (
     id SERIAL PRIMARY KEY,
@@ -68,6 +69,14 @@ CREATE TABLE IF NOT EXISTS category_posts (
     category_id INTEGER REFERENCES categories(id) ON DELETE CASCADE,
     post_id INTEGER REFERENCES posts(id) ON DELETE CASCADE,
     PRIMARY KEY (category_id, post_id)
+);
+
+-- Создаем таблицу tags
+CREATE TABLE IF NOT EXISTS tags (
+    id SERIAL PRIMARY KEY,
+    post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+    name VARCHAR(100) NOT NULL
+
 );
 
 -- Добавляем тестовых пользователей, если их нет

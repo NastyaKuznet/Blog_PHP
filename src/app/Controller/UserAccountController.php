@@ -23,8 +23,8 @@ class UserAccountController
 
     public function index(Request $request, Response $response): Response
     {
-        $user = $request->getAttribute('user');
-        $userId = $user['id'];
+        $userFromAttribute = $request->getAttribute('user');
+        $userId = $userFromAttribute['id'];
         $user = $this->userService->getUser($userId);
         $countPosts = $this->postService->getCountPosts($userId);
         $posts = $this->postService->getPostsByUserId($userId);

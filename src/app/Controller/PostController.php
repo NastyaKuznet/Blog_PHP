@@ -30,13 +30,14 @@ class PostController
         $sortBy = $queryParams['sort_by'] ?? null;
         $order = $queryParams['order'] ?? 'asc';
         $authorNickname = $queryParams['author_nickname'] ?? null;
+        $tag = $queryParams['tag_search'] ?? null;
         $categoryId = $queryParams['category_id'] ?? null;
 
         $categories = $this->categoryService->getCategoriesTree();
         if ($categoryId) {
             $posts = $this->postService->getPostsByCategoryId($categoryId);
         } else {
-            $posts = $this->postService->getAllPosts($sortBy, $order, $authorNickname);
+            $posts = $this->postService->getAllPosts($sortBy, $order, $authorNickname, $tag);
         }
 
         return $this->view->render($response, 'post/index.twig', [
@@ -145,15 +146,12 @@ class PostController
         $title = trim($data['title'] ?? '');
         $preview = trim($data['preview'] ?? '');
         $content = trim($data['content'] ?? '');
+        $tags = $data['tags'] ?? [];
 
         if (!empty($title) && !empty($preview) && !empty($content)) {
-            $success = $this->postService->addPost($title, $preview, $content, $user['id']);
+            $success = $this->postService->addPostWithTags($title, $content, $user['id'], $tags);
             if ($success) {
-                $response = new SlimResponse();
                 return $response->withHeader('Location', '/')->withStatus(302);
-            } else {
-                $response->getBody()->write("Ошибка при создании поста.");
-                return $response->withStatus(500)->withHeader('Content-Type', 'text/plain');
             }
         }
 
@@ -202,7 +200,7 @@ class PostController
             $categoryId = $data['category_id'] ? (int)$data['category_id'] : null;
 
             if (!empty($title) && !empty($content)) {
-                $isSuccess = $this->postService->editPost($postId, $title, $preview, $content, $user['id']);
+                $isSuccess = $this->postService->editPost($postId, $title, $preview, $content, $user['id'], $tags);
                 $isSuccessCategory = $this->categoryService->connectPostAndCategory($postId, $categoryId);
                 if ($isSuccess && $isSuccessCategory)
                 {
