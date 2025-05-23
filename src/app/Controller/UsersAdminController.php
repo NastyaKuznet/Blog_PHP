@@ -12,14 +12,12 @@ use NastyaKuznet\Blog\Middleware\RoleMiddlewareFactory;
 
 class UsersAdminController
 {
-    private DatabaseService $databaseService;
     private Twig $view;
     private UserService $userService;
     
 
-    public function __construct(DatabaseService $databaseService, UserService $userService, Twig $view)
+    public function __construct(UserService $userService, Twig $view)
     {
-        $this->databaseService = $databaseService;
         $this->userService = $userService;
         $this->view = $view;
     }
@@ -53,9 +51,9 @@ class UsersAdminController
     {
         $parsedBody = $request->getParsedBody();
         $userId = (int) ($parsedBody['user_id'] ?? 0);
-        $isBanned = (bool) ($parsedBody['is_banned'] ?? false);
+        $isBanned = (bool)$parsedBody['is_banned'];
 
-        $isSuccess = $this->databaseService->toggleUserBan($userId, $isBanned);
+        $isSuccess = $this->userService->toggleUserBan($userId, $isBanned);
 
         if ($isSuccess) {
             return $response->withHeader('Location', '/admin/users')->withStatus(302);

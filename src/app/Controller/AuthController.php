@@ -103,6 +103,13 @@ class AuthController
             ]);
         }
 
+        if($user->isBanned)
+        {
+            return $this->view->render($response, 'auth/login.twig', [
+                'error' => '<div class="error">Вы забанены!</div>'
+            ]);
+        }
+
         // Вызываем отдельный метод для установки токена
         $response = $this->setTokenInCookie($response, $user);
 

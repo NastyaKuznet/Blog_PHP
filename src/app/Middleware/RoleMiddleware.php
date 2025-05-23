@@ -55,7 +55,7 @@ class RoleMiddleware
             'reader'    => ['#^/post(\?.*)?$#', '#^/post/\d+$#'],
             'writer'    => ['#^/post(\?.*)?$#', '#^/post/\d+$#', '#^/post/\d+/like$#', '/account', '/post/create', '#^/comment/edit/\d+$#', '#^/comment/delete/\d+$#'],
             'moderator' => ['#^/post(\?.*)?$#', '#^/post/\d+$#', '#^/post/\d+/like$#', '/account', '/post/create', '#^/post/edit/\d+$#', '#^/comment/edit/\d+$#', '#^/comment/delete/\d+$#', '/post-non-publish', '#^/post-non-publish/\d+$#', '/categories', '/category/create', '#^/category/delete/\d+$#'],
-            'admin'     => ['#^/post(\?.*)?$#', '#^/post/\d+$#', '#^/post/\d+/like$#', '/account', '/post/create', '#^/post/edit/\d+$#', '/admin/users', '/admin/change_role', '/admin/delete_user', '#^/comment/edit/\d+$#', '#^/comment/delete/\d+$#', '/post-non-publish', '#^/post-non-publish/\d+$#', '/categories', '/category/create', '#^/category/delete/\d+$#'],
+            'admin'     => ['#^/post(\?.*)?$#', '#^/post/\d+$#', '#^/post/\d+/like$#', '/account', '/post/create', '#^/post/edit/\d+$#', '/admin/users', '/admin/change_role', '/admin/delete_user', '#^/comment/edit/\d+$#', '#^/comment/delete/\d+$#', '/post-non-publish', '#^/post-non-publish/\d+$#', '/categories', '/category/create', '#^/category/delete/\d+$#', '/admin/toggle_ban'],
         ];
 
         $role = $user['role'];

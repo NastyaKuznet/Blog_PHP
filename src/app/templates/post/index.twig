@@ -25,10 +25,10 @@
     {% if userRole in ['writer','moderator', 'admin'] %}
     <a href="/account">Аккаунт</a>
     |
+        <a href="/post/create">Написать пост</a>
+    |
     {% endif %}
     {% if userRole in ['moderator', 'admin'] %}
-        <a href="/post/create">Написать пост</a>
-        |
         <a href="/categories">Категории</a>
         |
         <a href="/post-non-publish">Неопубликованные посты</a>

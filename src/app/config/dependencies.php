@@ -73,5 +73,5 @@ return [
         ->constructor(get(PostService::class), get(UserService::class), get('view')),
     
     UsersAdminController::class => create(UsersAdminController::class)
-        ->constructor(get(DatabaseService::class), get(UserService::class), get('view')),
+        ->constructor(get(UserService::class), get('view')),
 ];

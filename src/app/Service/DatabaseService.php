@@ -394,9 +394,13 @@ class DatabaseService
             $stmt->execute([':post_id' => $postId]);
             $categoryId = $stmt->fetchColumn();
 
-            $stmt = $this->pdo->prepare("SELECT name FROM categories WHERE id = :category_id");
-            $stmt->execute([':category_id' => $categoryId]);
-            $categoryName = $stmt->fetchColumn();
+            $categoryName = "";
+            if($categoryId)
+            {
+                $stmt = $this->pdo->prepare("SELECT name FROM categories WHERE id = :category_id");
+                $stmt->execute([':category_id' => $categoryId]);
+                $categoryName = $stmt->fetchColumn();
+            }
 
             $this->pdo->commit();
 
@@ -815,11 +819,8 @@ class DatabaseService
     public function toggleUserBan(int $userId, bool $isBanned): bool
     {
         try {
-            $stmt = $this->pdo->prepare("UPDATE users SET is_banned = :is_banned WHERE id = :user_id");
-            $stmt->execute([
-                'is_banned' => $isBanned,
-                'user_id' => $userId
-            ]);
+            $stmt = $this->pdo->prepare("UPDATE users SET is_banned = ? WHERE id = ?");
+            $stmt->execute([$isBanned ? 't' : 'f', $userId]);
             return $stmt->rowCount() > 0;
         } catch (PDOException $e) {
             echo "Ошибка при изменении статуса забаненности пользователя: " . $e->getMessage();

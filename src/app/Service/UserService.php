@@ -55,4 +55,9 @@ class UserService
     {
         return $this->databaseService->deleteUser($user_id);
     }
+
+    public function toggleUserBan(int $userId, bool $isBanned): bool
+    {
+        return $this->databaseService->toggleUserBan($userId, $isBanned);
+    }
 }
