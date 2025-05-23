@@ -2,9 +2,8 @@
 
 namespace NastyaKuznet\Blog\Controller;
 
-use NastyaKuznet\Blog\Model\Comment;
-use NastyaKuznet\Blog\Model\Post;
 use NastyaKuznet\Blog\Service\PostService;
+use NastyaKuznet\Blog\Service\CategoryService;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Psr7\Response as SlimResponse;
@@ -13,28 +12,50 @@ use Slim\Views\Twig;
 class PostController
 {
     private PostService $postService;
+    private CategoryService $categoryService;
     private Twig $view;
 
-    public function __construct(PostService $postService, Twig $view)
+    public function __construct(PostService $postService, CategoryService $categoryService, Twig $view)
     {
         $this->postService = $postService;
+        $this->categoryService = $categoryService;
         $this->view = $view;
     }
 
     public function index(Request $request, Response $response): Response
     {
         $user = $request->getAttribute('user');
+        var_dump($user);
         $queryParams = $request->getQueryParams();
         $sortBy = $queryParams['sort_by'] ?? null;
         $order = $queryParams['order'] ?? 'asc';
         $authorNickname = $queryParams['author_nickname'] ?? null;
         $tag = $queryParams['tag_search'] ?? null;
+        $categoryId = $queryParams['category_id'] ?? null;
 
-        $posts = $this->postService->getAllPosts($sortBy, $order, $authorNickname, $tag);
+        $categories = $this->categoryService->getCategoriesTree();
+        if ($categoryId) {
+            $posts = $this->postService->getPostsByCategoryId($categoryId);
+        } else {
+            $posts = $this->postService->getAllPosts($sortBy, $order, $authorNickname, $tag);
+        }
 
         return $this->view->render($response, 'post/index.twig', [
             'posts' => $posts,
-            'userRole' => $user['role'],
+            'userRole' => is_array($user) ? $user['role'] : 'reader',
+            'app' => [  
+                'request' => $request,
+            ],
+            'categories' => $categories,
+        ]);
+    }
+
+    public function indexNonPublish(Request $request, Response $response): Response
+    {
+        $posts = $this->postService->getAllNonPublishPosts();
+
+        return $this->view->render($response, 'post/nonPublish/index.twig', [
+            'posts' => $posts,
             'app' => [  
                 'request' => $request,
             ],
@@ -51,13 +72,21 @@ class PostController
             $response->getBody()->write("Пост не найден.");
             return $response->withStatus(404)->withHeader('Content-Type', 'text/plain');
         }
-
+        $isLikedByUser = null;
+        if($user)
+        {
+            $isLikedByUser = $this->postService->checkLikeByPostIdAndUserId($postId, $user['id']);
+        }
         $comments = $this->postService->getCommentsByPostId($postId);
 
         if ($request->getMethod() === 'GET') {
             $data = [
                 'post' => $post,
-                'comments' => $comments
+                'comments' => $comments,
+                'app' => [
+                    'user' => $user 
+                ],
+                'isLikedByUser' => $isLikedByUser
             ];
 
             try {
@@ -115,12 +144,12 @@ class PostController
 
         $data = $request->getParsedBody();
         $title = trim($data['title'] ?? '');
+        $preview = trim($data['preview'] ?? '');
         $content = trim($data['content'] ?? '');
         $tags = $data['tags'] ?? [];
 
-        if (!empty($title) && !empty($content)) {
+        if (!empty($title) && !empty($preview) && !empty($content)) {
             $success = $this->postService->addPostWithTags($title, $content, $user['id'], $tags);
-
             if ($success) {
                 return $response->withHeader('Location', '/')->withStatus(302);
             }
@@ -133,19 +162,22 @@ class PostController
 
     public function edit(Request $request, Response $response, array $args): Response
     {
+        $user = $request->getAttribute('user');
         $postId = (int)$args['id'];
         $data = $request->getParsedBody();
 
         $post = $this->postService->getPostById($postId);
         if (!$post) {
-        $response->getBody()->write("Пост не найден.");
-        return $response->withStatus(404);
+            $response->getBody()->write("Пост не найден.");
+            return $response->withStatus(404);
         }
+        $categories = $this->categoryService->getAllCategories();
 
         if ($request->getMethod() === 'GET') {
             try {
                 return $this->view->render($response, 'post/edit.twig', [
                     'post' => $post,
+                    'categories' => $categories,
                 ]);
             } catch (\Twig\Error\LoaderError $e) {
                 $response->getBody()->write("Ошибка загрузки шаблона: " . $e->getMessage());
@@ -163,12 +195,16 @@ class PostController
 
         if ($action === 'save') {
             $title = $data['title'] ?? '';
+            $preview = $data['preview'] ?? '';
             $content = $data['content'] ?? '';
-            $tags = $data['tags'] ?? [];
+            $categoryId = $data['category_id'] ? (int)$data['category_id'] : null;
 
             if (!empty($title) && !empty($content)) {
-                $isSuccess = $this->postService->editPost($postId, $title, $content, $tags);
-                if ($isSuccess) {
+                $isSuccess = $this->postService->editPost($postId, $title, $preview, $content, $user['id'], $tags);
+                $isSuccessCategory = $this->categoryService->connectPostAndCategory($postId, $categoryId);
+                if ($isSuccess && $isSuccessCategory)
+                {
+                    $response = new SlimResponse();
                     return $response->withHeader('Location', '/')->withStatus(302);
                 }
                 $response->getBody()->write("Неудалось сохранить пост.");
@@ -178,7 +214,7 @@ class PostController
                 return $response->withStatus(400);
             }
         } elseif ($action === 'delete') {
-            $isSuccess = $this->postService->deletePostAndComments($postId);
+            $isSuccess = $this->postService->deletePost($postId);
             if ($isSuccess)
             {
                 $response = new SlimResponse();
@@ -192,17 +228,106 @@ class PostController
         }
     }
 
+    public function editNonPublish(Request $request, Response $response, array $args): Response
+    {
+        $user = $request->getAttribute('user');
+        $postId = (int)$args['id'];
+        $data = $request->getParsedBody();
+
+        $post = $this->postService->getNonPublishPostById($postId);
+        if (!$post) {
+            $response->getBody()->write("Пост не найден.");
+            return $response->withStatus(404);
+        }
+        $categories = $this->categoryService->getAllCategories();
+
+        if ($request->getMethod() === 'GET') {
+            try {
+                return $this->view->render($response, 'post/nonPublish/edit.twig', [
+                    'post' => $post,
+                    'categories' => $categories,
+                ]);
+            } catch (\Twig\Error\LoaderError $e) {
+                $response->getBody()->write("Ошибка загрузки шаблона: " . $e->getMessage());
+                return $response->withStatus(500)->withHeader('Content-Type', 'text/plain');
+            } catch (\Twig\Error\RuntimeError $e) {
+                $response->getBody()->write("Ошибка времени выполнения шаблона: " . $e->getMessage());
+                return $response->withStatus(500)->withHeader('Content-Type', 'text/plain');
+            } catch (\Twig\Error\SyntaxError $e) {
+                $response->getBody()->write("Синтаксическая ошибка в шаблоне: " . $e->getMessage());
+                return $response->withStatus(500)->withHeader('Content-Type', 'text/plain');
+            }
+        }
+
+        $action = $data['action'] ?? null;
+        $title = $data['title'] ?? '';
+        $preview = $data['preview'] ?? '';
+        $content = $data['content'] ?? '';
+        $categoryId = $data['category_id'] ? (int)$data['category_id'] : null;
+
+        if ($action === 'save') {
+            if (!empty($title) && !empty($preview) && !empty($content)) {
+                $isSuccessEditPost = $this->postService->editPost($postId, $title, $preview, $content, $user['id']);
+                $isSuccessCategory = $this->categoryService->connectPostAndCategory($postId, $categoryId);
+                if ($isSuccessEditPost && $isSuccessCategory)
+                {
+                    $response = new SlimResponse();
+                    return $response->withHeader('Location', '/post-non-publish')->withStatus(302);
+                }
+                $response->getBody()->write("Неудалось сохранить пост.");
+                return $response->withStatus(500);
+            } else {
+                $response->getBody()->write("Ошибка при сохранении изменений: Заголовок и содержание обязательны.");
+                return $response->withStatus(400);
+            }
+        } elseif ($action === 'delete') {
+            $isSuccess = $this->postService->deletePost($postId);
+            if ($isSuccess)
+            {
+                $response = new SlimResponse();
+                return $response->withHeader('Location', '/post-non-publish')->withStatus(302);
+            }
+            $response->getBody()->write("Неудалось удалить пост.");
+            return $response->withStatus(500);
+        } elseif ($action === 'publish') {
+            if (!empty($title) && !empty($preview) && !empty($content)) {
+                $isSuccessEditPost = $this->postService->editPost($postId, $title, $preview, $content, $user['id']);
+                $isSuccess = $this->postService->publishPost($postId);
+                $isSuccessCategory = $this->categoryService->connectPostAndCategory($postId, $categoryId);
+                if ($isSuccessEditPost && $isSuccess && $isSuccessCategory)
+                {
+                    $response = new SlimResponse();
+                    return $response->withHeader('Location', '/post-non-publish')->withStatus(302);
+                }
+            }
+            $response->getBody()->write("Неудалось опубликовать пост.");
+            return $response->withStatus(500);
+        }else {
+            $response->getBody()->write("Недопустимое действие.");
+            return $response->withStatus(400);
+        }
+    }
+
     public function likePost(Request $request, Response $response, array $args): Response
     {
+        $user = $request->getAttribute('user');
         $postId = (int)$args['id'];
 
-        $isSuccess = $this->postService->addLike($postId);
+        $isLikedByUser = $this->postService->checkLikeByPostIdAndUserId($postId, $user['id']);
+        if($isLikedByUser)
+        {
+            $isSuccess = $this->postService->deleteLike($postId, $user['id']);
+        }
+        else 
+        {
+            $isSuccess = $this->postService->addLike($postId, $user['id']);
+        }      
 
         if ($isSuccess) {
             $response = new SlimResponse();
-            return $response->withHeader('Location', '/')->withStatus(302);
+            return $response->withHeader('Location', '/post/' . $postId)->withStatus(302);
         } else {
-            $response->getBody()->write("Не удалось поставить лайк посту.");
+            $response->getBody()->write("Не удалось поставить лайк посту / снять лайк с поста.");
             return $response->withStatus(500);
         }
     }

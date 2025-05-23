@@ -9,6 +9,8 @@
     <h1>Личный кабинет</h1>
     <p><strong>Имя пользователя:</strong> {{ user.nickname|escape }}</p>
     <p><strong>Роль:</strong> {{ user.roleName|escape }}</p>
+    <p><strong>Дата регистрации:</strong> {{ user.registerDate|date('H:i d.m.Y', 'Asia/Yekaterinburg') }}</p>
+    <p><strong>Заблокирован:</strong> {{ user.isBanned ? 'Да' : 'Нет' }}</p>
 
     {% if user.roleName != 'reader' %}
         <p><strong>Количество постов:</strong> {{ countPosts|escape }}</p>
@@ -17,13 +19,13 @@
             {% for post in posts %}
                 <li>
                     <strong>{{ post.title|escape }}</strong><br>
-                    {{ post.content|escape|nl2br }}<br>
+                    {{ post.preview|escape|nl2br }}<br>
                     <small>{{ post.created_at|escape }}</small>
                 </li>
             {% endfor %}
         </ul>
     {% endif %}
 
-    <a href="/post">← На главную</a>
+    <a href="/">← На главную</a>
 </body>
 </html>

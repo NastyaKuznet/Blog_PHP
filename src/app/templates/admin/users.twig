@@ -12,6 +12,8 @@
             <th>ID</th>
             <th>Никнейм</th>
             <th>Роль</th>
+            <th>Дата регистрации</th>
+            <th>Забанен</th>
             <th>Действия</th>
         </tr>
         {% for user in users %}
@@ -19,6 +21,8 @@
                 <td>{{ user.id|escape }}</td>
                 <td>{{ user.nickname|escape }}</td>
                 <td>{{ user.roleName|escape }}</td>
+                <td>{{ user.registerDate|date('H:i d.m.Y', 'Asia/Yekaterinburg') }}</td>
+                <td>{{ user.isBanned ? 'Да' : 'Нет' }}</td>
                 <td>
                     <!-- Форма для изменения роли -->
                     <form method="POST" action="/admin/change_role">
@@ -32,10 +36,11 @@
                         <button type="submit">Сохранить роль</button>
                     </form>
 
-                    <!-- Форма для удаления пользователя -->
-                    <form method="POST" action="/admin/delete_user">
+                    <!-- Форма для изменения статуса забаненности -->
+                    <form method="POST" action="/admin/toggle_ban">
                         <input type="hidden" name="user_id" value="{{ user.id|escape }}">
-                        <button type="submit">Удалить</button>
+                        <input type="hidden" name="is_banned" value="{{ user.isBanned ? 0 : 1 }}">
+                        <button type="submit">{{ user.isBanned ? 'Разбанить' : 'Забанить' }}</button>
                     </form>
                 </td>
             </tr>

@@ -2,8 +2,10 @@
 use Slim\Factory\AppFactory;
 use NastyaKuznet\Blog\Controller\PostController;
 use NastyaKuznet\Blog\Controller\AuthController;
+use NastyaKuznet\Blog\Controller\CommentController;
 use NastyaKuznet\Blog\Middleware\RoleMiddleware;
 use NastyaKuznet\Blog\Middleware\AuthMiddleware;
+use NastyaKuznet\Blog\Controller\CategoryController;
 use Slim\Views\TwigMiddleware;
 use Slim\Routing\RouteCollectorProxy;
 use NastyaKuznet\Blog\Controller\UserAccountController;
@@ -42,8 +44,6 @@ $container = $app->getContainer();
 $app->add($container->get(RoleMiddleware::class));
 $app->add($container->get(AuthMiddleware::class));
 
-
-
 $app->get('/login', [AuthController::class, 'login']);
 $app->post('/login', [AuthController::class, 'login']);
 $app->get('/register', [AuthController::class, 'register']);
@@ -59,7 +59,7 @@ $app->get('/debug/routes', function ($request, $response) use ($app) {
     return $response;
 });
 
-$app->get('/', [AuthController::class, 'home']);
+//$app->get('/', [AuthController::class, 'home']);
 
 // Группировка роутов по префиксу 'post'
 $app->group('/post', function (RouteCollectorProxy $group) use ($container) {
@@ -72,15 +72,28 @@ $app->group('/post', function (RouteCollectorProxy $group) use ($container) {
 $app->group('/admin', function (RouteCollectorProxy $group) use ($container) {
     $group->get('/users', [UsersAdminController::class, 'index']);
     $group->post('/change_role', [UsersAdminController::class, 'changeRole']);
-    $group->post('/delete_user', [UsersAdminController::class, 'deleteUser']);
+    $group->post('/toggle_ban', [UsersAdminController::class, 'toggleBan']); 
 });
 
-$app->get('/post', [PostController::class, 'index']);
+$app->get('/categories', [CategoryController::class, 'index']);
+$app->get('/category/create', [CategoryController::class, 'create']);
+$app->post('/category/create', [CategoryController::class, 'create']);
+$app->post('/category/delete/{id}', [CategoryController::class, 'delete']);
+
+$app->get('/', [PostController::class, 'index']);
+
+$app->get('/post-non-publish', [PostController::class, 'indexNonPublish']);
+
+$app->map(['GET', 'POST'],'/post-non-publish/{id}', [PostController::class, 'editNonPublish']);
 
 $app->map(['GET', 'POST'],'/post/{id}', [PostController::class, 'show']);
 
 $app->post('/post/{id}/like', [PostController::class, 'likePost']);
 
 $app->get('/account', [UserAccountController::class, 'index']);
+
+$app->get('/comment/edit/{id}', [CommentController::class, 'editForm']);
+$app->post('/comment/edit/{id}', [CommentController::class, 'update']);
+$app->post('/comment/delete/{id}', [CommentController::class, 'delete']);
 
 $app->run(); 

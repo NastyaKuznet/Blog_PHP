@@ -2,6 +2,7 @@
 <html>
 <head>
     <title>Создание поста</title>
+    <link rel="stylesheet" href="/style.css">
     <script>
         // Добавляем тег в список перед отправкой формы
         function addTag() {
@@ -35,6 +36,10 @@
         <input type="text" id="title" name="title" required>
     </div>
     <div>
+        <label for="preview">Превью:</label><br>
+        <textarea id="preview" name="preview" rows="5" cols="50" required></textarea>
+    </div>
+    <div>
         <label for="content">Содержание:</label><br>
         <textarea id="content" name="content" rows="5" cols="50" required></textarea>
     </div>
@@ -46,7 +51,7 @@
 
     <div id="selected_tags" style="margin-top: 10px;"></div>
     <div>
-        <button type="submit">Опубликовать</button>
+        <button type="submit">Создать</button>
         <a href="/">Лента</a>
     </div>
 </form>

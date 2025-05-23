@@ -22,9 +22,9 @@ class AuthService
      * @param string $roleName
      * @return bool
      */
-    public function registerUser(string $username, string $password, string $roleId): bool
+    public function registerUser(string $username, string $password): bool
     {
-        return $this->databaseService->addUser($username, $password, $roleId);
+        return $this->databaseService->addUser($username, $password);
     }
 
     public function checkUserRegistration(string $username): bool
@@ -48,11 +48,13 @@ class AuthService
         }
 
         return new User(
-            $userData['id'],
+            $userData['id'], 
             $userData['nickname'],
             $userData['password'],
             $userData['role_id'],
-            $userData['role_name']
+            $userData['role_name'],
+            $userData['register_date'],    
+            $userData['is_banned']          
         );
     }
 
