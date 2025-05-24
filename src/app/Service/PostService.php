@@ -95,6 +95,7 @@ class PostService
         $postsFromDb = $this->databaseService->getAllNonPublishPosts();
         $posts = [];
         foreach ($postsFromDb as $postData) {
+            $tags = $this->getTagsByPostId($postData['id']);
             $posts[] = new Post(
                 $postData['id'],
                 $postData['title'],
@@ -108,7 +109,8 @@ class PostService
                 $postData['publish_date'],
                 $postData['edit_date'],
                 null,
-                null
+                null,
+                $tags
             );
         }
         return $posts;
@@ -121,7 +123,7 @@ class PostService
         if (!$postFromDb) {
             return null;
         }
-        $tags = $this->getTagsByPostId($postFromDb['id']);
+        $tags = $this->getTagsByPostId($postFromDb['post']['id']);
         try {
             return new Post(
                 $postFromDb['post']['id'],
@@ -194,7 +196,7 @@ class PostService
         if (!$postFromDb) {
             return null;
         }
-
+        $tags = $this->getTagsByPostId($postFromDb['post']['id']);
         try {
             return new Post(
                 $postFromDb['post']['id'],
@@ -209,7 +211,8 @@ class PostService
                 $postFromDb['post']['publish_date'],
                 $postFromDb['post']['edit_date'],
                 $postFromDb['category_id'],
-                $postFromDb['category_name']
+                $postFromDb['category_name'],
+                $tags
             );
         } catch (\Exception $e) {
             error_log("Ошибка при создании объекта Post: " . $e->getMessage());
@@ -353,9 +356,9 @@ class PostService
         return $tags;
     }
 
-    public function addPostWithTags(string $title, string $content, int $userId, array $tags): bool
+    public function addPostWithTags(string $title, string $preview, string $content, int $userId, array $tags): bool
     {
-        $postId = $this->databaseService->addPostAndGetId($title, $content, $userId);
+        $postId = $this->databaseService->addPostAndGetId($title, $preview, $content, $userId);
         if (!$postId) return false;
 
         foreach ($tags as $tagName) {

@@ -18,6 +18,7 @@
             <div style="margin-bottom: 20px; border: 1px solid #ccc; padding: 10px; word-wrap: break-word;">
                 <h3>{{ post.title|escape }}</h3>
                 <p>{{ post.preview|nl2br }}</p>
+                <p>Теги: {% for tag in post.tags %}{{ tag.name }}{% if not loop.last %}, {% endif %}{% endfor %}</p>
                 <p>Дата создания поста: {{ post.createDate|date('H:i d.m.Y', 'Asia/Yekaterinburg') }}</p>
                 <p>Автор: {{ post.userNickname|escape }}</p>
                 <a href="/post-non-publish/{{ post.id|escape }}">Открыть пост</a>

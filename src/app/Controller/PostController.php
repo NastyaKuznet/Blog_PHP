@@ -25,7 +25,6 @@ class PostController
     public function index(Request $request, Response $response): Response
     {
         $user = $request->getAttribute('user');
-        var_dump($user);
         $queryParams = $request->getQueryParams();
         $sortBy = $queryParams['sort_by'] ?? null;
         $order = $queryParams['order'] ?? 'asc';
@@ -149,9 +148,14 @@ class PostController
         $tags = $data['tags'] ?? [];
 
         if (!empty($title) && !empty($preview) && !empty($content)) {
-            $success = $this->postService->addPostWithTags($title, $content, $user['id'], $tags);
+            $success = $this->postService->addPostWithTags($title, $preview, $content, $user['id'], $tags);
             if ($success) {
                 return $response->withHeader('Location', '/')->withStatus(302);
+            }
+            else
+            {
+                $response->getBody()->write("Не удалось сохранить пост.");
+                return $response->withStatus(500)->withHeader('Content-Type', 'text/plain');
             }
         }
 
@@ -197,6 +201,7 @@ class PostController
             $title = $data['title'] ?? '';
             $preview = $data['preview'] ?? '';
             $content = $data['content'] ?? '';
+            $tags = $data['tags'] ?? [];
             $categoryId = $data['category_id'] ? (int)$data['category_id'] : null;
 
             if (!empty($title) && !empty($content)) {
@@ -263,11 +268,12 @@ class PostController
         $title = $data['title'] ?? '';
         $preview = $data['preview'] ?? '';
         $content = $data['content'] ?? '';
+        $tags = $data['tags'] ?? [];
         $categoryId = $data['category_id'] ? (int)$data['category_id'] : null;
 
         if ($action === 'save') {
             if (!empty($title) && !empty($preview) && !empty($content)) {
-                $isSuccessEditPost = $this->postService->editPost($postId, $title, $preview, $content, $user['id']);
+                $isSuccessEditPost = $this->postService->editPost($postId, $title, $preview, $content, $user['id'], $tags);
                 $isSuccessCategory = $this->categoryService->connectPostAndCategory($postId, $categoryId);
                 if ($isSuccessEditPost && $isSuccessCategory)
                 {
@@ -291,7 +297,7 @@ class PostController
             return $response->withStatus(500);
         } elseif ($action === 'publish') {
             if (!empty($title) && !empty($preview) && !empty($content)) {
-                $isSuccessEditPost = $this->postService->editPost($postId, $title, $preview, $content, $user['id']);
+                $isSuccessEditPost = $this->postService->editPost($postId, $title, $preview, $content, $user['id'], $tags);
                 $isSuccess = $this->postService->publishPost($postId);
                 $isSuccessCategory = $this->categoryService->connectPostAndCategory($postId, $categoryId);
                 if ($isSuccessEditPost && $isSuccess && $isSuccessCategory)

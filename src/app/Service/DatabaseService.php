@@ -250,13 +250,23 @@ class DatabaseService
     public function getPostsByTag(string $tagName): array
     {
         try {
-            $stmt = $this->pdo->prepare("SELECT p.* , u.nickname as user_nickname, COUNT(c.id) as comment_count
+            $stmt = $this->pdo->prepare("SELECT p.* ,
+                                        u.nickname as user_nickname, 
+                                        u2.nickname as last_editor_nickname,
+                                        ca.id as category_id,
+                                        ca.name as category_name,
+                                        COUNT(l.id) as like_count,
+                                        COUNT(CASE WHEN c.is_delete = false THEN c.id ELSE NULL END) as comment_count
                                         FROM tags t 
                                         JOIN posts p ON t.post_id = p.id
                                         LEFT JOIN comments c ON p.id = c.post_id
-                                        JOIN users u ON p.user_id = u.id  
+                                        LEFT JOIN likes l ON p.id = l.post_id
+                                        LEFT JOIN category_posts cp ON cp.post_id = p.id
+                                        LEFT JOIN categories ca ON ca.id = cp.category_id
+                                        JOIN users u2 ON p.last_editor_id = u2.id 
+                                        JOIN users u ON p.author_id = u.id  
                                         WHERE t.name = :tag_name
-                                        GROUP BY p.id, u.nickname");
+                                        GROUP BY p.id, u.nickname, u2.nickname, ca.id");
             $stmt->execute(['tag_name' => $tagName]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
@@ -871,7 +881,7 @@ class DatabaseService
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             echo "Ошибка при получении тегов поста: " . $e->getMessage();
-            return false;
+            return [];
         }
     }
 
@@ -960,12 +970,13 @@ class DatabaseService
     }
 
     // Добавить пост и вернуть его ID
-    public function addPostAndGetId(string $title, string $content, int $userId): ?int
+    public function addPostAndGetId(string $title, string $preview, string $content, int $userId): ?int
     {
         try {
-            $stmt = $this->pdo->prepare("INSERT INTO posts (title, content, user_id) VALUES (:title, :content, :user_id) RETURNING id");
+            $stmt = $this->pdo->prepare("INSERT INTO posts (title, preview, content, author_id, last_editor_id) VALUES (:title, :preview, :content, :user_id, :user_id) RETURNING id");
             $stmt->execute([
                 'title' => $title,
+                'preview' => $preview,
                 'content' => $content,
                 'user_id' => $userId
             ]);
@@ -976,7 +987,7 @@ class DatabaseService
             return null;
         }
     }
-=======
+
     // Метод для получения категории поста
     public function getCategoriesByPostId(int $postId): array
     {
