@@ -2,17 +2,17 @@
 
 namespace NastyaKuznet\Blog\Controller;
 
-use NastyaKuznet\Blog\Service\CategoryService;
+use NastyaKuznet\Blog\Service\interfaces\CategoryServiceInterface;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Views\Twig;
 
 class CategoryController
 {
-    private CategoryService $categoryService;
+    private CategoryServiceInterface $categoryService;
     private Twig $view;
 
-    public function __construct(CategoryService $categoryService, Twig $view)
+    public function __construct(CategoryServiceInterface $categoryService, Twig $view)
     {
         $this->categoryService = $categoryService;
         $this->view = $view;

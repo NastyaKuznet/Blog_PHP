@@ -2,14 +2,16 @@
 
 namespace NastyaKuznet\Blog\Service;
 
-use NastyaKuznet\Blog\Model\Role;
 use NastyaKuznet\Blog\Model\User;
+use NastyaKuznet\Blog\Service\interfaces\AuthServiceInterface;
+use NastyaKuznet\Blog\Service\interfaces\DatabaseServiceInterface;
 
-class AuthService
+
+class AuthService implements AuthServiceInterface
 {
-    private $databaseService;
+    private DatabaseServiceInterface $databaseService;
 
-    public function __construct(DatabaseService $databaseService)
+    public function __construct(DatabaseServiceInterface $databaseService)
     {
         $this->databaseService = $databaseService;
     }
@@ -101,7 +103,7 @@ class AuthService
     /**
      * Base64UrlDecode
      */
-    public function base64UrlDecode(string $data): string
+    private function base64UrlDecode(string $data): string
     {
         return base64_decode(str_pad(strtr($data, '-_', '+/'), strlen($data) % 4, '=', STR_PAD_RIGHT));
     }

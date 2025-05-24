@@ -2,8 +2,9 @@
 
 namespace NastyaKuznet\Blog\Controller;
 
-use NastyaKuznet\Blog\Service\PostService;
-use NastyaKuznet\Blog\Service\CategoryService;
+use NastyaKuznet\Blog\Service\interfaces\PostServiceInterface;
+use NastyaKuznet\Blog\Service\interfaces\CategoryServiceInterface;
+use NastyaKuznet\Blog\Service\interfaces\CommentServiceInterface;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Psr7\Response as SlimResponse;
@@ -11,14 +12,20 @@ use Slim\Views\Twig;
 
 class PostController
 {
-    private PostService $postService;
-    private CategoryService $categoryService;
+    private PostServiceInterface $postService;
+    private CategoryServiceInterface $categoryService;
+    private CommentServiceInterface $commentService;
     private Twig $view;
 
-    public function __construct(PostService $postService, CategoryService $categoryService, Twig $view)
+    public function __construct(
+        PostServiceInterface $postService, 
+        CategoryServiceInterface $categoryService, 
+        CommentServiceInterface $commentService, 
+        Twig $view)
     {
         $this->postService = $postService;
         $this->categoryService = $categoryService;
+        $this->commentService = $commentService;
         $this->view = $view;
     }
 
@@ -76,7 +83,7 @@ class PostController
         {
             $isLikedByUser = $this->postService->checkLikeByPostIdAndUserId($postId, $user['id']);
         }
-        $comments = $this->postService->getCommentsByPostId($postId);
+        $comments = $this->commentService->getCommentsByPostId($postId);
 
         if ($request->getMethod() === 'GET') {
             $data = [
@@ -106,7 +113,7 @@ class PostController
         $commentText = trim($data['comment'] ?? '');
 
         if (!empty($commentText)) {
-            $isSuccess = $this->postService->addComment($commentText, $postId, $user['id']);
+            $isSuccess = $this->commentService->addComment($commentText, $postId, $user['id']);
 
             if ($isSuccess) {
                 $response = new SlimResponse();

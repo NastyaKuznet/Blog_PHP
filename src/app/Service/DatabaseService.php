@@ -1,10 +1,12 @@
 <?php
 namespace NastyaKuznet\Blog\Service;
 
+use NastyaKuznet\Blog\Service\interfaces\DatabaseServiceInterface;
+
 use PDO;
 use PDOException; 
 
-class DatabaseService
+class DatabaseService implements DatabaseServiceInterface
 {
     public $pdo;
 
@@ -25,7 +27,7 @@ class DatabaseService
     }
 
     // Метод для получения всех опубликованных постов
-    public function getAllPosts()
+    public function getAllPosts(): array
     {
         try {
             $stmt = $this->pdo->query("SELECT p.*, 
@@ -52,7 +54,7 @@ class DatabaseService
     }
 
     // Метод для получения постов, отсортированных по нику автора
-    public function getPostsByAuthorAlphabetical()
+    public function getPostsByAuthorAlphabetical(): array
     {
         try {
             $stmt = $this->pdo->query("SELECT p.* , 
@@ -80,7 +82,7 @@ class DatabaseService
     }
 
     // Метод для получения постов по автору, отсортированных по нику автора в обратном порядке
-    public function getPostsByAuthorReverseAlphabetical()
+    public function getPostsByAuthorReverseAlphabetical(): array
     {
         try {
             $stmt = $this->pdo->query("SELECT p.*, 
@@ -108,7 +110,7 @@ class DatabaseService
     }
 
     // Метод для получения всех постов по конкретному нику автора
-    public function getPostsByAuthor($author_nickname)
+    public function getPostsByAuthor($author_nickname): array
     {
         try {
             $stmt = $this->pdo->prepare("SELECT p.*, 
@@ -136,7 +138,7 @@ class DatabaseService
     }
 
     // Метод для получения всех постов, отсортированных по количеству лайков в порядке возрастания
-    public function getPostsByLikesAscending()
+    public function getPostsByLikesAscending(): array
     {
         try {
             $stmt = $this->pdo->query("SELECT p.*, 
@@ -164,7 +166,7 @@ class DatabaseService
     }
 
     // Метод для получения всех постов, отсортированных по количеству лайков в порядке убывания
-    public function getPostsByLikesDescending()
+    public function getPostsByLikesDescending(): array
     {
         try {
             $stmt = $this->pdo->query("SELECT p.*, 
@@ -192,7 +194,7 @@ class DatabaseService
     }
 
     // Метод для получения всех постов, отсортированных по количеству комментариев в порядке возрастания
-    public function getPostsByCommentsAscending()
+    public function getPostsByCommentsAscending(): array
     {
         try {
             $stmt = $this->pdo->query("SELECT p.*, 
@@ -220,7 +222,7 @@ class DatabaseService
     }
 
     // Метод для получения всех постов, отсортированных по количеству комментариев в порядке убывания
-    public function getPostsByCommentsDescending()
+    public function getPostsByCommentsDescending(): array
     {
         try {
             $stmt = $this->pdo->query("SELECT p.*, 
@@ -304,7 +306,7 @@ class DatabaseService
     }
 
     // Метод для получения всех не опубликованных постов
-    public function getAllNonPublishPosts()
+    public function getAllNonPublishPosts(): array
     {
         try {
             $stmt = $this->pdo->query("SELECT p.*, 
@@ -323,7 +325,7 @@ class DatabaseService
     }
 
     // Метод для получения поста по ид
-    function getPostById(int $postId): ?array
+    public function getPostById(int $postId): ?array
     {
         try {
             $this->pdo->beginTransaction();
@@ -390,7 +392,7 @@ class DatabaseService
     }
 
     // Метод для получения неопубликованного поста по ид
-    function getNonPublishPostById(int $postId): ?array
+    public function getNonPublishPostById(int $postId): ?array
     {
         try {
             $this->pdo->beginTransaction();
@@ -546,7 +548,7 @@ class DatabaseService
     }
 
     // Метод для получения коментариев по ид поста
-    public function getCommentsById($postId)
+    public function getCommentsByPostId(int $postId): array
     {
         try {
             $stmt = $this->pdo->prepare("SELECT c.*, u.nickname as user_nickname
@@ -576,7 +578,7 @@ class DatabaseService
     }
 
     // Метод для добавления коментария по ид поста
-    public function addComment($content, $postId, $userId)
+    public function addComment(string $content, int $postId, int $userId): bool
     {
         try {
             $stmt = $this->pdo->prepare("INSERT INTO comments (content, post_id, user_id, created_date, is_edit, is_delete) 
@@ -628,7 +630,7 @@ class DatabaseService
     }
 
     // Метод для проверки поставлен ли лайк пользателем по определенному посту
-    public function checkLikeByPostIdAndUserId($postId, $userId): bool
+    public function checkLikeByPostIdAndUserId(int $postId, int $userId): bool
     {
         try {
             $stmt = $this->pdo->prepare("SELECT * 
@@ -682,7 +684,7 @@ class DatabaseService
     }
 
     // Метод для получения информации о пользователе по его ID
-    public function getUserInfo($user_id)
+    public function getUserInfo(int $user_id): array
     {
         try {
             $stmt = $this->pdo->prepare("SELECT u.*, r.name AS role_name 
@@ -698,7 +700,7 @@ class DatabaseService
     }
 
     // Метод для получения списка всех пользователей с их ID, ником и ролью
-    public function getAllUsers()
+    public function getAllUsers(): array
     {
         try {
             $stmt = $this->pdo->query("SELECT u.*, r.name as role_name 
@@ -713,7 +715,7 @@ class DatabaseService
     }
 
     // Метод для изменения роли пользователя
-    public function changeUserRole($user_id, $new_role_id)
+    public function changeUserRole(int $user_id, int $new_role_id): bool
     {
         try {
             $stmt = $this->pdo->prepare("UPDATE users SET role_id = :new_role_id WHERE id = :user_id");
@@ -776,7 +778,7 @@ class DatabaseService
     }
 
     // Метод для добавления нового пользователя
-    public function addUser($nickname, $password)
+    public function addUser(string $nickname, string $password): bool
     {
         try {
             $stmt = $this->pdo->prepare("INSERT INTO users (nickname, password, role_id) VALUES (:nickname, :password, 2)");
@@ -792,7 +794,7 @@ class DatabaseService
     }
 
     // Метод для авторизации пользователя
-    public function authorizationUser($nickname, $password)
+    public function authorizationUser(string $nickname, string $password): mixed
     {
         try {
             $stmt = $this->pdo->prepare("SELECT u.*, r.name AS role_name 

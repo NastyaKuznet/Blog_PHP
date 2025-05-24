@@ -2,21 +2,19 @@
 
 namespace NastyaKuznet\Blog\Controller;
 
-use NastyaKuznet\Blog\Service\DatabaseService;
-use NastyaKuznet\Blog\Service\UserService;
+use NastyaKuznet\Blog\Service\interfaces\UserServiceInterface;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Psr7\Response as SlimResponse;
 use Slim\Views\Twig;
-use NastyaKuznet\Blog\Middleware\RoleMiddlewareFactory;
 
 class UsersAdminController
 {
     private Twig $view;
-    private UserService $userService;
+    private UserServiceInterface $userService;
     
 
-    public function __construct(UserService $userService, Twig $view)
+    public function __construct(UserServiceInterface $userService, Twig $view)
     {
         $this->userService = $userService;
         $this->view = $view;

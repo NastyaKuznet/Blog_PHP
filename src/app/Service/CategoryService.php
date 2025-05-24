@@ -3,13 +3,14 @@
 namespace NastyaKuznet\Blog\Service;
 
 use NastyaKuznet\Blog\Model\Category;
-use NastyaKuznet\Blog\Service\DatabaseService;
+use NastyaKuznet\Blog\Service\interfaces\CategoryServiceInterface;
+use NastyaKuznet\Blog\Service\interfaces\DatabaseServiceInterface;
 
-class CategoryService
+class CategoryService implements CategoryServiceInterface
 {
-    private DatabaseService $databaseService;
+    private DatabaseServiceInterface $databaseService;
 
-    public function __construct(DatabaseService $databaseService)
+    public function __construct(DatabaseServiceInterface $databaseService)
     {
         $this->databaseService = $databaseService;
     }

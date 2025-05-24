@@ -67,7 +67,7 @@ return [
         ->constructor(get(CommentService::class), get('view')),
 
     PostController::class => create(PostController::class)
-        ->constructor(get(PostService::class), get(CategoryService::class), get('view')),
+        ->constructor(get(PostService::class), get(CategoryService::class), get(CommentService::class), get('view')),
 
     UserAccountController::class => create(UserAccountController::class)
         ->constructor(get(PostService::class), get(UserService::class), get('view')),

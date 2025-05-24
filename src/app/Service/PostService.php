@@ -2,16 +2,16 @@
 
 namespace NastyaKuznet\Blog\Service;
 
-use NastyaKuznet\Blog\Model\Comment;
-use NastyaKuznet\Blog\Service\DatabaseService;
+use NastyaKuznet\Blog\Service\interfaces\DatabaseServiceInterface;
 use NastyaKuznet\Blog\Model\Post;
 use NastyaKuznet\Blog\Model\Tag;
+use NastyaKuznet\Blog\Service\interfaces\PostServiceInterface;
 
-class PostService
+class PostService implements PostServiceInterface
 {
-    private DatabaseService $databaseService;
+    private DatabaseServiceInterface $databaseService;
 
-    public function __construct(DatabaseService $databaseService)
+    public function __construct(DatabaseServiceInterface $databaseService)
     {
         $this->databaseService = $databaseService;
     }
@@ -230,32 +230,6 @@ class PostService
         return $this->databaseService->deletePost($id); 
     }
 
-    public function getCommentsByPostId(int $postId): array
-    {
-        $commentsFromDb = $this->databaseService->getCommentsById($postId);
-        $comments = [];
-        foreach ($commentsFromDb as $commentData) {
-            $comments[] = new Comment(
-                $commentData['id'],
-                $commentData['content'],
-                $commentData['post_id'],
-                $commentData['user_id'],
-                $commentData['user_nickname'],
-                $commentData['created_date'],
-                $commentData['edit_date'],
-                $commentData['delete_date'],
-                $commentData['is_edit'],
-                $commentData['is_delete'] 
-            );
-        }
-        return $comments;
-    }
-
-    public function addComment(string $content, int $postId, int $userId): bool
-    {
-        return $this->databaseService->addComment($content, $postId, $userId);
-    }
-
     public function checkLikeByPostIdAndUserId(int $postId, int $userId): bool 
     {
         return $this->databaseService->checkLikeByPostIdAndUserId($postId, $userId);
@@ -271,16 +245,17 @@ class PostService
         return $this->databaseService->deleteLike($postId, $userId);
     }
 
-    public function getCountPosts (int $userId) : int 
+    public function getCountPosts (int $userId): int 
     {
         return $this->databaseService->getCountPostsByUserId($userId);
     }
 
-    public function getPostsByUserId (int $userId) : array 
+    public function getPostsByUserId(int $userId): array 
     {
         $postsFromDb = $this->databaseService->getPostsByUserId($userId);
         $posts = [];
         foreach ($postsFromDb as $postData) {
+            $tags = $this->getTagsByPostId($postData['id']);
             $posts[] = new Post(
                 $postData['id'],
                 $postData['title'],
@@ -295,6 +270,7 @@ class PostService
                 $postData['edit_date'],
                 $postData['category_id'],
                 $postData['category_name'],
+                $tags,
                 $postData['like_count'],
                 $postData['comment_count']
             );
@@ -307,6 +283,7 @@ class PostService
         $postsFromDb = $this->databaseService->getPostsByCategoryId($categoryId);
         $posts = [];
         foreach ($postsFromDb as $postData) {
+            $tags = $this->getTagsByPostId($postData['id']);
             $posts[] = new Post(
                 $postData['id'],
                 $postData['title'],
@@ -321,6 +298,7 @@ class PostService
                 $postData['edit_date'],
                 $postData['category_id'],
                 $postData['category_name'],
+                $tags,
                 $postData['like_count'],
                 $postData['comment_count']
             );

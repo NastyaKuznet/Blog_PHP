@@ -10,7 +10,6 @@
     <p><strong>Имя пользователя:</strong> {{ user.nickname|escape }}</p>
     <p><strong>Роль:</strong> {{ user.roleName|escape }}</p>
     <p><strong>Дата регистрации:</strong> {{ user.registerDate|date('H:i d.m.Y', 'Asia/Yekaterinburg') }}</p>
-    <p><strong>Заблокирован:</strong> {{ user.isBanned ? 'Да' : 'Нет' }}</p>
 
     {% if user.roleName != 'reader' %}
         <p><strong>Количество постов:</strong> {{ countPosts|escape }}</p>

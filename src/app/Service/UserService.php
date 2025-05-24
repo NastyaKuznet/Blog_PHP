@@ -3,13 +3,14 @@
 namespace NastyaKuznet\Blog\Service;
 
 use NastyaKuznet\Blog\Model\User;
-use NastyaKuznet\Blog\Service\DatabaseService;
+use NastyaKuznet\Blog\Service\interfaces\DatabaseServiceInterface;
+use NastyaKuznet\Blog\Service\interfaces\UserServiceInterface;
 
-class UserService 
+class UserService implements UserServiceInterface
 {
-    private DatabaseService $databaseService;
+    private DatabaseServiceInterface $databaseService;
 
-    public function __construct(DatabaseService $databaseService)
+    public function __construct(DatabaseServiceInterface $databaseService)
     {
         $this->databaseService = $databaseService;
     }

@@ -6,14 +6,14 @@ use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Psr7\Response as SlimResponse;
 use Slim\Views\Twig;
-use NastyaKuznet\Blog\Service\CommentService;
+use NastyaKuznet\Blog\Service\interfaces\CommentServiceInterface;
 
 class CommentController
 {
-    private CommentService $commentService;
+    private CommentServiceInterface $commentService;
     private Twig $view;
 
-    public function __construct(CommentService $commentService, Twig $view)
+    public function __construct(CommentServiceInterface $commentService, Twig $view)
     {
         $this->commentService = $commentService;
         $this->view = $view;

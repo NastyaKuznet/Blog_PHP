@@ -2,19 +2,19 @@
 
 namespace NastyaKuznet\Blog\Controller;
 
-use NastyaKuznet\Blog\Service\PostService;
-use NastyaKuznet\Blog\Service\UserService;
+use NastyaKuznet\Blog\Service\interfaces\PostServiceInterface;
+use NastyaKuznet\Blog\Service\interfaces\UserServiceInterface;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Views\Twig;
 
 class UserAccountController
 {
-    private PostService $postService;
-    private UserService $userService;
+    private PostServiceInterface $postService;
+    private UserServiceInterface $userService;
     private Twig $view;
 
-    public function __construct(PostService $postService, UserService $userService, Twig $view)
+    public function __construct(PostServiceInterface $postService, UserServiceInterface $userService, Twig $view)
     {
         $this->postService = $postService;
         $this->userService = $userService;

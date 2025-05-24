@@ -78,19 +78,3 @@ CREATE TABLE IF NOT EXISTS tags (
     name VARCHAR(100) NOT NULL
 
 );
-
--- Добавляем тестовых пользователей, если их нет
-INSERT INTO users (nickname, password, role_id) VALUES ('reader', 'reader', 1)
-ON CONFLICT DO NOTHING;
-INSERT INTO users (nickname, password, role_id) VALUES ('writer', 'writer', 2)
-ON CONFLICT DO NOTHING;
-INSERT INTO users (nickname, password, role_id) VALUES ('moderator', 'moderator', 3)
-ON CONFLICT DO NOTHING;
-INSERT INTO users (nickname, password, role_id) VALUES ('admin', 'admin', 4)
-ON CONFLICT DO NOTHING;
-
--- Добавляем тестовые посты
-INSERT INTO posts (title, content, user_id) VALUES ('Пост читателя', 'Читатель не должен иметь постов', 1);
-INSERT INTO posts (title, content, user_id) VALUES ('Пост писателя', 'Привет, это мой первый пост!', 2);
-INSERT INTO posts (title, content, user_id) VALUES ('Пост модера', 'Я могу редактировать и удалять посты', 3);
-INSERT INTO posts (title, content, user_id) VALUES ('Пост админа', 'Я администратор и могу всё!', 4);
