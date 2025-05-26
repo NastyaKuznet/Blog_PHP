@@ -30,7 +30,7 @@
     <body>
         <h1>Редактирование поста</h1>
         <p>Автор поста: {{ post.userNickname|escape }}</p>
-        <form action="/post/edit/{{ post.id }}" method="POST">
+        <form action="/post/save/{{ post.id }}" method="POST">
             <div>
                 <label for="title">Заголовок:</label><br>
                 <input type="text" id="title" name="title" value="{{ post.title|escape }}" required>
@@ -67,12 +67,12 @@
                     </option>
                 {% endfor %}
             </select>
-            <div>
-                <button type="submit" name="action" value="save">Сохранить изменения</button>
-                <button type="submit" name="action" value="delete">Удалить пост</button>
-                <a href="/">Лента</a>
-            </div>
+            <br/>
+            <button type="submit">Сохранить изменения</button>
         </form>
-
+        <form action="/post/delete/{{ post.id }}" method="post">
+            <button type="submit">Удалить пост</button>
+        </form>
+        <a href="/">Лента</a>
     </body>
 </html>
