@@ -1,10 +1,9 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <title>Вход</title>
-    <link rel="stylesheet" href="/assets/styles/default.css">
-</head>
-<body>
+{# src/app/templates/auth/login.twig #}
+{% extends "layout.twig" %}
+
+{% block title %}Вход в систему{% endblock %}
+
+{% block content %}
     <h2>Вход в систему</h2>
     <form method="POST" action="/login">
         <input type="text" name="username" placeholder="Имя пользователя" required><br>
@@ -15,9 +14,7 @@
         Нет аккаунта? <a href="/register">Зарегистрироваться</a>
     </div>
 
-    
     {% if error %}
         <div class="error">{{ error|raw }}</div>
     {% endif %}
-</body>
-</html>
+{% endblock %}

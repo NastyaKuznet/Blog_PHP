@@ -1,14 +1,17 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <title>Регистрация</title>
-    <link rel="stylesheet" href="/assets/styles/default.css">
-</head>
-<body>
+{# src/app/templates/auth/register.twig #}
+{% extends "layout.twig" %}
+
+{% block title %}Регистрация{% endblock %}
+
+{% block content %}
     <h2>Регистрация</h2>
     <form method="POST" action="/register">
         <input type="text" name="username" placeholder="Имя пользователя" required><br>
         <input type="password" name="password" placeholder="Пароль" required><br>
+        <select name="role">
+            <option value="1">Читатель</option>
+            <option value="2">Писатель</option>
+        </select><br>
         <button type="submit">Зарегистрироваться</button>
     </form>
     <div class="toggle-auth">
@@ -18,5 +21,4 @@
     {% if error %}
         <div class="error">{{ error|raw }}</div>
     {% endif %}
-</body>
-</html>
+{% endblock %}

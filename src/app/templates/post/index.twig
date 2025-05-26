@@ -1,44 +1,9 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Лента постов</title>
-    <link rel="stylesheet" href="/assets/styles/default.css">
-</head>
-<body>
+{# src/app/templates/post/index.twig #}
+{% extends "layout.twig" %}
 
-<div style="display: flex; justify-content: space-between; align-items: center;">
-  <h1>Лента постов</h1>
-  <div>
-        {% if userRole in ['writer','moderator', 'admin'] %}
-            <form action="/logout" method="post">
-                <button type="submit">Выход</button>
-            </form>
-        {% elseif userRole == 'reader' %}
-            <a href="/register">
-                <button type="button">Регистрация</button>
-            </a>
-        {% endif %}
-     </div>
-</div>
+{% block title %}Лента постов{% endblock %}
 
-<p>
-    {% if userRole in ['writer','moderator', 'admin'] %}
-    <a href="/account">Аккаунт</a>
-    |
-        <a href="/post/create">Написать пост</a>
-    |
-    {% endif %}
-    {% if userRole in ['moderator', 'admin'] %}
-        <a href="/categories">Категории</a>
-        |
-        <a href="/post-non-publish">Неопубликованные посты</a>
-    {% endif %} 
-    {% if userRole == 'admin' %}
-        |
-        <a href="/admin/users">Перейти к управлению пользователями</a>
-    {% endif %}
-</p>
-
+{% block content %}
 <div style="display: flex;">
 
     <div style="width: 200px; padding-right: 20px;">
@@ -84,7 +49,7 @@
             {% endfor %}
         {% endmacro %}
     </div>
-     
+
     <div style="width: calc(100% - 240px); margin: 0 auto; padding: 0 20px;">
         {% for post in posts %}
             <div style="margin-bottom: 20px; border: 1px solid #ccc; padding: 10px; word-wrap: break-word;">
@@ -97,7 +62,7 @@
                 <p>Лайков: {{ post.likes|escape }}</p>
                 <p>Комментариев: {{ post.commentCount|escape }}</p>
                 <a href="/post/{{ post.id|escape }}">Открыть пост</a>
-
+                
                 {% if userRole in ['moderator', 'admin'] %}
                     <a href="/post/edit/{{ post.id|escape }}">Редактировать пост</a>
                 {% endif %}
@@ -105,6 +70,4 @@
         {% endfor %}
     </div>
 </div>
-
-</body>
-</html>
+{% endblock %}

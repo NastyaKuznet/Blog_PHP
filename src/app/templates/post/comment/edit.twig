@@ -1,9 +1,7 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Редактировать комментарий</title>
-</head>
-<body>
+{# src/app/templates/post/comment/edit.twig #}
+{% extends "layout.twig" %}
+{% block title %}Редактировать комментарий{% endblock %}
+{% block content %}
 <h1>Редактировать комментарий</h1>
 
 <form action="/comment/edit/{{ comment.id }}" method="POST">
@@ -12,5 +10,4 @@
     <button type="submit">Сохранить изменения</button>
     <a href="/post/{{ comment.post_id }}">Отмена</a>
 </form>
-</body>
-</html>
+{% endblock %}
