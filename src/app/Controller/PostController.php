@@ -5,6 +5,8 @@ namespace NastyaKuznet\Blog\Controller;
 use NastyaKuznet\Blog\Service\interfaces\PostServiceInterface;
 use NastyaKuznet\Blog\Service\interfaces\CategoryServiceInterface;
 use NastyaKuznet\Blog\Service\interfaces\CommentServiceInterface;
+use NastyaKuznet\Blog\Service\interfaces\LikeServiceInterface;
+use NastyaKuznet\Blog\Service\interfaces\NonPublishPostServiceInterface;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Psr7\Response as SlimResponse;
@@ -15,17 +17,23 @@ class PostController
     private PostServiceInterface $postService;
     private CategoryServiceInterface $categoryService;
     private CommentServiceInterface $commentService;
+    private NonPublishPostServiceInterface $nonPublishService;
+    private LikeServiceInterface $likeService;
     private Twig $view;
 
     public function __construct(
         PostServiceInterface $postService, 
         CategoryServiceInterface $categoryService, 
-        CommentServiceInterface $commentService, 
+        CommentServiceInterface $commentService,
+        NonPublishPostServiceInterface $nonPublishService,
+        LikeServiceInterface $likeService,
         Twig $view)
     {
         $this->postService = $postService;
         $this->categoryService = $categoryService;
         $this->commentService = $commentService;
+        $this->nonPublishService = $nonPublishService;
+        $this->likeService = $likeService;
         $this->view = $view;
     }
 
@@ -39,11 +47,11 @@ class PostController
         $tag = $queryParams['tag_search'] ?? null;
         $categoryId = $queryParams['category_id'] ?? null;
 
-        $categories = $this->categoryService->getCategoriesTree();
+        $categories = $this->categoryService->getTree();
         if ($categoryId) {
-            $posts = $this->postService->getPostsByCategoryId($categoryId);
+            $posts = $this->categoryService->getPostsByCategoryId($categoryId);
         } else {
-            $posts = $this->postService->getAllPosts($sortBy, $order, $authorNickname, $tag);
+            $posts = $this->postService->getAll($sortBy, $order, $authorNickname, $tag);
         }
 
         return $this->view->render($response, 'post/index.twig', [
@@ -58,7 +66,7 @@ class PostController
 
     public function indexNonPublish(Request $request, Response $response): Response
     {
-        $posts = $this->postService->getAllNonPublishPosts();
+        $posts = $this->nonPublishService->getAllNonPublish();
 
         return $this->view->render($response, 'post/nonPublish/index.twig', [
             'posts' => $posts,
@@ -72,7 +80,7 @@ class PostController
     {
         $user = $request->getAttribute('user');
         $postId = (int)$args['id'];
-        $post = $this->postService->getPostById($postId);
+        $post = $this->postService->getById($postId);
 
         if (!$post) {
             $response->getBody()->write("Пост не найден.");
@@ -81,9 +89,9 @@ class PostController
         $isLikedByUser = null;
         if($user)
         {
-            $isLikedByUser = $this->postService->checkLikeByPostIdAndUserId($postId, $user['id']);
+            $isLikedByUser = $this->likeService->check($postId, $user['id']);
         }
-        $comments = $this->commentService->getCommentsByPostId($postId);
+        $comments = $this->commentService->getByPostId($postId);
 
         if ($request->getMethod() === 'GET') {
             $data = [
@@ -113,7 +121,7 @@ class PostController
         $commentText = trim($data['comment'] ?? '');
 
         if (!empty($commentText)) {
-            $isSuccess = $this->commentService->addComment($commentText, $postId, $user['id']);
+            $isSuccess = $this->commentService->add($commentText, $postId, $user['id']);
 
             if ($isSuccess) {
                 $response = new SlimResponse();
@@ -155,7 +163,7 @@ class PostController
         $tags = $data['tags'] ?? [];
 
         if (!empty($title) && !empty($preview) && !empty($content)) {
-            $success = $this->postService->addPostWithTags($title, $preview, $content, $user['id'], $tags);
+            $success = $this->postService->add($title, $preview, $content, $user['id'], $tags);
             if ($success) {
                 return $response->withHeader('Location', '/')->withStatus(302);
             }
@@ -177,12 +185,12 @@ class PostController
         $postId = (int)$args['id'];
         $data = $request->getParsedBody();
 
-        $post = $this->postService->getPostById($postId);
+        $post = $this->postService->getById($postId);
         if (!$post) {
             $response->getBody()->write("Пост не найден.");
             return $response->withStatus(404);
         }
-        $categories = $this->categoryService->getAllCategories();
+        $categories = $this->categoryService->getAll();
 
         if ($request->getMethod() === 'GET') {
             try {
@@ -212,7 +220,7 @@ class PostController
             $categoryId = $data['category_id'] ? (int)$data['category_id'] : null;
 
             if (!empty($title) && !empty($content)) {
-                $isSuccess = $this->postService->editPost($postId, $title, $preview, $content, $user['id'], $tags);
+                $isSuccess = $this->postService->edit($postId, $title, $preview, $content, $user['id'], $tags);
                 $isSuccessCategory = $this->categoryService->connectPostAndCategory($postId, $categoryId);
                 if ($isSuccess && $isSuccessCategory)
                 {
@@ -226,7 +234,7 @@ class PostController
                 return $response->withStatus(400);
             }
         } elseif ($action === 'delete') {
-            $isSuccess = $this->postService->deletePost($postId);
+            $isSuccess = $this->postService->delete($postId);
             if ($isSuccess)
             {
                 $response = new SlimResponse();
@@ -246,12 +254,12 @@ class PostController
         $postId = (int)$args['id'];
         $data = $request->getParsedBody();
 
-        $post = $this->postService->getNonPublishPostById($postId);
+        $post = $this->nonPublishService->getNonPublishById($postId);
         if (!$post) {
             $response->getBody()->write("Пост не найден.");
             return $response->withStatus(404);
         }
-        $categories = $this->categoryService->getAllCategories();
+        $categories = $this->categoryService->getAll();
 
         if ($request->getMethod() === 'GET') {
             try {
@@ -280,7 +288,7 @@ class PostController
 
         if ($action === 'save') {
             if (!empty($title) && !empty($preview) && !empty($content)) {
-                $isSuccessEditPost = $this->postService->editPost($postId, $title, $preview, $content, $user['id'], $tags);
+                $isSuccessEditPost = $this->postService->edit($postId, $title, $preview, $content, $user['id'], $tags);
                 $isSuccessCategory = $this->categoryService->connectPostAndCategory($postId, $categoryId);
                 if ($isSuccessEditPost && $isSuccessCategory)
                 {
@@ -294,7 +302,7 @@ class PostController
                 return $response->withStatus(400);
             }
         } elseif ($action === 'delete') {
-            $isSuccess = $this->postService->deletePost($postId);
+            $isSuccess = $this->postService->delete($postId);
             if ($isSuccess)
             {
                 $response = new SlimResponse();
@@ -304,8 +312,8 @@ class PostController
             return $response->withStatus(500);
         } elseif ($action === 'publish') {
             if (!empty($title) && !empty($preview) && !empty($content)) {
-                $isSuccessEditPost = $this->postService->editPost($postId, $title, $preview, $content, $user['id'], $tags);
-                $isSuccess = $this->postService->publishPost($postId);
+                $isSuccessEditPost = $this->postService->edit($postId, $title, $preview, $content, $user['id'], $tags);
+                $isSuccess = $this->postService->publish($postId);
                 $isSuccessCategory = $this->categoryService->connectPostAndCategory($postId, $categoryId);
                 if ($isSuccessEditPost && $isSuccess && $isSuccessCategory)
                 {
@@ -326,14 +334,14 @@ class PostController
         $user = $request->getAttribute('user');
         $postId = (int)$args['id'];
 
-        $isLikedByUser = $this->postService->checkLikeByPostIdAndUserId($postId, $user['id']);
+        $isLikedByUser = $this->likeService->check($postId, $user['id']);
         if($isLikedByUser)
         {
-            $isSuccess = $this->postService->deleteLike($postId, $user['id']);
+            $isSuccess = $this->likeService->delete($postId, $user['id']);
         }
         else 
         {
-            $isSuccess = $this->postService->addLike($postId, $user['id']);
+            $isSuccess = $this->likeService->add($postId, $user['id']);
         }      
 
         if ($isSuccess) {

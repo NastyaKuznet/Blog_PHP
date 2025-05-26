@@ -56,18 +56,18 @@ class AuthController
                 ->withStatus(400);
         }
 
-        $checkUser = $this->authService->checkUserRegistration($username, $password);
+        $checkUser = $this->authService->checkRegistration($username, $password);
         if ($checkUser){
             return $this->view->render($response, 'auth/register.twig', [
                 'error' => '<div class="error">Такой никнейм уже существует</div>'
             ]);
         }
 
-        $success = $this->authService->registerUser($username, $password);
+        $success = $this->authService->register($username, $password);
 
         if ($success) {
             // После регистрации сразу логиним пользователя
-            $user = $this->authService->authenticateUser($username, $password);
+            $user = $this->authService->authenticate($username, $password);
 
             // Вызываем наш отдельный метод для установки токена
             $response = $this->setTokenInCookie($response, $user);
@@ -95,7 +95,7 @@ class AuthController
             ]);
         }
 
-        $user = $this->authService->authenticateUser($username, $password);
+        $user = $this->authService->authenticate($username, $password);
 
         if (!$user) {
             return $this->view->render($response, 'auth/login.twig', [

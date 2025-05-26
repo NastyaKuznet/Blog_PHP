@@ -25,9 +25,9 @@ class UserAccountController
     {
         $userFromAttribute = $request->getAttribute('user');
         $userId = $userFromAttribute['id'];
-        $user = $this->userService->getUser($userId);
-        $countPosts = $this->postService->getCountPosts($userId);
-        $posts = $this->postService->getPostsByUserId($userId);
+        $user = $this->userService->get($userId);
+        $countPosts = $this->postService->getCountPostsByUserId($userId);
+        $posts = $this->postService->getByUserId($userId);
         return $this->view->render($response, 'user/userAccount.twig', [
             'posts' => $posts,
             'user' => $user,

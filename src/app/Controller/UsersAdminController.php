@@ -22,7 +22,7 @@ class UsersAdminController
 
     public function index(Request $request, Response $response): Response
     {
-        $allUsers = $this->userService->getAllUsers();
+        $allUsers = $this->userService->getAll();
         return $this->view->render($response, 'admin/users.twig', [
             'users' => $allUsers,
         ]);
@@ -34,7 +34,7 @@ class UsersAdminController
         $userId = (int) ($parsedBody['user_id'] ?? 0);
         $newRoleId = (int) ($parsedBody['new_role_id'] ?? 0);
 
-        $isSuccess = $this->userService->changeUserRole($userId, $newRoleId);
+        $isSuccess = $this->userService->changeRole($userId, $newRoleId);
         if($isSuccess)
         {
             return $response->withHeader('Location', '/admin/users')->withStatus(302);
@@ -51,7 +51,7 @@ class UsersAdminController
         $userId = (int) ($parsedBody['user_id'] ?? 0);
         $isBanned = (bool)$parsedBody['is_banned'];
 
-        $isSuccess = $this->userService->toggleUserBan($userId, $isBanned);
+        $isSuccess = $this->userService->toggleBan($userId, $isBanned);
 
         if ($isSuccess) {
             return $response->withHeader('Location', '/admin/users')->withStatus(302);

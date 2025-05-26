@@ -23,7 +23,7 @@ class CommentController
     public function editForm(Request $request, Response $response, array $args): Response
     {
         $commentId = (int)$args['id'];
-        $comment = $this->commentService->getCommentById($commentId);
+        $comment = $this->commentService->getById($commentId);
 
         if (!$comment) {
             $response->getBody()->write("Комментарий не найден или был удалён.");
@@ -39,7 +39,7 @@ class CommentController
     public function update(Request $request, Response $response, array $args): Response
     {
         $commentId = (int)$args['id'];
-        $comment = $this->commentService->getCommentById($commentId);
+        $comment = $this->commentService->getById($commentId);
 
         if (!$comment) {
             $response->getBody()->write("Комментарий не найден.");
@@ -54,7 +54,7 @@ class CommentController
             return $response->withStatus(400)->withHeader('Content-Type', 'text/plain');
         }
 
-        $isSuccess = $this->commentService->updateComment($commentId, $content);
+        $isSuccess = $this->commentService->update($commentId, $content);
 
         if ($isSuccess) {
             $postId = $comment['post_id'];
@@ -70,14 +70,14 @@ class CommentController
     public function delete(Request $request, Response $response, array $args): Response
     {
         $commentId = (int)$args['id'];
-        $comment = $this->commentService->getCommentById($commentId);
+        $comment = $this->commentService->getById($commentId);
 
         if (!$comment) {
             $response->getBody()->write("Комментарий не найден.");
             return $response->withStatus(404)->withHeader('Content-Type', 'text/plain');
         }
 
-        $isSuccess = $this->commentService->deleteComment($commentId);
+        $isSuccess = $this->commentService->delete($commentId);
 
         if ($isSuccess) {
             $postId = $comment['post_id'];

@@ -24,12 +24,12 @@ class AuthService implements AuthServiceInterface
      * @param string $roleName
      * @return bool
      */
-    public function registerUser(string $username, string $password): bool
+    public function register(string $username, string $password): bool
     {
         return $this->databaseService->addUser($username, $password);
     }
 
-    public function checkUserRegistration(string $username): bool
+    public function checkRegistration(string $username): bool
     {
         return $this->databaseService->checkUserNickname($username);
     }
@@ -41,7 +41,7 @@ class AuthService implements AuthServiceInterface
      * @param string $password
      * @return User|false
      */
-    public function authenticateUser(string $username, string $password): mixed
+    public function authenticate(string $username, string $password): mixed
     {
         $userData = $this->databaseService->authorizationUser($username, $password);
 

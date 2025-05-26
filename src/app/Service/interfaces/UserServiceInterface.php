@@ -5,9 +5,9 @@ use NastyaKuznet\Blog\Model\User;
 
 interface UserServiceInterface
 {
-    public function getUser(int $userId): User;
-    public function getAllUsers(): array;
-    public function changeUserRole($user_id, $new_role_id) : bool;
-    public function deleteUser(int $user_id): bool;
-    public function toggleUserBan(int $userId, bool $isBanned): bool;
+    public function get(int $userId): User;
+    public function getAll(): array;
+    public function changeRole(int $userId, int $newRoleId) : bool;
+    public function delete(int $userId): bool;
+    public function toggleBan(int $userId, bool $isBanned): bool;
 }

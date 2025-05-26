@@ -20,7 +20,7 @@ class CategoryController
 
     public function index(Request $request, Response $response): Response
     {
-        $categories = $this->categoryService->getAllCategories();
+        $categories = $this->categoryService->getAll();
         return $this->view->render($response, 'categories/categories.twig', [
             'categories' => $categories,
         ]);
@@ -29,7 +29,7 @@ class CategoryController
     public function create(Request $request, Response $response): Response
     {
         if ($request->getMethod() === 'GET') {
-            $categories = $this->categoryService->getAllCategories();
+            $categories = $this->categoryService->getAll();
             return $this->view->render($response, 'categories/create_category.twig', [
                 'categories' => $categories,
             ]);
@@ -45,7 +45,7 @@ class CategoryController
             ]);
         }
 
-        $success = $this->categoryService->addCategory($name, $parentId);
+        $success = $this->categoryService->add($name, $parentId);
         if ($success) {
             return $response->withHeader('Location', '/categories')->withStatus(302);
         } else {
@@ -63,7 +63,7 @@ class CategoryController
             return $response->withHeader('Location', '/categories')->withStatus(302);
         }
 
-        $success = $this->categoryService->deleteCategory($categoryId);
+        $success = $this->categoryService->delete($categoryId);
 
         if ($success) {
             return $response->withHeader('Location', '/categories')->withStatus(302);
