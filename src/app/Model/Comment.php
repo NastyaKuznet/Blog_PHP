@@ -9,15 +9,33 @@ class Comment
     public $postId;
     public $userId;
     public $userNickname;
-    public $createdAt;
+    public $createdDate;
+    public $editDate;
+    public $deleteDate;
+    public $isEdit;
+    public $isDelete;
 
-    public function __construct(int $id, string $content, int $postId, int $userId, string $userNickname, string $createdAt)
+    public function __construct(
+        int $id, 
+        string $content, 
+        int $postId, 
+        int $userId, 
+        string $userNickname, 
+        string $createdDate, 
+        ?string $editDate = null,
+        ?string $deleteDate = null,
+        bool $isEdit = false,
+        bool $isDelete = false)
     {
         $this->id = $id;
         $this->content = $content;
         $this->postId = $postId;
         $this->userId = $userId;
         $this->userNickname = $userNickname;
-        $this->createdAt = $createdAt;
+        $this->createdDate = $createdDate;
+        $this->editDate = $editDate;
+        $this->deleteDate = $deleteDate;
+        $this->isEdit = $isEdit;
+        $this->isDelete = $isDelete;
     }
 }

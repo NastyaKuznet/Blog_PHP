@@ -8,6 +8,7 @@ use Psr\Http\Server\RequestHandlerInterface as RequestHandler;
 use NastyaKuznet\Blog\Service\AuthService;
 use Slim\Psr7\Response\RedirectResponse;
 use Slim\Psr7\Factory\ResponseFactory;
+use Slim\Psr7\Response as SlimResponse;
 
 class AuthMiddleware
 {
@@ -21,38 +22,25 @@ class AuthMiddleware
     }
 
     public function __invoke(Request $request, RequestHandler $handler): Response
-    {
-        // Разрешённые маршруты без авторизации
-        $allowedRoutes = ['/login', '/register', '/'];
-
-        // Получаем текущий URI
-        $uri = $request->getUri()->getPath();
-
-        // Пропускаем, если маршрут разрешён
-        if (in_array($uri, $allowedRoutes)) {
-            return $handler->handle($request);
-        }
-        
+    {        
         // Получаем токен из кук
         $token = $request->getCookieParams()['token'] ?? null;
 
-        if (!$token) {
-            return (new ResponseFactory())->createResponse(401)
-                ->withHeader('Location', '/login')
-                ->withStatus(302);
+        if ($token) {
+            $payload = $this->authService->decodeJwtToken($token, $this->secretKey);
+
+            if ($payload !== null && isset($payload['exp']) && $payload['exp'] >= time()) {
+                // Токен валиден — добавляем пользователя в запрос
+                $request = $request->withAttribute('user', $payload);
+            } else {
+                $response = new SlimResponse();
+                $response->getBody()->write('Authentication required');
+                return $response->withStatus(401);
+            }
         }
 
-        $payload = $this->authService->decodeJwtToken($token, $this->secretKey);
-
-        if ($payload === null || !isset($payload['exp']) || $payload['exp'] < time()) {
-            return (new ResponseFactory())->createResponse(401)
-                ->withHeader('Location', '/login')
-                ->withStatus(302);
-        }
-
-        // Добавляем пользователя в атрибуты запроса
-        $request = $request->withAttribute('user', $payload);
-
+        session_start();
+        
         // Продолжаем обработку
         return $handler->handle($request);
     }

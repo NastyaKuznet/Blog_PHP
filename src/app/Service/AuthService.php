@@ -2,14 +2,16 @@
 
 namespace NastyaKuznet\Blog\Service;
 
-use NastyaKuznet\Blog\Model\Role;
 use NastyaKuznet\Blog\Model\User;
+use NastyaKuznet\Blog\Service\interfaces\AuthServiceInterface;
+use NastyaKuznet\Blog\Service\interfaces\DatabaseServiceInterface;
 
-class AuthService
+
+class AuthService implements AuthServiceInterface
 {
-    private $databaseService;
+    private DatabaseServiceInterface $databaseService;
 
-    public function __construct(DatabaseService $databaseService)
+    public function __construct(DatabaseServiceInterface $databaseService)
     {
         $this->databaseService = $databaseService;
     }
@@ -22,9 +24,9 @@ class AuthService
      * @param string $roleName
      * @return bool
      */
-    public function registerUser(string $username, string $password, string $roleId): bool
+    public function registerUser(string $username, string $password): bool
     {
-        return $this->databaseService->addUser($username, $password, $roleId);
+        return $this->databaseService->addUser($username, $password);
     }
 
     public function checkUserRegistration(string $username): bool
@@ -48,11 +50,13 @@ class AuthService
         }
 
         return new User(
-            $userData['id'],
+            $userData['id'], 
             $userData['nickname'],
             $userData['password'],
             $userData['role_id'],
-            $userData['role_name']
+            $userData['role_name'],
+            $userData['register_date'],    
+            $userData['is_banned']          
         );
     }
 
@@ -99,7 +103,7 @@ class AuthService
     /**
      * Base64UrlDecode
      */
-    public function base64UrlDecode(string $data): string
+    private function base64UrlDecode(string $data): string
     {
         return base64_decode(str_pad(strtr($data, '-_', '+/'), strlen($data) % 4, '=', STR_PAD_RIGHT));
     }

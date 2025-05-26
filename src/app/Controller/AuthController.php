@@ -4,16 +4,15 @@ namespace NastyaKuznet\Blog\Controller;
 
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Http\Message\ResponseInterface as Response;
-use NastyaKuznet\Blog\Service\AuthService;
-use Slim\Psr7\Response as SlimResponse;
+use NastyaKuznet\Blog\Service\Interfaces\AuthServiceInterface;
 use Slim\Views\Twig;
 
 class AuthController
 {
-    private $authService;
+    private AuthServiceInterface $authService;
     private Twig $view;
 
-    public function __construct(AuthService $authService, Twig $view)
+    public function __construct(AuthServiceInterface $authService, Twig $view)
     {
         $this->authService = $authService;
         $this->view = $view;
@@ -48,7 +47,6 @@ class AuthController
         $data = $request->getParsedBody();
         $username = $data['username'] ?? '';
         $password = $data['password'] ?? '';
-        $role = $data['role'] ?? 'user';
 
         if (empty($username) || empty($password)) {
             $html = '<div class="error">Заполните имя и пароль</div>';
@@ -65,7 +63,7 @@ class AuthController
             ]);
         }
 
-        $success = $this->authService->registerUser($username, $password, $role);
+        $success = $this->authService->registerUser($username, $password);
 
         if ($success) {
             // После регистрации сразу логиним пользователя
@@ -73,7 +71,7 @@ class AuthController
 
             // Вызываем наш отдельный метод для установки токена
             $response = $this->setTokenInCookie($response, $user);
-            return $response->withHeader('Location', '/post')->withStatus(302);
+            return $response->withHeader('Location', '/')->withStatus(302);
         } else {
             return $this->view->render($response, 'auth/register.twig', [
                 'error' => '<div class="error">Ошибка при регистрации</div>'
@@ -105,10 +103,17 @@ class AuthController
             ]);
         }
 
+        if($user->isBanned)
+        {
+            return $this->view->render($response, 'auth/login.twig', [
+                'error' => '<div class="error">Вы забанены!</div>'
+            ]);
+        }
+
         // Вызываем отдельный метод для установки токена
         $response = $this->setTokenInCookie($response, $user);
 
-        return $response->withHeader('Location', '/post')->withStatus(302);
+        return $response->withHeader('Location', '/')->withStatus(302);
     }
 
     /**
@@ -141,6 +146,6 @@ class AuthController
         );
 
         // Перенаправляем на главную страницу
-        return $response->withHeader('Location', '/');
+        return $response->withHeader('Location', '/register');
     }
 }

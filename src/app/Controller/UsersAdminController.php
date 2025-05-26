@@ -2,24 +2,20 @@
 
 namespace NastyaKuznet\Blog\Controller;
 
-use NastyaKuznet\Blog\Service\DatabaseService;
-use NastyaKuznet\Blog\Service\UserService;
+use NastyaKuznet\Blog\Service\interfaces\UserServiceInterface;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Psr7\Response as SlimResponse;
 use Slim\Views\Twig;
-use NastyaKuznet\Blog\Middleware\RoleMiddlewareFactory;
 
 class UsersAdminController
 {
-    private DatabaseService $databaseService;
     private Twig $view;
-    private UserService $userService;
+    private UserServiceInterface $userService;
     
 
-    public function __construct(DatabaseService $databaseService, UserService $userService, Twig $view)
+    public function __construct(UserServiceInterface $userService, Twig $view)
     {
-        $this->databaseService = $databaseService;
         $this->userService = $userService;
         $this->view = $view;
     }
@@ -49,20 +45,21 @@ class UsersAdminController
         return $response->withStatus(500);
     }
 
-    public function deleteUser(Request $request, Response $response): Response
+    public function toggleBan(Request $request, Response $response): Response
     {
         $parsedBody = $request->getParsedBody();
         $userId = (int) ($parsedBody['user_id'] ?? 0);
-        
-        $isSuccess = $this->userService->deleteUser($userId);
-        if($isSuccess)
-        {
+        $isBanned = (bool)$parsedBody['is_banned'];
+
+        $isSuccess = $this->userService->toggleUserBan($userId, $isBanned);
+
+        if ($isSuccess) {
             return $response->withHeader('Location', '/admin/users')->withStatus(302);
         }
 
         $response = new SlimResponse();
-        $response->getBody()->write('Error in delete user.');
+        $response->getBody()->write('Error in toggling ban status.');
         return $response->withStatus(500);
     }
-
+    
 }

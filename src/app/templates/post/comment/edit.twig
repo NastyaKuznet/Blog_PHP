@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Редактировать комментарий</title>
+</head>
+<body>
+<h1>Редактировать комментарий</h1>
+
+<form action="/comment/edit/{{ comment.id }}" method="POST">
+    <label for="comment">Текст комментария:</label><br>
+    <textarea id="comment" name="comment" rows="4" cols="50" required>{{ comment.content|escape }}</textarea><br>
+    <button type="submit">Сохранить изменения</button>
+    <a href="/post/{{ comment.post_id }}">Отмена</a>
+</form>
+</body>
+</html>
