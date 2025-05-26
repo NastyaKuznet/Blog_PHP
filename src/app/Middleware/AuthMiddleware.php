@@ -32,10 +32,6 @@ class AuthMiddleware
             if ($payload !== null && isset($payload['exp']) && $payload['exp'] >= time()) {
                 // Токен валиден — добавляем пользователя в запрос
                 $request = $request->withAttribute('user', $payload);
-            } else {
-                $response = new SlimResponse();
-                $response->getBody()->write('Authentication required');
-                return $response->withStatus(401);
             }
         }
 
