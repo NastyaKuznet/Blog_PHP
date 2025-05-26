@@ -44,9 +44,6 @@ class AuthMiddleware
                         'samesite' => 'Strict',
                     ]
                 );
-                $response = new SlimResponse();
-                //$response->getBody()->write('Authentication required');
-                return $response->withStatus(401);
             }
         }
 
