@@ -33,8 +33,19 @@ class AuthMiddleware
                 // Токен валиден — добавляем пользователя в запрос
                 $request = $request->withAttribute('user', $payload);
             } else {
+                setcookie(
+                    'token',
+                    '',
+                    [
+                        'expires' => time() - 3600,
+                        'path' => '/',
+                        'httponly' => true,
+                        'secure' => true,
+                        'samesite' => 'Strict',
+                    ]
+                );
                 $response = new SlimResponse();
-                $response->getBody()->write('Authentication required');
+                //$response->getBody()->write('Authentication required');
                 return $response->withStatus(401);
             }
         }

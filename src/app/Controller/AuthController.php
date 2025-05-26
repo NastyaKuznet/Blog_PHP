@@ -38,23 +38,16 @@ class AuthController
         return $this->view->render($response, 'auth/register.twig');
     }
 
+    public function registerForm(Request $request, Response $response): Response
+    {
+        return $this->view->render($response, 'auth/register.twig');
+    }
+
     public function register(Request $request, Response $response): Response
     {
-        if ($request->getMethod() === 'GET') {
-            return $this->view->render($response, 'auth/register.twig');
-        }
-
         $data = $request->getParsedBody();
         $username = $data['username'] ?? '';
         $password = $data['password'] ?? '';
-
-        if (empty($username) || empty($password)) {
-            $html = '<div class="error">Заполните имя и пароль</div>';
-            $response->getBody()->write($html);
-            return $response
-                ->withHeader('Content-Type', 'text/html')
-                ->withStatus(400);
-        }
 
         $checkUser = $this->authService->checkUserRegistration($username, $password);
         if ($checkUser){
@@ -79,21 +72,16 @@ class AuthController
         }
     }
 
+    public function loginForm(Request $request, Response $response): Response
+    {
+        return $this->view->render($response, 'auth/login.twig');
+    }
+
     public function login(Request $request, Response $response): Response
     {
-        if ($request->getMethod() === 'GET') {
-            return $this->view->render($response, 'auth/login.twig');
-        }
-
         $data = $request->getParsedBody();
         $username = $data['username'] ?? '';
         $password = $data['password'] ?? '';
-
-        if (empty($username) || empty($password)) {
-            return $this->view->render($response, 'auth/login.twig', [
-                'error' => '<div class="error">Введите имя и пароль</div>'
-            ]);
-        }
 
         $user = $this->authService->authenticateUser($username, $password);
 
@@ -107,7 +95,7 @@ class AuthController
         {
             return $this->view->render($response, 'auth/login.twig', [
                 'error' => '<div class="error">Вы забанены!</div>'
-            ]);
+            ])->withStatus(403);
         }
 
         // Вызываем отдельный метод для установки токена
@@ -129,9 +117,16 @@ class AuthController
         $token = $this->authService->generateJwtToken($user, $_ENV['JWT_SECRET']);
 
         // Устанавливаем токен в куки
-        $response = $response->withHeader(
-            'Set-Cookie',
-            sprintf('token=%s; Path=/; HttpOnly; Secure; SameSite=Strict', $token)
+        setcookie(
+            'token',
+            $token,
+            [
+                'path' => '/',
+                'httponly' => true,
+                'secure' => true,
+                'samesite' => 'Strict',
+                'expires' => strtotime('+1 day')
+            ]
         );
 
         return $response;
@@ -140,9 +135,16 @@ class AuthController
     public function logout(Request $request, Response $response): Response
     {
         // Устанавливаем куку с пустым значением и прошедшим сроком действия
-        $response = $response->withHeader(
-            'Set-Cookie',
-            'token=; Path=/; Expires=' . gmdate('D, d M Y H:i:s', time() - 3600) . ' GMT'
+        setcookie(
+            'token',
+            '',
+            [
+                'path' => '/',
+                'httponly' => true,
+                'secure' => true,
+                'samesite' => 'Strict',
+                'expires' => time() - 3600
+            ]
         );
 
         // Перенаправляем на главную страницу
