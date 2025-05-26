@@ -45,8 +45,8 @@
         <h2>Фильтры</h2>
 
         <form action="/" method="GET">
-            <label for="author_nickname">Фильтр по никнейму автора:</label><br>
-            <input type="text" id="author_nickname" name="author_nickname" value="{{ app.request.get('author_nickname')|escape }}"><br><br>
+            <label for="author_login">Фильтр по никнейму автора:</label><br>
+            <input type="text" id="author_login" name="author_login" value="{{ app.request.get('author_login')|escape }}"><br><br>
             <label for="sort_by">Сортировать по:</label><br>
             <select name="sort_by" id="sort_by">
                 <option value="">Не выбрано</option>
@@ -93,7 +93,7 @@
                 <p>Категория: {{ post.categoryName|nl2br }}</p>
                 <p>Теги: {% for tag in post.tags %}{{ tag.name }}{% if not loop.last %}, {% endif %}{% endfor %}</p>
                 <p>Дата публикации поста: {{ post.publishDate|date('H:i d.m.Y', 'Asia/Yekaterinburg') }}</p>
-                <p>Автор: {{ post.userNickname|escape }}</p>
+                <p>Автор: {{ post.userLogin|escape }}</p>
                 <p>Лайков: {{ post.likes|escape }}</p>
                 <p>Комментариев: {{ post.commentCount|escape }}</p>
                 <a href="/post/{{ post.id|escape }}">Открыть пост</a>

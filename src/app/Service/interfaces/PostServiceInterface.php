@@ -5,7 +5,7 @@ use NastyaKuznet\Blog\Model\Post;
 
 interface PostServiceInterface
 {
-    public function getAllPosts(?string $sortBy, ?string $order, ?string $authorNickname, ?string $tag): array;
+    public function getAllPosts(?string $sortBy, ?string $order, ?string $authorLogin, ?string $tag): array;
     public function getAllNonPublishPosts(): array;
     public function getPostById(int $id): ?Post;
     public function addPost(string $title, string $preview, string $content, $userId): bool ;

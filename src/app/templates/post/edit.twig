@@ -29,7 +29,7 @@
     </head>
     <body>
         <h1>Редактирование поста</h1>
-        <p>Автор поста: {{ post.userNickname|escape }}</p>
+        <p>Автор поста: {{ post.userLogin|escape }}</p>
         <form action="/post/edit/{{ post.id }}" method="POST">
             <div>
                 <label for="title">Заголовок:</label><br>

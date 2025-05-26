@@ -9,72 +9,65 @@ use PDOException;
 class DatabaseService implements DatabaseServiceInterface
 {
     public $pdo;
+    private array $prepared = [];
 
     public function __construct(array $config)
     {
-        $host = $config['db']['host'];
-        $dbname = $config['db']['dbname'];
-        $username = $config['db']['username'];
-        $password = $config['db']['password'];
-
         try {
-            $this->pdo = new PDO("pgsql:host=$host;dbname=$dbname", $username, $password);
+            $this->pdo = new PDO(
+                "pgsql:host={$config['db']['host']};dbname={$config['db']['dbname']}",
+                $config['db']['username'],
+                $config['db']['password']
+            );
             $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-            $this->pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC); //Установите режим выборки по умолчанию
+            
+            // Загрузка и подготовка SQL-запросов
+            $this->loadQueries(__DIR__.'/../sql/queries.sql');
+            
         } catch (PDOException $e) {
-            throw new \Exception("Ошибка подключения к базе данных: " . $e->getMessage());
+            throw new \RuntimeException("Service unavailable", 500);
+        }
+    }
+
+    /**
+     * Загружает SQL-запросы из файла и подготавливает их
+     */
+    private function loadQueries(string $file): void
+    {
+        $sqlContent = file_get_contents($file);
+        preg_match_all('/--\s*name:\s*(\w+)\s*\n(.*?);/s', $sqlContent, $matches);
+        
+        foreach ($matches[1] as $idx => $name) {
+            $this->prepared[$name] = $this->pdo->prepare($matches[2][$idx]);
+        }
+    }
+
+    /**
+     * Общий метод выполнения запросов
+     */
+    private function execute(string $queryName, array $params = []): \PDOStatement
+    {
+        try {
+            $stmt = $this->prepared[$queryName];
+            $stmt->execute($params);
+            return $stmt;
+        } catch (PDOException $e) {
+            $this->logger->error("Query $queryName failed: {$e->getMessage()}");
+            throw new \RuntimeException("Database operation failed", 500);
         }
     }
 
     // Метод для получения всех опубликованных постов
     public function getAllPosts(): array
     {
-        try {
-            $stmt = $this->pdo->query("SELECT p.*, 
-                                            u.nickname as user_nickname, 
-                                            u2.nickname as last_editor_nickname,
-                                            ca.id as category_id,
-                                            ca.name as category_name,
-                                            COUNT(l.id) as like_count,
-                                            COUNT(CASE WHEN c.is_delete = false THEN c.id ELSE NULL END) as comment_count
-                                        FROM posts p
-                                        LEFT JOIN comments c ON p.id = c.post_id
-                                        LEFT JOIN likes l ON p.id = l.post_id
-                                        LEFT JOIN category_posts cp ON cp.post_id = p.id
-                                        LEFT JOIN categories ca ON ca.id = cp.category_id
-                                        JOIN users u ON p.author_id = u.id
-                                        JOIN users u2 ON p.last_editor_id = u2.id
-                                        WHERE p.is_publish = true and p.is_delete = false
-                                        GROUP BY p.id, u.nickname, u2.nickname, ca.id;");
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            echo "Ошибка при получении постов: " . $e->getMessage();
-            return [];
-        }
+        return $this->execute('getAllPosts')->fetchAll();
     }
 
     // Метод для получения постов, отсортированных по нику автора
     public function getPostsByAuthorAlphabetical(): array
     {
         try {
-            $stmt = $this->pdo->query("SELECT p.* , 
-                                                u.nickname as user_nickname, 
-                                                u2.nickname as last_editor_nickname,
-                                                ca.id as category_id,
-                                                ca.name as category_name,
-                                                COUNT(l.id) as like_count,
-                                                COUNT(CASE WHEN c.is_delete = false THEN c.id ELSE NULL END) as comment_count
-                                        FROM posts p 
-                                        LEFT JOIN comments c ON p.id = c.post_id
-                                        LEFT JOIN likes l ON p.id = l.post_id
-                                        LEFT JOIN category_posts cp ON cp.post_id = p.id
-                                        LEFT JOIN categories ca ON ca.id = cp.category_id
-                                        JOIN users u ON p.author_id = u.id  
-                                        JOIN users u2 ON p.last_editor_id = u2.id
-                                        WHERE p.is_publish = true and p.is_delete = false
-                                        GROUP BY p.id, u.nickname, u2.nickname, ca.id
-                                        ORDER BY u.nickname ASC;");
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            return $this->execute('getAllPosts')->fetchAll();
         } catch (PDOException $e) {
             echo "Ошибка при получении постов по автору: " . $e->getMessage();
             return [];
@@ -86,8 +79,8 @@ class DatabaseService implements DatabaseServiceInterface
     {
         try {
             $stmt = $this->pdo->query("SELECT p.*, 
-                                            u.nickname as user_nickname, 
-                                            u2.nickname as last_editor_nickname,
+                                            u.login as user_login, 
+                                            u2.login as last_editor_login,
                                             ca.id as category_id,
                                             ca.name as category_name,
                                             COUNT(l.id) as like_count,
@@ -100,8 +93,8 @@ class DatabaseService implements DatabaseServiceInterface
                                         JOIN users u ON p.author_id = u.id
                                         JOIN users u2 ON p.last_editor_id = u2.id
                                         WHERE p.is_publish = true and p.is_delete = false
-                                        GROUP BY p.id, u.nickname, u2.nickname, ca.id
-                                        ORDER BY u.nickname DESC;");
+                                        GROUP BY p.id, u.login, u2.login, ca.id
+                                        ORDER BY u.login DESC;");
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             echo "Ошибка при получении постов по автору: " . $e->getMessage();
@@ -110,12 +103,12 @@ class DatabaseService implements DatabaseServiceInterface
     }
 
     // Метод для получения всех постов по конкретному нику автора
-    public function getPostsByAuthor($author_nickname): array
+    public function getPostsByAuthor($author_login): array
     {
         try {
             $stmt = $this->pdo->prepare("SELECT p.*, 
-                                            u.nickname as user_nickname, 
-                                            u2.nickname as last_editor_nickname,
+                                            u.login as user_login, 
+                                            u2.login as last_editor_login,
                                             ca.id as category_id,
                                             ca.name as category_name,
                                             COUNT(l.id) as like_count,
@@ -127,9 +120,9 @@ class DatabaseService implements DatabaseServiceInterface
                                         LEFT JOIN categories ca ON ca.id = cp.category_id
                                         JOIN users u ON p.author_id = u.id
                                         JOIN users u2 ON p.last_editor_id = u2.id 
-                                        WHERE u.nickname = :author_nickname AND p.is_publish = true AND p.is_delete = false
-                                        GROUP BY p.id, u.nickname, u2.nickname, ca.id;");
-            $stmt->execute(['author_nickname' => $author_nickname]);
+                                        WHERE u.login = :author_login AND p.is_publish = true AND p.is_delete = false
+                                        GROUP BY p.id, u.login, u2.login, ca.id;");
+            $stmt->execute(['author_login' => $author_login]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             echo "Ошибка при получении постов по автору: " . $e->getMessage();
@@ -142,8 +135,8 @@ class DatabaseService implements DatabaseServiceInterface
     {
         try {
             $stmt = $this->pdo->query("SELECT p.*, 
-                                            u.nickname as user_nickname,
-                                            u2.nickname as last_editor_nickname,
+                                            u.login as user_login,
+                                            u2.login as last_editor_login,
                                             ca.id as category_id,
                                             ca.name as category_name,
                                             COUNT(l.id) as like_count,
@@ -156,7 +149,7 @@ class DatabaseService implements DatabaseServiceInterface
                                         JOIN users u ON p.author_id = u.id
                                         JOIN users u2 ON p.last_editor_id = u2.id 
                                         WHERE p.is_publish = true and p.is_delete = false
-                                        GROUP BY p.id, u.nickname, u2.nickname, ca.id
+                                        GROUP BY p.id, u.login, u2.login, ca.id
                                         ORDER BY like_count ASC;");
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
@@ -170,8 +163,8 @@ class DatabaseService implements DatabaseServiceInterface
     {
         try {
             $stmt = $this->pdo->query("SELECT p.*, 
-                                            u.nickname as user_nickname, 
-                                            u2.nickname as last_editor_nickname,
+                                            u.login as user_login, 
+                                            u2.login as last_editor_login,
                                             ca.id as category_id,
                                             ca.name as category_name,
                                             COUNT(l.id) as like_count,
@@ -184,7 +177,7 @@ class DatabaseService implements DatabaseServiceInterface
                                         LEFT JOIN category_posts cp ON cp.post_id = p.id
                                         LEFT JOIN categories ca ON ca.id = cp.category_id
                                         WHERE p.is_publish = true and p.is_delete = false
-                                        GROUP BY p.id, u.nickname, u2.nickname, ca.id
+                                        GROUP BY p.id, u.login, u2.login, ca.id
                                         ORDER BY like_count DESC;");
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
@@ -198,8 +191,8 @@ class DatabaseService implements DatabaseServiceInterface
     {
         try {
             $stmt = $this->pdo->query("SELECT p.*, 
-                                            u.nickname as user_nickname,
-                                            u2.nickname as last_editor_nickname,
+                                            u.login as user_login,
+                                            u2.login as last_editor_login,
                                             ca.id as category_id,
                                             ca.name as category_name,
                                             COUNT(l.id) as like_count,
@@ -212,7 +205,7 @@ class DatabaseService implements DatabaseServiceInterface
                                         JOIN users u ON p.author_id = u.id
                                         JOIN users u2 ON p.last_editor_id = u2.id
                                         WHERE p.is_publish = true and p.is_delete = false
-                                        GROUP BY p.id, u.nickname, u2.nickname, ca.id
+                                        GROUP BY p.id, u.login, u2.login, ca.id
                                         ORDER BY comment_count ASC;");
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
@@ -226,8 +219,8 @@ class DatabaseService implements DatabaseServiceInterface
     {
         try {
             $stmt = $this->pdo->query("SELECT p.*, 
-                                            u.nickname as user_nickname, 
-                                            u2.nickname as last_editor_nickname,
+                                            u.login as user_login, 
+                                            u2.login as last_editor_login,
                                             ca.id as category_id,
                                             ca.name as category_name,
                                             COUNT(l.id) as like_count,
@@ -240,7 +233,7 @@ class DatabaseService implements DatabaseServiceInterface
                                         JOIN users u ON p.author_id = u.id 
                                         JOIN users u2 ON p.last_editor_id = u2.id 
                                         WHERE p.is_publish = true and p.is_delete = false
-                                        GROUP BY p.id, u.nickname, u2.nickname, ca.id
+                                        GROUP BY p.id, u.login, u2.login, ca.id
                                         ORDER BY comment_count DESC;");
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
@@ -253,8 +246,8 @@ class DatabaseService implements DatabaseServiceInterface
     {
         try {
             $stmt = $this->pdo->prepare("SELECT p.* ,
-                                        u.nickname as user_nickname, 
-                                        u2.nickname as last_editor_nickname,
+                                        u.login as user_login, 
+                                        u2.login as last_editor_login,
                                         ca.id as category_id,
                                         ca.name as category_name,
                                         COUNT(l.id) as like_count,
@@ -268,7 +261,7 @@ class DatabaseService implements DatabaseServiceInterface
                                         JOIN users u2 ON p.last_editor_id = u2.id 
                                         JOIN users u ON p.author_id = u.id  
                                         WHERE t.name = :tag_name
-                                        GROUP BY p.id, u.nickname, u2.nickname, ca.id");
+                                        GROUP BY p.id, u.login, u2.login, ca.id");
             $stmt->execute(['tag_name' => $tagName]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
@@ -282,8 +275,8 @@ class DatabaseService implements DatabaseServiceInterface
     {
         try {
             $stmt = $this->pdo->prepare("SELECT p.*, 
-                                            u.nickname as user_nickname,
-                                            u2.nickname as last_editor_nickname, 
+                                            u.login as user_login,
+                                            u2.login as last_editor_login, 
                                             ca.id as category_id,
                                             ca.name as category_name,
                                             COUNT(l.id) as like_count,
@@ -296,7 +289,7 @@ class DatabaseService implements DatabaseServiceInterface
                                         JOIN users u ON p.author_id = u.id  
                                         JOIN users u2 ON p.last_editor_id = u2.id
                                         WHERE u.id = :user_id and p.is_publish = true
-                                        GROUP BY p.id, u.nickname, u2.nickname, ca.id;");
+                                        GROUP BY p.id, u.login, u2.login, ca.id;");
             $stmt->execute(['user_id' => $userId]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
@@ -310,13 +303,13 @@ class DatabaseService implements DatabaseServiceInterface
     {
         try {
             $stmt = $this->pdo->query("SELECT p.*, 
-                                            u.nickname as user_nickname, 
-                                            u2.nickname as last_editor_nickname
+                                            u.login as user_login, 
+                                            u2.login as last_editor_login
                                         FROM posts p
                                         JOIN users u ON p.author_id = u.id
                                         JOIN users u2 ON p.last_editor_id = u2.id
                                         WHERE p.is_publish = false and p.is_delete = false
-                                        GROUP BY p.id, u.nickname, u2.nickname;");
+                                        GROUP BY p.id, u.login, u2.login;");
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             echo "Ошибка при получении постов: " . $e->getMessage();
@@ -326,7 +319,7 @@ class DatabaseService implements DatabaseServiceInterface
 
     // Метод для получения поста по ид
     public function getPostById(int $postId): ?array
-    {
+    { 
         try {
             $this->pdo->beginTransaction();
 
@@ -348,17 +341,17 @@ class DatabaseService implements DatabaseServiceInterface
             $commentCount = $stmt->fetchColumn();
 
             $authorId = $post['author_id'];
-            $stmt = $this->pdo->prepare("SELECT nickname FROM users WHERE id = :authorId");
+            $stmt = $this->pdo->prepare("SELECT login FROM users WHERE id = :authorId");
             $stmt->execute([':authorId' => $authorId]);
-            $authorNickname = $stmt->fetchColumn();
+            $authorLogin = $stmt->fetchColumn();
 
-            $editorNickname = null;
+            $editorLogin = null;
             if (isset($post['last_editor_id']) && $post['last_editor_id'] !== null) 
             {
                 $lastEditorId = $post['last_editor_id'];
-                $stmt = $this->pdo->prepare("SELECT nickname FROM users WHERE id = :lastEditorId");
+                $stmt = $this->pdo->prepare("SELECT login FROM users WHERE id = :lastEditorId");
                 $stmt->execute([':lastEditorId' => $lastEditorId]);
-                $editorNickname = $stmt->fetchColumn();
+                $editorLogin = $stmt->fetchColumn();
             }
             $stmt = $this->pdo->prepare("SELECT category_id FROM category_posts WHERE post_id = :post_id");
             $stmt->execute([':post_id' => $postId]);
@@ -374,8 +367,8 @@ class DatabaseService implements DatabaseServiceInterface
                 'post' => $post,
                 'like_count' => $likeCount,
                 'comment_count' => $commentCount,
-                'author_nickname' => $authorNickname,
-                'last_editor_nickname' => $editorNickname,
+                'author_login' => $authorLogin,
+                'last_editor_login' => $editorLogin,
                 'category_id' => $categoryId,
                 'category_name' => $categoryName,
             ];
@@ -407,17 +400,17 @@ class DatabaseService implements DatabaseServiceInterface
             }
 
             $authorId = $post['author_id'];
-            $stmt = $this->pdo->prepare("SELECT nickname FROM users WHERE id = :authorId");
+            $stmt = $this->pdo->prepare("SELECT login FROM users WHERE id = :authorId");
             $stmt->execute([':authorId' => $authorId]);
-            $authorNickname = $stmt->fetchColumn();
+            $authorLogin = $stmt->fetchColumn();
 
-            $editorNickname = null;
+            $editorLogin = null;
             if (isset($post['last_editor_id']) && $post['last_editor_id'] !== null) 
             {
                 $lastEditorId = $post['last_editor_id'];
-                $stmt = $this->pdo->prepare("SELECT nickname FROM users WHERE id = :lastEditorId");
+                $stmt = $this->pdo->prepare("SELECT login FROM users WHERE id = :lastEditorId");
                 $stmt->execute([':lastEditorId' => $lastEditorId]);
-                $editorNickname = $stmt->fetchColumn();
+                $editorLogin = $stmt->fetchColumn();
             }
 
             $stmt = $this->pdo->prepare("SELECT category_id FROM category_posts WHERE post_id = :post_id");
@@ -436,8 +429,8 @@ class DatabaseService implements DatabaseServiceInterface
 
             $result = [
                 'post' => $post,
-                'author_nickname' => $authorNickname,
-                'last_editor_nickname' => $editorNickname,
+                'author_login' => $authorLogin,
+                'last_editor_login' => $editorLogin,
                 'category_id' => $categoryId,
                 'category_name' => $categoryName,
             ];
@@ -551,7 +544,7 @@ class DatabaseService implements DatabaseServiceInterface
     public function getCommentsByPostId(int $postId): array
     {
         try {
-            $stmt = $this->pdo->prepare("SELECT c.*, u.nickname as user_nickname
+            $stmt = $this->pdo->prepare("SELECT c.*, u.login as user_login
                                         FROM comments c
                                         JOIN users u ON c.user_id = u.id
                                         WHERE c.post_id = :post_id AND c.is_delete = FALSE");
@@ -778,12 +771,12 @@ class DatabaseService implements DatabaseServiceInterface
     }
 
     // Метод для добавления нового пользователя
-    public function addUser(string $nickname, string $password): bool
+    public function addUser(string $login, string $password): bool
     {
         try {
-            $stmt = $this->pdo->prepare("INSERT INTO users (nickname, password, role_id) VALUES (:nickname, :password, 2)");
+            $stmt = $this->pdo->prepare("INSERT INTO users (login, password, role_id) VALUES (:login, :password, 2)");
             $stmt->execute([
-                'nickname' => $nickname,
+                'login' => $login,
                 'password' => password_hash($password, PASSWORD_DEFAULT) // Хэшируем пароль
             ]);
             return true;
@@ -794,13 +787,13 @@ class DatabaseService implements DatabaseServiceInterface
     }
 
     // Метод для авторизации пользователя
-    public function authorizationUser(string $nickname, string $password): mixed
+    public function authorizationUser(string $login, string $password): mixed
     {
         try {
             $stmt = $this->pdo->prepare("SELECT u.*, r.name AS role_name 
                                         FROM users u JOIN roles r ON u.role_id = r.id 
-                                        WHERE u.nickname = :nickname");
-            $stmt->execute(['nickname' => $nickname]);
+                                        WHERE u.login = :login");
+            $stmt->execute(['login' => $login]);
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
             if ($user && password_verify($password, $user['password'])) {
@@ -815,13 +808,13 @@ class DatabaseService implements DatabaseServiceInterface
     }
 
     // Метод для проверки занятого ника
-    public function checkUserNickname(string $nickname): bool
+    public function checkUserLogin(string $login): bool
     {
         try {
             $stmt = $this->pdo->prepare("SELECT u.*, r.name AS role_name 
                                         FROM users u JOIN roles r ON u.role_id = r.id 
-                                        WHERE u.nickname = :nickname");
-            $stmt->execute(['nickname' => $nickname]);
+                                        WHERE u.login = :login");
+            $stmt->execute(['login' => $login]);
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
            return !!$user;
@@ -891,7 +884,7 @@ class DatabaseService implements DatabaseServiceInterface
     public function getAllCategories(): array
     {
         try {
-            $stmt = $this->pdo->query("SELECT * FROM categories ORDER BY id ASC");
+            $stmt = $this->pdo->query("SELECT * FROM categories WHERE is_delete = FALSE ORDER BY id ASC");
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             echo "Ошибка при получении категорий: " . $e->getMessage();
@@ -932,7 +925,7 @@ class DatabaseService implements DatabaseServiceInterface
     public function getCategoryById(int $categoryId): ?array
     {
         try {
-            $stmt = $this->pdo->prepare("SELECT * FROM categories WHERE id = :category_id");
+            $stmt = $this->pdo->prepare("SELECT * FROM categories WHERE id = :category_id AND is_delete = FALSE");
             $stmt->execute(['category_id' => $categoryId]);
             return $stmt->fetch(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
@@ -998,7 +991,7 @@ class DatabaseService implements DatabaseServiceInterface
                 SELECT c.*
                 FROM categories c
                 JOIN category_posts cp ON c.id = cp.category_id
-                WHERE cp.post_id = :post_id
+                WHERE cp.post_id = :post_id AND c.is_delete = FALSE
             ");
             $stmt->execute(['post_id' => $postId]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -1014,15 +1007,16 @@ class DatabaseService implements DatabaseServiceInterface
         try {
             $stmt = $this->pdo->prepare("
                 WITH RECURSIVE category_tree AS (
-                SELECT id FROM categories WHERE id = :category_id
+                SELECT id FROM categories WHERE id = :category_id AND is_delete = FALSE
                 UNION ALL
                 SELECT c.id 
                 FROM categories c
                 INNER JOIN category_tree ct ON c.parent_id = ct.id
+                WHERE c.is_delete = FALSE
             )
             SELECT p.*, 
-                u.nickname as user_nickname,
-                u2.nickname as last_editor_nickname,
+                u.login as user_login,
+                u2.login as last_editor_login,
                 ca.id as category_id,
                 ca.name as category_name,  
                 COUNT(l.id) as like_count,
@@ -1034,8 +1028,11 @@ class DatabaseService implements DatabaseServiceInterface
              LEFT JOIN categories ca ON ca.id = cp.category_id
             JOIN users u ON p.author_id = u.id
             JOIN users u2 ON p.last_editor_id = u2.id
-            WHERE cp.category_id IN (SELECT id FROM category_tree) AND p.is_publish = true
-            GROUP BY p.id, u.nickname, u2.nickname, ca.id;
+            WHERE cp.category_id IN (SELECT id FROM category_tree) 
+            AND p.is_publish = true
+            AND p.is_delete = false
+            AND ca.is_delete = FALSE
+            GROUP BY p.id, u.login, u2.login, ca.id;
             ");
 
             $stmt->execute(['category_id' => $categoryId]);
@@ -1050,35 +1047,59 @@ class DatabaseService implements DatabaseServiceInterface
     public function deleteCategory(int $categoryId): bool
     {
         try {
-            $stmt = $this->pdo->prepare("DELETE FROM category_posts WHERE category_id = :category_id");
-            $stmt->execute(['category_id' => $categoryId]);
-
-            $stmt = $this->pdo->prepare("DELETE FROM categories WHERE id = :category_id");
-            $stmt->execute(['category_id' => $categoryId]);
-
+            $this->pdo->beginTransaction();
+            $this->markAsDeletedRecursive($categoryId);
+            $this->pdo->commit();
             return true;
         } catch (PDOException $e) {
-            error_log("Ошибка удаления категории: " . $e->getMessage());
+            error_log("Ошибка при пометке категории как удалённой: " . $e->getMessage());
             return false;
         }
     }
 
+    // Рекурсивная функция для пометки категории и всех подкатегорий как удалённых
+    private function markAsDeletedRecursive(int $categoryId): void
+    {
+        $stmt = $this->pdo->prepare("
+            UPDATE categories 
+            SET is_delete = TRUE 
+            WHERE id = :category_id AND is_delete = FALSE
+        ");
+        $stmt->execute(['category_id' => $categoryId]);
+
+        $stmt = $this->pdo->prepare("
+            SELECT id FROM categories 
+            WHERE parent_id = :category_id AND is_delete = FALSE
+        ");
+        $stmt->execute(['category_id' => $categoryId]);
+
+        $children = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+        foreach ($children as $childId) {
+            $this->markAsDeletedRecursive($childId);
+        }
+    }
+
+    // Метод для добавления связи между постом и категорией
     public function connectPostAndCategory(int $postId, int $categoryId): bool
     {
         try {
             $this->pdo->beginTransaction();
-            $stmt = $this->pdo->prepare("DELETE FROM category_posts 
-                                        WHERE post_id = :post_id;");
+            
+            // Проверяем, что категория не удалена
+            $stmt = $this->pdo->prepare("SELECT 1 FROM categories WHERE id = :category_id AND is_delete = FALSE");
+            $stmt->execute(['category_id' => $categoryId]);
+            if (!$stmt->fetch()) {
+                throw new PDOException("Категория не найдена или удалена");
+            }
 
+            $stmt = $this->pdo->prepare("DELETE FROM category_posts WHERE post_id = :post_id;");
             $stmt->execute(['post_id' => $postId]);
 
-            $stmt = $this->pdo->prepare("INSERT INTO category_posts (category_id, post_id)
-                                        VALUES (:category_id, :post_id);");
-
-            $stmt->execute(['category_id' => $categoryId,
-                            'post_id' => $postId]);
+            $stmt = $this->pdo->prepare("INSERT INTO category_posts (category_id, post_id) VALUES (:category_id, :post_id);");
+            $stmt->execute(['category_id' => $categoryId, 'post_id' => $postId]);
+            
             $this->pdo->commit();
-
             return true;
         } catch (PDOException $e) {
             if ($this->pdo->inTransaction()) {

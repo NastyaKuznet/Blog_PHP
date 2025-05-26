@@ -8,7 +8,7 @@ class Comment
     public $content;
     public $postId;
     public $userId;
-    public $userNickname;
+    public $userLogin;
     public $createdDate;
     public $editDate;
     public $deleteDate;
@@ -20,7 +20,7 @@ class Comment
         string $content, 
         int $postId, 
         int $userId, 
-        string $userNickname, 
+        string $userLogin, 
         string $createdDate, 
         ?string $editDate = null,
         ?string $deleteDate = null,
@@ -31,7 +31,7 @@ class Comment
         $this->content = $content;
         $this->postId = $postId;
         $this->userId = $userId;
-        $this->userNickname = $userNickname;
+        $this->userLogin = $userLogin;
         $this->createdDate = $createdDate;
         $this->editDate = $editDate;
         $this->deleteDate = $deleteDate;

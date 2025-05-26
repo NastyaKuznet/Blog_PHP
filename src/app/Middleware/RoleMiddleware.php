@@ -9,84 +9,70 @@ use Slim\Psr7\Response as SlimResponse;
 
 class RoleMiddleware
 {
+    private array $routePermissions;
+
+    public function __construct(array $routePermissions)
+    {
+        $this->routePermissions = $routePermissions;
+    }
 
     public function __invoke(Request $request, Handler $handler): Response
     {
-        // Разрешённые маршруты без авторизации
-        $allowedRoutes = [
-            '/', 
-            '/login', 
-            '/register', 
-            '/logout',
-            '/post', 
-            '#^/post/\d+$#', 
-            '#^/post/\d+/like$#'
-        ];
-
         // Получаем текущий URI
         $uri = $request->getUri()->getPath();
 
-        foreach ($allowedRoutes as $route) {            
-            if (str_starts_with($route, '#')) {
-                $matchResult = preg_match($route, $uri);
-                
-                if ($matchResult) {
-                    return $handler->handle($request);
-                }
-            } else {
-                if ($uri === $route) {
-                    return $handler->handle($request);
-                }
-            }
-        }
-
         // Получаем пользователя из атрибутов запроса
         $user = $request->getAttribute('user');
-        //die($user);
 
-        // Проверяем, установлен ли атрибут user и является ли он массивом
-        if (!is_array($user) || $user === null) {
-            $response = new SlimResponse();
-            $response->getBody()->write('Access denied');
-            return $response->withStatus(403);
+        // Определяем роль: если пользователь не авторизован - он читатель
+        $role = is_array($user) && !empty($user['role']) ? $user['role'] : 'reader'; 
+
+        // Получаем разрешенные маршруты для роли
+        $allowedRoutes = $this->getAllowedRoutesForRole($role);
+
+        if ($this->isRouteAllowed($uri, $allowedRoutes)) {
+            return $handler->handle($request);
         }
 
-        $routes = [
-            'reader'    => ['#^/post(\?.*)?$#', '#^/post/\d+$#'],
-            'writer'    => ['#^/post(\?.*)?$#', '#^/post/\d+$#', '#^/post/\d+/like$#', '/account', '/post/create', '#^/comment/edit/\d+$#', '#^/comment/delete/\d+$#'],
-            'moderator' => ['#^/post(\?.*)?$#', '#^/post/\d+$#', '#^/post/\d+/like$#', '/account', '/post/create', '#^/post/edit/\d+$#', '#^/comment/edit/\d+$#', '#^/comment/delete/\d+$#', '/post-non-publish', '#^/post-non-publish/\d+$#', '/categories', '/category/create', '#^/category/delete/\d+$#'],
-            'admin'     => ['#^/post(\?.*)?$#', '#^/post/\d+$#', '#^/post/\d+/like$#', '/account', '/post/create', '#^/post/edit/\d+$#', '/admin/users', '/admin/change_role', '/admin/delete_user', '#^/comment/edit/\d+$#', '#^/comment/delete/\d+$#', '/post-non-publish', '#^/post-non-publish/\d+$#', '/categories', '/category/create', '#^/category/delete/\d+$#', '/admin/toggle_ban'],
-        ];
+        return $this->denyAccess();
+    }
 
-        $role = $user['role'];
-
-        if (isset($routes[$role])) {
-            foreach ($routes[$role] as $route) {
-                if (strpos($route, '#') === 0) {  // Если начинается с #, значит это регулярное выражение
-                    if (preg_match($route, $uri)) {
-                        return $handler->handle($request);
-                    }
-                } else { // Иначе - простое сравнение строк
-                    if ($uri === $route) {
-                        return $handler->handle($request);
-                    }
-                }
-            }
+    private function getAllowedRoutesForRole(string $role): array
+    {
+        if (!isset($this->routePermissions['roles'][$role])) {
+            return [];
         }
 
-        $response = new SlimResponse();
-        $response->getBody()->write('Access denied');
-        return $response->withStatus(403);
+        $roleConfig = $this->routePermissions['roles'][$role];
+        $routes = $roleConfig['routes'] ?? [];
+
+        // Рекурсивно добавляем унаследованные маршруты
+        if (isset($roleConfig['extends'])) {
+            $inherited = $this->getAllowedRoutesForRole($roleConfig['extends']);
+            $routes = array_merge($inherited, $routes);
+        }
+
+        return $routes;
     }
 
     private function isRouteAllowed(string $uri, array $allowedRoutes): bool
     {
         foreach ($allowedRoutes as $route) {
-            echo($route);
-            if (preg_match($route, $uri)) {
+            if (str_starts_with($route, '#')) {
+                if (preg_match($route, $uri)) {
+                    return true;
+                }
+            } elseif ($uri === $route) {
                 return true;
             }
         }
         return false;
+    }
+
+    private function denyAccess(): Response
+    {
+        $response = new SlimResponse();
+        $response->getBody()->write('Access denied');
+        return $response->withStatus(403);
     }
 }

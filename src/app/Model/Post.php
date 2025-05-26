@@ -9,9 +9,9 @@ class Post
     public $preview;
     public $content;
     public $userId;
-    public $userNickname;
+    public $userLogin;
     public $lastEditorId;
-    public $lastEditorNickname;
+    public $lastEditorLogin;
     public $commentCount;
     public $createDate;
     public $publishDate;
@@ -21,16 +21,16 @@ class Post
     public $editDate;
     public $likes;
 
-    public function __construct(int $id, string $title, string $preview, string $content, int $userId, string $userNickname, int $lastEditorId, string $lastEditorNickname, string $createDate, ?string $publishDate, ?string $editDate, ?int $categoryId, ?string $categoryName, array $tags = [], int $likes = 0, int $commentCount = 0)
+    public function __construct(int $id, string $title, string $preview, string $content, int $userId, string $userLogin, int $lastEditorId, string $lastEditorLogin, string $createDate, ?string $publishDate, ?string $editDate, ?int $categoryId, ?string $categoryName, array $tags = [], int $likes = 0, int $commentCount = 0)
     {
         $this->id = $id;
         $this->title = $title;
         $this->preview = $preview;
         $this->content = $content;
         $this->userId = $userId;
-        $this->userNickname = $userNickname;
+        $this->userLogin = $userLogin;
         $this->lastEditorId = $lastEditorId;
-        $this->lastEditorNickname = $lastEditorNickname;
+        $this->lastEditorLogin = $lastEditorLogin;
         $this->commentCount = $commentCount;
         $this->createDate = $createDate;
         $this->publishDate = $publishDate;

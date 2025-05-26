@@ -16,10 +16,10 @@ class PostService implements PostServiceInterface
         $this->databaseService = $databaseService;
     }
 
-    private function getPostsWithFilters(?string $sortBy, ?string $order, ?string $authorNickname, ?string $tag): array
+    private function getPostsWithFilters(?string $sortBy, ?string $order, ?string $authorLogin, ?string $tag): array
     {
-        if ($authorNickname) {
-            $postsFromDb = $this->databaseService->getPostsByAuthor($authorNickname);
+        if ($authorLogin) {
+            $postsFromDb = $this->databaseService->getPostsByAuthor($authorLogin);
             return $postsFromDb;
         }
 
@@ -61,9 +61,9 @@ class PostService implements PostServiceInterface
         return $postsFromDb;
     }
 
-    public function getAllPosts(?string $sortBy, ?string $order, ?string $authorNickname, ?string $tag): array
+    public function getAllPosts(?string $sortBy, ?string $order, ?string $authorLogin, ?string $tag): array
     {
-        $postsFromDb = $this->getPostsWithFilters($sortBy, $order, $authorNickname, $tag);
+        $postsFromDb = $this->getPostsWithFilters($sortBy, $order, $authorLogin, $tag);
         $posts = [];
         foreach ($postsFromDb as $postData) {
             $tags = $this->getTagsByPostId($postData['id']);
@@ -73,9 +73,9 @@ class PostService implements PostServiceInterface
                 $postData['preview'],
                 $postData['content'],
                 $postData['author_id'],
-                $postData['user_nickname'],
+                $postData['user_login'],
                 $postData['last_editor_id'],
-                $postData['last_editor_nickname'],
+                $postData['last_editor_login'],
                 $postData['create_date'],
                 $postData['publish_date'],
                 $postData['edit_date'],
@@ -102,9 +102,9 @@ class PostService implements PostServiceInterface
                 $postData['preview'],
                 $postData['content'],
                 $postData['author_id'],
-                $postData['user_nickname'],
+                $postData['user_login'],
                 $postData['last_editor_id'],
-                $postData['last_editor_nickname'],
+                $postData['last_editor_login'],
                 $postData['create_date'],
                 $postData['publish_date'],
                 $postData['edit_date'],
@@ -131,9 +131,9 @@ class PostService implements PostServiceInterface
                 $postFromDb['post']['preview'],
                 $postFromDb['post']['content'],
                 $postFromDb['post']['author_id'],
-                $postFromDb['author_nickname'],
+                $postFromDb['author_login'],
                 $postFromDb['post']['last_editor_id'],
-                $postFromDb['last_editor_nickname'],
+                $postFromDb['last_editor_login'],
                 $postFromDb['post']['create_date'],
                 $postFromDb['post']['publish_date'],
                 $postFromDb['post']['edit_date'],
@@ -204,9 +204,9 @@ class PostService implements PostServiceInterface
                 $postFromDb['post']['preview'],
                 $postFromDb['post']['content'],
                 $postFromDb['post']['author_id'],
-                $postFromDb['author_nickname'],
+                $postFromDb['author_login'],
                 $postFromDb['post']['last_editor_id'],
-                $postFromDb['last_editor_nickname'],
+                $postFromDb['last_editor_login'],
                 $postFromDb['post']['create_date'],
                 $postFromDb['post']['publish_date'],
                 $postFromDb['post']['edit_date'],
@@ -262,9 +262,9 @@ class PostService implements PostServiceInterface
                 $postData['preview'],
                 $postData['content'],
                 $postData['author_id'],
-                $postData['user_nickname'],
+                $postData['user_login'],
                 $postData['last_editor_id'],
-                $postData['last_editor_nickname'],
+                $postData['last_editor_login'],
                 $postData['create_date'],
                 $postData['publish_date'],
                 $postData['edit_date'],
@@ -290,9 +290,9 @@ class PostService implements PostServiceInterface
                 $postData['preview'],
                 $postData['content'],
                 $postData['author_id'],
-                $postData['user_nickname'],
+                $postData['user_login'],
                 $postData['last_editor_id'],
-                $postData['last_editor_nickname'],
+                $postData['last_editor_login'],
                 $postData['create_date'],
                 $postData['publish_date'],
                 $postData['edit_date'],

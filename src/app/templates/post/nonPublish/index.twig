@@ -20,7 +20,7 @@
                 <p>{{ post.preview|nl2br }}</p>
                 <p>Теги: {% for tag in post.tags %}{{ tag.name }}{% if not loop.last %}, {% endif %}{% endfor %}</p>
                 <p>Дата создания поста: {{ post.createDate|date('H:i d.m.Y', 'Asia/Yekaterinburg') }}</p>
-                <p>Автор: {{ post.userNickname|escape }}</p>
+                <p>Автор: {{ post.userLogin|escape }}</p>
                 <a href="/post-non-publish/{{ post.id|escape }}">Открыть пост</a>
             </div>
         {% endfor %}

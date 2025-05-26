@@ -30,10 +30,10 @@
     <body>
         <a href="/post-non-publish">Лента неопубликованных постов</a>
         <h1>Редактирование неопубликованного поста</h1>
-        <p>Автор поста: {{ post.userNickname|escape }}</p>
+        <p>Автор поста: {{ post.userLogin|escape }}</p>
         <p>Дата создания поста: {{ post.createDate|date('H:i d.m.Y', 'Asia/Yekaterinburg') }}</p>
         {% if post.editDate %}
-            <p>Пост был редактирован: {{ post.lastEditorNickname|escape }}</p>
+            <p>Пост был редактирован: {{ post.lastEditorLogin|escape }}</p>
             <p>Дата редактирования поста: {{ post.editDate|date('H:i d.m.Y', 'Asia/Yekaterinburg') }}</p>
         {% endif %}
         <form action="/post-non-publish/{{ post.id }}" method="POST">

@@ -19,7 +19,7 @@
         {% for user in users %}
             <tr>
                 <td>{{ user.id|escape }}</td>
-                <td>{{ user.nickname|escape }}</td>
+                <td>{{ user.login|escape }}</td>
                 <td>{{ user.roleName|escape }}</td>
                 <td>{{ user.registerDate|date('H:i d.m.Y', 'Asia/Yekaterinburg') }}</td>
                 <td>{{ user.isBanned ? 'Да' : 'Нет' }}</td>

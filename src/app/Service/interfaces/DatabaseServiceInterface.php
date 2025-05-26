@@ -6,7 +6,7 @@ interface DatabaseServiceInterface
     public function getAllPosts(): array;
     public function getPostsByAuthorAlphabetical(): array;
     public function getPostsByAuthorReverseAlphabetical(): array;
-    public function getPostsByAuthor($author_nickname): array;
+    public function getPostsByAuthor($author_login): array;
     public function getPostsByLikesAscending(): array;
     public function getPostsByLikesDescending(): array;
     public function getPostsByCommentsAscending(): array;
@@ -33,9 +33,9 @@ interface DatabaseServiceInterface
     public function getAllUsers(): array;
     public function changeUserRole(int $user_id, int $new_role_id): bool;
     public function deleteUser(int $user_id): bool;
-    public function addUser(string $nickname, string $password): bool;
-    public function authorizationUser(string $nickname, string $password): mixed;
-    public function checkUserNickname(string $nickname): bool;
+    public function addUser(string $login, string $password): bool;
+    public function authorizationUser(string $login, string $password): mixed;
+    public function checkUserLogin(string $login): bool;
     public function toggleUserBan(int $userId, bool $isBanned): bool;
     public function getRoles(): array;
     public function getAllTags(): array;
