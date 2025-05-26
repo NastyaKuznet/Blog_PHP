@@ -1,0 +1,1 @@
+SELECT u.*, r.name AS role_name FROM users u JOIN roles r ON u.role_id = r.id WHERE u.login = :login;

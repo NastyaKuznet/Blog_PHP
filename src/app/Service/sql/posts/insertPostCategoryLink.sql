@@ -1,0 +1,1 @@
+INSERT INTO category_posts (category_id, post_id) VALUES (:category_id, :post_id);

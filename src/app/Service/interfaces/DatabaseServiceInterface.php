@@ -32,7 +32,6 @@ interface DatabaseServiceInterface
     public function getUserInfo(int $user_id): array;
     public function getAllUsers(): array;
     public function changeUserRole(int $user_id, int $new_role_id): bool;
-    public function deleteUser(int $user_id): bool;
     public function addUser(string $login, string $password): bool;
     public function authorizationUser(string $login, string $password): mixed;
     public function checkUserLogin(string $login): bool;

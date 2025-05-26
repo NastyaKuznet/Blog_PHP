@@ -1,0 +1,1 @@
+SELECT c.* FROM categories c JOIN category_posts cp ON c.id = cp.category_id WHERE cp.post_id = :post_id AND c.is_delete = FALSE;

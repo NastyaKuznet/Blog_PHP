@@ -1,0 +1,1 @@
+SELECT COUNT(*) FROM posts p WHERE p.author_id = :user_id and p.is_publish = true;

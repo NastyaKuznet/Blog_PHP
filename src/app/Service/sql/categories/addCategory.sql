@@ -1,0 +1,1 @@
+INSERT INTO categories (name, parent_id) VALUES (:name, :parent_id);

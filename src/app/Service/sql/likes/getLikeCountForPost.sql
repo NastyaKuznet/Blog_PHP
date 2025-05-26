@@ -1,0 +1,1 @@
+SELECT COUNT(*) FROM likes WHERE post_id = :postId;

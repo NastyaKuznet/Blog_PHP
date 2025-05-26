@@ -1,0 +1,1 @@
+SELECT t.* FROM tags t WHERE t.post_id = :post_id;

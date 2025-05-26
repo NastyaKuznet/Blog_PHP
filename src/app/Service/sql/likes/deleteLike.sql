@@ -1,0 +1,1 @@
+DELETE FROM likes l WHERE l.post_id = :post_id AND l.user_id = :user_id;
