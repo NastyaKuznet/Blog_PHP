@@ -2,19 +2,19 @@
 
 namespace NastyaKuznet\Blog\Controller;
 
-use NastyaKuznet\Blog\Service\PostService;
-use NastyaKuznet\Blog\Service\UserService;
+use NastyaKuznet\Blog\Service\interfaces\PostServiceInterface;
+use NastyaKuznet\Blog\Service\interfaces\UserServiceInterface;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Views\Twig;
 
 class UserAccountController
 {
-    private PostService $postService;
-    private UserService $userService;
+    private PostServiceInterface $postService;
+    private UserServiceInterface $userService;
     private Twig $view;
 
-    public function __construct(PostService $postService, UserService $userService, Twig $view)
+    public function __construct(PostServiceInterface $postService, UserServiceInterface $userService, Twig $view)
     {
         $this->postService = $postService;
         $this->userService = $userService;
@@ -23,7 +23,8 @@ class UserAccountController
 
     public function index(Request $request, Response $response): Response
     {
-        $userId = 1; //теперь всегда под админом, но потом убрать хардкод!
+        $userFromAttribute = $request->getAttribute('user');
+        $userId = $userFromAttribute['id'];
         $user = $this->userService->getUser($userId);
         $countPosts = $this->postService->getCountPosts($userId);
         $posts = $this->postService->getPostsByUserId($userId);
@@ -31,7 +32,7 @@ class UserAccountController
             'posts' => $posts,
             'user' => $user,
             'countPosts' => $countPosts,
-            'app' => [  
+            'app' => [
                 'request' => $request,
             ],
         ]);

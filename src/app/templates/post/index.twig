@@ -2,16 +2,14 @@
 <html>
 <head>
     <title>Лента постов</title>
+    <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-
-<h1>Лента постов</h1>
-
 
 <div style="display: flex; justify-content: space-between; align-items: center;">
   <h1>Лента постов</h1>
   <div>
-        {% if userRole in ['writer','moder', 'admin'] %}
+        {% if userRole in ['writer','moderator', 'admin'] %}
             <form action="/logout" method="post">
                 <button type="submit">Выход</button>
             </form>
@@ -24,11 +22,15 @@
 </div>
 
 <p>
-    {% if userRole in ['writer','moder', 'admin'] %}
+    {% if userRole in ['writer','moderator', 'admin'] %}
     <a href="/account">Аккаунт</a>
+    |
+        <a href="/post/create">Написать пост</a>
     |
     {% endif %}
     {% if userRole in ['moderator', 'admin'] %}
+        <a href="/categories">Категории</a>
+        |
         <a href="/post-non-publish">Неопубликованные посты</a>
     {% endif %} 
     {% if userRole == 'admin' %}
@@ -42,10 +44,9 @@
     <div style="width: 200px; padding-right: 20px;">
         <h2>Фильтры</h2>
 
-        <form action="/post" method="GET">
+        <form action="/" method="GET">
             <label for="author_nickname">Фильтр по никнейму автора:</label><br>
             <input type="text" id="author_nickname" name="author_nickname" value="{{ app.request.get('author_nickname')|escape }}"><br><br>
-
             <label for="sort_by">Сортировать по:</label><br>
             <select name="sort_by" id="sort_by">
                 <option value="">Не выбрано</option>
@@ -53,27 +54,44 @@
                 <option value="likes" {% if app.request.get('sort_by') == 'likes' %}selected{% endif %}>Лайкам</option>
                 <option value="comments" {% if app.request.get('sort_by') == 'comments' %}selected{% endif %}>Комментариям</option>
             </select><br><br>
-
             <label for="order">Порядок:</label><br>
             <select name="order" id="order">
                 <option value="asc" {% if app.request.get('order') == 'asc' %}selected{% endif %}>Возрастанию</option>
                 <option value="desc" {% if app.request.get('order') == 'desc' %}selected{% endif %}>Убыванию</option>
             </select><br><br>
-
+            <label for="tag">По тегу:</label><br>
+            <input type="text" id="tag_search" name="tag_search" value="{{ app.request.get('tag_search')|escape }}"><br><br>
             <button type="submit">Применить</button>
-            <a href="/post">Сбросить фильтры</a>
+            <a href="/">Сбросить фильтры</a>
         </form>
+        <h2>Категории</h2>
+        <ul>
+            {% import _self as self %}
+            {{ self.recursive_print(categories) }}
+        </ul>
+
+        {% macro recursive_print(categories) %}
+            {% import _self as self %}
+            {% for category in categories %}
+                <li>
+                    <a href="/?category_id={{ category.id }}">{{ category.name|escape }}</a>
+                    {% if category.children is defined and category.children|length > 0 %}
+                        <ul>
+                            {{ self.recursive_print(category.children) }}
+                        </ul>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        {% endmacro %}
     </div>
      
     <div style="width: calc(100% - 240px); margin: 0 auto; padding: 0 20px;">
-        {% if userRole in ['writer', 'moder', 'admin'] %}
-            <a href="/post/create">Написать пост</a>
-        {% endif %}
-
         {% for post in posts %}
             <div style="margin-bottom: 20px; border: 1px solid #ccc; padding: 10px; word-wrap: break-word;">
                 <h3>{{ post.title|escape }}</h3>
                 <p>{{ post.preview|nl2br }}</p>
+                <p>Категория: {{ post.categoryName|nl2br }}</p>
+                <p>Теги: {% for tag in post.tags %}{{ tag.name }}{% if not loop.last %}, {% endif %}{% endfor %}</p>
                 <p>Дата публикации поста: {{ post.publishDate|date('H:i d.m.Y', 'Asia/Yekaterinburg') }}</p>
                 <p>Автор: {{ post.userNickname|escape }}</p>
                 <p>Лайков: {{ post.likes|escape }}</p>

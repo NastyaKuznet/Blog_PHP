@@ -4,16 +4,15 @@ namespace NastyaKuznet\Blog\Controller;
 
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Http\Message\ResponseInterface as Response;
-use NastyaKuznet\Blog\Service\AuthService;
-use Slim\Psr7\Response as SlimResponse;
+use NastyaKuznet\Blog\Service\Interfaces\AuthServiceInterface;
 use Slim\Views\Twig;
 
 class AuthController
 {
-    private $authService;
+    private AuthServiceInterface $authService;
     private Twig $view;
 
-    public function __construct(AuthService $authService, Twig $view)
+    public function __construct(AuthServiceInterface $authService, Twig $view)
     {
         $this->authService = $authService;
         $this->view = $view;
@@ -101,6 +100,13 @@ class AuthController
         if (!$user) {
             return $this->view->render($response, 'auth/login.twig', [
                 'error' => '<div class="error">Неверное имя или пароль</div>'
+            ]);
+        }
+
+        if($user->isBanned)
+        {
+            return $this->view->render($response, 'auth/login.twig', [
+                'error' => '<div class="error">Вы забанены!</div>'
             ]);
         }
 
