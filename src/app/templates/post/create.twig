@@ -1,33 +1,7 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Создание поста</title>
-    <link rel="stylesheet" href="/style.css">
-    <script>
-        // Добавляем тег в список перед отправкой формы
-        function addTag() {
-            const tagInput = document.getElementById('new_tag');
-            const selectedTagsDiv = document.getElementById('selected_tags');
-            const tagName = tagInput.value.trim();
+{% extends "layout.twig" %}
+{% block title %}Создание поста{% endblock %}
 
-            if (tagName === '') return;
-
-            // Создаем элемент списка
-            const div = document.createElement('div');
-            div.innerHTML = `
-                <input type="hidden" name="tags[]" value="${tagName}">
-                ${tagName} <button type="button" onclick="removeTag(this)">Удалить</button>
-            `;
-            selectedTagsDiv.appendChild(div);
-            tagInput.value = '';
-        }
-
-        function removeTag(button) {
-            button.parentElement.remove();
-        }
-    </script>
-</head>
-<body>
+{% block content %}
 <h1>Создание поста</h1>
 
 <form action="/post/create" method="POST">
@@ -55,7 +29,4 @@
         <a href="/">Лента</a>
     </div>
 </form>
-
-</body>
-</html>
-
+{% endblock %}

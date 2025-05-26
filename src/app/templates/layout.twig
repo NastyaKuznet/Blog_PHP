@@ -1,0 +1,63 @@
+{# layout.twig #}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Блог{% endblock %}</title>
+    <link rel="stylesheet" href="/assets/styles/default.css">
+</head>
+<body>
+
+<header>
+    <h1><a href="/">Мой блог</a></h1>
+    <nav>
+        {% if user %}
+            {% if userRole in ['writer', 'moder', 'admin'] %}
+                <a href="/post/create">Написать пост</a>
+            {% endif %}
+            <a href="/account">Аккаунт</a>
+            <a href="/logout">Выход</a>
+        {% else %}
+            <a href="/login">Вход</a>
+            <a href="/register">Регистрация</a>
+        {% endif %}
+        {% if userRole == 'admin' %}
+            <a href="/admin/users">Управление пользователями</a>
+        {% endif %}
+    </nav>
+</header>
+
+<main>
+    {% block content %}
+    {% endblock %}
+</main>
+
+<footer>
+    &copy; {{ 'now'|date('Y') }} — Все права защищены
+</footer>
+
+<script>
+    // JS для добавления тегов
+    function addTag() {
+        const tagInput = document.getElementById('new_tag');
+        const selectedTagsDiv = document.getElementById('selected_tags');
+        const tagName = tagInput.value.trim();
+
+        if (!tagName) return;
+
+        const div = document.createElement('div');
+        div.innerHTML = `
+            <input type="hidden" name="tags[]" value="${tagName}">
+            ${tagName} <button type="button" onclick="removeTag(this)">Удалить</button>
+        `;
+        selectedTagsDiv.appendChild(div);
+        tagInput.value = '';
+    }
+
+    function removeTag(button) {
+        button.parentElement.remove();
+    }
+</script>
+
+</body>
+</html>

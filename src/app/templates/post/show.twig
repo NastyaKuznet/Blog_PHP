@@ -1,10 +1,9 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>{{ post.title|escape }}</title>
-    <link rel="stylesheet" href="/style.css">
-</head>
-<body>
+{# src/app/templates/post/show.twig #}
+{% extends "layout.twig" %}
+
+{% block title %}{{ post.title|escape }}{% endblock %}
+
+{% block content %}
 <a href="/">Лента</a>
 <h1>{{ post.title|escape }}</h1>
 <h2>{{ post.preview|escape }}</h2>
@@ -66,7 +65,4 @@
         <button type="submit">Отправить комментарий</button>
     </form>
 {% endif %}
-
-</body>
-</html>
-
+{% endblock %}
