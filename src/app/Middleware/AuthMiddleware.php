@@ -32,6 +32,18 @@ class AuthMiddleware
             if ($payload !== null && isset($payload['exp']) && $payload['exp'] >= time()) {
                 // Токен валиден — добавляем пользователя в запрос
                 $request = $request->withAttribute('user', $payload);
+            } else {
+                setcookie(
+                    'token',
+                    '',
+                    [
+                        'expires' => time() - 3600,
+                        'path' => '/',
+                        'httponly' => true,
+                        'secure' => true,
+                        'samesite' => 'Strict',
+                    ]
+                );
             }
         }
 

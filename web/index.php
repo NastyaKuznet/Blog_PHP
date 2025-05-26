@@ -41,9 +41,9 @@ $errorMiddleware = $app->addErrorMiddleware(true, true, true);
 $container = $app->getContainer();
 
 $app->get('/', [PostController::class, 'index'])->add($container->get(AuthMiddleware::class));
-$app->get('/login', [AuthController::class, 'login']);
+$app->get('/login', [AuthController::class, 'loginForm']);
 $app->post('/login', [AuthController::class, 'login']);
-$app->get('/register', [AuthController::class, 'register']);
+$app->get('/register', [AuthController::class, 'registerForm']);
 $app->post('/register', [AuthController::class, 'register']);
 $app->post('/logout', [AuthController::class, 'logout'])->add($container->get(AuthMiddleware::class));
 $app->get('/account', [UserAccountController::class, 'index'])->add($container->get(AuthMiddleware::class));
