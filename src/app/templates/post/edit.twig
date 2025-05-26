@@ -30,21 +30,23 @@
                 <input type="hidden" name="tags[]" value="{{ tag.name }}">
                 {{ tag.name|escape }} <button type="button" onclick="removeTag(this)">Удалить</button>
             </div>
-        {% endfor %}
-    </div>
+                {% endfor %}
+            </div>
 
-    <label for="category_id">Категория:</label><br>
-    <select id="category_id" name="category_id">
-        {% for category in categories %}
-            <option value="{{ category.id }}" {% if category.id == post.categoryId %}selected{% endif %}>
-                {{ category.name }}
-            </option>
-        {% endfor %}
-    </select>
-    <div>
-        <button type="submit" name="action" value="save">Сохранить изменения</button>
-        <button type="submit" name="action" value="delete">Удалить пост</button>
+            <label for="category_id">Категория:</label><br>
+            <select id="category_id" name="category_id">
+                {% for category in categories %}
+                    <option value="{{ category.id }}" {% if category.id == post.categoryId %}selected{% endif %}>
+                        {{ category.name }}
+                    </option>
+                {% endfor %}
+            </select>
+            <br/>
+            <button type="submit">Сохранить изменения</button>
+        </form>
+        <form action="/post/delete/{{ post.id }}" method="post">
+            <button type="submit">Удалить пост</button>
+        </form>
         <a href="/">Лента</a>
-    </div>
-</form>
+    </body>
 {% endblock %}

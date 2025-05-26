@@ -10,7 +10,7 @@
     <p>Пост был редактирован: {{ post.lastEditorNickname|escape }}</p>
     <p>Дата редактирования поста: {{ post.editDate|date('H:i d.m.Y', 'Asia/Yekaterinburg') }}</p>
 {% endif %}
-<form action="/post-non-publish/{{ post.id }}" method="POST">
+<form action="/post-non-publish/publish/{{ post.id }}" method="POST">
     <div>
         <label for="title">Заголовок:</label><br>
         <input type="text" id="title" name="title" value="{{ post.title|escape }}" required>
@@ -23,7 +23,6 @@
         <label for="content">Содержание:</label><br>
         <textarea id="content" name="content" rows="5" cols="50" required>{{ post.content|escape }}</textarea>
     </div>
-
     <div>
         <label for="new_tag">Добавить тег:</label><br>
         <input type="text" id="new_tag" placeholder="Введите тег">
@@ -38,7 +37,6 @@
             </div>
         {% endfor %}
     </div>
-
     <label for="category_id">Категория:</label><br>
     <select id="category_id" name="category_id">
         {% for category in categories %}
@@ -47,10 +45,11 @@
             </option>
         {% endfor %}
     </select>
-    <div>
-        <button type="submit" name="action" value="save">Сохранить изменения</button>
-        <button type="submit" name="action" value="publish">Опубликовать пост</button>
-        <button type="submit" name="action" value="delete">Удалить пост</button>
-    </div>
+    <br/>
+    <button type="submit">Сохранить и опубликовать</button>
+</form>
+
+<form action="/post-non-publish/delete/{{ post.id }}" method="post">
+    <button type="submit">Удалить пост</button>
 </form>
 {% endblock %}
