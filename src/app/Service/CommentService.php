@@ -25,7 +25,7 @@ class CommentService implements CommentServiceInterface
                 $commentData['content'],
                 $commentData['post_id'],
                 $commentData['user_id'],
-                $commentData['user_nickname'],
+                $commentData['user_login'],
                 $commentData['created_date'],
                 $commentData['edit_date'],
                 $commentData['delete_date'],

@@ -21,7 +21,7 @@
                     {% endfor %}
                 </p>
                 <p>Дата создания поста: {{ post.createDate|date('H:i d.m.Y', 'Asia/Yekaterinburg') }}</p>
-                <p>Автор: {{ post.userNickname|escape }}</p>
+                <p>Автор: {{ post.userLogin|escape }}</p>
                 <a href="/post-non-publish/{{ post.id|escape }}">Открыть пост</a>
             </div>
         {% endfor %}

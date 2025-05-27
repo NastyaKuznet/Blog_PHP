@@ -10,14 +10,14 @@
 <p>{{ post.content|escape }}</p>
 <p>Теги: {% for tag in post.tags %}{{ tag.name }}{% if not loop.last %}, {% endif %}{% endfor %}</p>
 <p>Категория: {{ post.categoryName|nl2br }}</p>
-<p>Автор поста: {{ post.userNickname|escape }}</p>
+<p>Автор поста: {{ post.userLogin|escape }}</p>
 <p>Дата создания поста: {{ post.createDate|date('H:i d.m.Y', 'Asia/Yekaterinburg') }}</p>
 <p>Дата публикации поста: {{ post.publishDate|date('H:i d.m.Y', 'Asia/Yekaterinburg') }}</p>
 <p>Лайков: {{ post.likes|escape }}</p>
 <p>Комментариев: {{ post.commentCount|escape }}</p>
 
 {% if post.editDate %}
-    <p>Пост был редактирован: {{ post.lastEditorNickname|escape }}</p>
+    <p>Пост был редактирован: {{ post.lastEditorLogin|escape }}</p>
     <p>Дата редактирования поста: {{ post.editDate|date('H:i d.m.Y', 'Asia/Yekaterinburg') }}</p>
 {% endif %}
 
@@ -37,13 +37,13 @@
 {% if comments %}
     {% for comment in comments %}
         <div style="margin-bottom: 10px; border: 1px solid #eee; padding: 5px;">
-            <p><b>{{ comment.userNickname|escape }}:</b> {{ comment.content|escape }}</p>
+            <p><b>{{ comment.userLogin|escape }}:</b> {{ comment.content|escape }}</p>
             <p>Дата добавления: {{ comment.createdDate|date('H:i d.m.Y', 'Asia/Yekaterinburg') }}</p>
 
             {% if comment.editDate %}
                 <p style="color: gray;">(редактировано {{ comment.editDate|date('H:i d.m.Y', 'Asia/Yekaterinburg') }})</p>
             {% endif %}
-            {% if app.user and (comment.userNickname == app.user.nickname or app.user.role in ['admin']) %}
+            {% if app.user and (comment.userLogin == app.user.login or app.user.role in ['admin']) %}
                 <form action="/comment/edit/{{ comment.id }}" method="GET">
                     <button type="submit">Редактировать</button>
                 </form>

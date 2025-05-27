@@ -1,0 +1,1 @@
+SELECT r.id, r.name FROM roles r;

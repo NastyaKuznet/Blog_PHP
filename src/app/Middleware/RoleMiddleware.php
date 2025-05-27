@@ -9,7 +9,6 @@ use Slim\Psr7\Response as SlimResponse;
 
 class RoleMiddleware
 {
-
     private array $allowedRoles;
 
     public function __construct(array $allowedRoles)

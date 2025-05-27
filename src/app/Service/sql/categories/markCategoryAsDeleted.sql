@@ -1,0 +1,1 @@
+UPDATE categories SET is_delete = TRUE WHERE id = :category_id AND is_delete = FALSE;

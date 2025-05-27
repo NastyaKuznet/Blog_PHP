@@ -1,0 +1,1 @@
+SELECT * FROM categories WHERE is_delete = FALSE ORDER BY id ASC;

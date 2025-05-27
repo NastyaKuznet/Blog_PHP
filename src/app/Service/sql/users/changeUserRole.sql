@@ -1,0 +1,1 @@
+UPDATE users SET role_id = :new_role_id WHERE id = :user_id;

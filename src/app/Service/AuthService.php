@@ -31,7 +31,7 @@ class AuthService implements AuthServiceInterface
 
     public function checkUserRegistration(string $username): bool
     {
-        return $this->databaseService->checkUserNickname($username);
+        return $this->databaseService->checkUserLogin($username);
     }
 
     /**
@@ -51,7 +51,7 @@ class AuthService implements AuthServiceInterface
 
         return new User(
             $userData['id'], 
-            $userData['nickname'],
+            $userData['login'],
             $userData['password'],
             $userData['role_id'],
             $userData['role_name'],
@@ -78,7 +78,7 @@ class AuthService implements AuthServiceInterface
         $payload = [
             'iss' => 'blog-app', 
             'id' => $user->id,
-            'nickname' => $user->nickname,
+            'login' => $user->login,
             'role' => $user->roleName,
             'exp' => time() + $ttl,
         ];

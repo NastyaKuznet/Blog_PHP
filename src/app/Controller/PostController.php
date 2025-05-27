@@ -35,7 +35,7 @@ class PostController
         $queryParams = $request->getQueryParams();
         $sortBy = $queryParams['sort_by'] ?? null;
         $order = $queryParams['order'] ?? 'asc';
-        $authorNickname = $queryParams['author_nickname'] ?? null;
+        $authorLogin = $queryParams['author_login'] ?? null;
         $tag = $queryParams['tag_search'] ?? null;
         $categoryId = $queryParams['category_id'] ?? null;
 
@@ -43,7 +43,7 @@ class PostController
         if ($categoryId) {
             $posts = $this->postService->getPostsByCategoryId($categoryId);
         } else {
-            $posts = $this->postService->getAllPosts($sortBy, $order, $authorNickname, $tag);
+            $posts = $this->postService->getAllPosts($sortBy, $order, $authorLogin, $tag);
         }
 
         return $this->view->render($response, 'post/index.twig', [

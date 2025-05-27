@@ -1,0 +1,1 @@
+SELECT login FROM users WHERE id = :user_id;

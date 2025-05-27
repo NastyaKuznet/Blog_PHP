@@ -9,7 +9,7 @@ class Comment
         public string $content, 
         public int $postId, 
         public int $userId, 
-        public string $userNickname, 
+        public string $userLogin, 
         public string $createdDate, 
         public ?string $editDate = null,
         public ?string $deleteDate = null,
