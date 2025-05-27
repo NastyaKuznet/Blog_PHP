@@ -8,6 +8,7 @@ use NastyaKuznet\Blog\Controller\UsersAdminController;
 use NastyaKuznet\Blog\Controller\CategoryController;
 use NastyaKuznet\Blog\Middleware\AuthMiddleware;
 use NastyaKuznet\Blog\Middleware\RoleMiddleware;
+use NastyaKuznet\Blog\Middleware\RoleMiddlewareFactory;
 use NastyaKuznet\Blog\Service\AuthService;
 use NastyaKuznet\Blog\Service\CommentService;
 use NastyaKuznet\Blog\Service\DatabaseService;
@@ -57,8 +58,8 @@ return [
     AuthMiddleware::class => create(AuthMiddleware::class)
         ->constructor(get(AuthService::class), get('config.jwt_secret')),
 
-    RoleMiddleware::class => create(RoleMiddleware::class)
-        ->constructor(get('config.route_permissions')),
+    RoleMiddlewareFactory::class => create(RoleMiddlewareFactory::class)
+        ->constructor(),
 
     AuthController::class => create(AuthController::class)
         ->constructor(get(AuthService::class), get('view')),

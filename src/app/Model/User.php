@@ -3,23 +3,15 @@
 namespace NastyaKuznet\Blog\Model;
 
 class User
-{
-    public $id;
-    public $login;
-    public $password;
-    public $roleId;
-    public $roleName;
-    public $registerDate; 
-    public $isBanned;     
-
-    public function __construct(int $id, string $login, string $password, int $roleId, string $roleName, string $registerDate, bool $isBanned) 
-    {
-        $this->id = $id;
-        $this->login = $login;
-        $this->password = $password;
-        $this->roleId = $roleId;
-        $this->roleName = $roleName;
-        $this->registerDate = $registerDate;
-        $this->isBanned = $isBanned;
+{ 
+    public function __construct(
+        public int $id, 
+        public string $login, 
+        public string $password, 
+        public int $roleId, 
+        public string $roleName, 
+        public string $registerDate, 
+        public bool $isBanned
+    ) {
     }
 }

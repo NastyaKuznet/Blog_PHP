@@ -9,70 +9,23 @@ use Slim\Psr7\Response as SlimResponse;
 
 class RoleMiddleware
 {
-    private array $routePermissions;
+    private array $allowedRoles;
 
-    public function __construct(array $routePermissions)
+    public function __construct(array $allowedRoles)
     {
-        $this->routePermissions = $routePermissions;
+        $this->allowedRoles = $allowedRoles;
     }
 
     public function __invoke(Request $request, Handler $handler): Response
     {
-        // Получаем текущий URI
-        $uri = $request->getUri()->getPath();
-
-        // Получаем пользователя из атрибутов запроса
         $user = $request->getAttribute('user');
 
-        // Определяем роль: если пользователь не авторизован - он читатель
-        $role = is_array($user) && !empty($user['role']) ? $user['role'] : 'reader'; 
-
-        // Получаем разрешенные маршруты для роли
-        $allowedRoutes = $this->getAllowedRoutesForRole($role);
-
-        if ($this->isRouteAllowed($uri, $allowedRoutes)) {
-            return $handler->handle($request);
+        if (!isset($user['role']) || !in_array($user['role'], $this->allowedRoles)) {
+            $response = new SlimResponse();
+            $response->getBody()->write('Insufficient permissions');
+            return $response->withStatus(403); // 403 Forbidden
         }
 
-        return $this->denyAccess();
-    }
-
-    private function getAllowedRoutesForRole(string $role): array
-    {
-        if (!isset($this->routePermissions['roles'][$role])) {
-            return [];
-        }
-
-        $roleConfig = $this->routePermissions['roles'][$role];
-        $routes = $roleConfig['routes'] ?? [];
-
-        // Рекурсивно добавляем унаследованные маршруты
-        if (isset($roleConfig['extends'])) {
-            $inherited = $this->getAllowedRoutesForRole($roleConfig['extends']);
-            $routes = array_merge($inherited, $routes);
-        }
-
-        return $routes;
-    }
-
-    private function isRouteAllowed(string $uri, array $allowedRoutes): bool
-    {
-        foreach ($allowedRoutes as $route) {
-            if (str_starts_with($route, '#')) {
-                if (preg_match($route, $uri)) {
-                    return true;
-                }
-            } elseif ($uri === $route) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private function denyAccess(): Response
-    {
-        $response = new SlimResponse();
-        $response->getBody()->write('Access denied');
-        return $response->withStatus(403);
+        return $handler->handle($request);
     }
 }

@@ -3,13 +3,14 @@ use Slim\Factory\AppFactory;
 use NastyaKuznet\Blog\Controller\PostController;
 use NastyaKuznet\Blog\Controller\AuthController;
 use NastyaKuznet\Blog\Controller\CommentController;
-use NastyaKuznet\Blog\Middleware\RoleMiddleware;
 use NastyaKuznet\Blog\Middleware\AuthMiddleware;
+use NastyaKuznet\Blog\Middleware\RoleMiddlewareFactory;
 use NastyaKuznet\Blog\Controller\CategoryController;
 use Slim\Views\TwigMiddleware;
 use Slim\Routing\RouteCollectorProxy;
 use NastyaKuznet\Blog\Controller\UserAccountController;
 use NastyaKuznet\Blog\Controller\UsersAdminController;
+
 
 require __DIR__ . '/../vendor/autoload.php';
 
@@ -24,15 +25,13 @@ $container = $containerBuilder->build();
 // 2. Создаем Slim приложение, передавая контейнер
 $app = AppFactory::createFromContainer($container);
 
-session_start();
-
 // Add Twig-View Middleware
 $app->add(TwigMiddleware::createFromContainer($app));
 
 // Add Routing Middleware
 $app->addRoutingMiddleware();
 
-// загуглить что это
+// Add Body Pasrsing MIddleware
 $app->addBodyParsingMiddleware();
 
 // Add Error Middleware
@@ -41,16 +40,13 @@ $errorMiddleware = $app->addErrorMiddleware(true, true, true);
 // Dependency Injection Container (DI Container)
 $container = $app->getContainer();
 
-$app->add($container->get(RoleMiddleware::class));
-$app->add($container->get(AuthMiddleware::class));
-
-$app->get('/login', [AuthController::class, 'login']);
+$app->get('/', [PostController::class, 'index'])->add($container->get(AuthMiddleware::class));
+$app->get('/login', [AuthController::class, 'loginForm']);
 $app->post('/login', [AuthController::class, 'login']);
-$app->get('/register', [AuthController::class, 'register']);
+$app->get('/register', [AuthController::class, 'registerForm']);
 $app->post('/register', [AuthController::class, 'register']);
-
-$app->post('/logout', [AuthController::class, 'logout']);
-
+$app->post('/logout', [AuthController::class, 'logout'])->add($container->get(AuthMiddleware::class));
+$app->get('/account', [UserAccountController::class, 'index'])->add($container->get(AuthMiddleware::class));
 $app->get('/debug/routes', function ($request, $response) use ($app) {
     $routes = $app->getRouteCollector()->getRoutes();
     $routePatterns = array_map(fn($r) => $r->getPattern(), $routes);
@@ -58,42 +54,71 @@ $app->get('/debug/routes', function ($request, $response) use ($app) {
     $response->getBody()->write("<pre>" . print_r($routePatterns, true) . "</pre>");
     return $response;
 });
-
-//$app->get('/', [AuthController::class, 'home']);
-
-// Группировка роутов по префиксу 'post'
 $app->group('/post', function (RouteCollectorProxy $group) use ($container) {
     $group->get('/create', [PostController::class, 'create']);
     $group->post('/create', [PostController::class, 'create']);
+    $group->map(['GET', 'POST'],'/{id}', [PostController::class, 'show']);
+    $group->post('/{id}/like', [PostController::class, 'likePost']);
     $group->get('/edit/{id}', [PostController::class, 'edit']);
     $group->post('/edit/{id}', [PostController::class, 'edit']);
-});
-
+    $group->post('/save/{id}', [PostController::class, 'save']);
+    $group->post('/delete/{id}', [PostController::class, 'delete']);
+})->add(function ($request, $handler) use ($container) {
+        $roleMiddlewareFactory = $container->get(RoleMiddlewareFactory::class);
+        $uri = $request->getUri()->getPath();
+        $allowedRoles = [];
+        if ($uri === '/post/create') {
+            $allowedRoles = ['writer', 'moderator', 'admin'];
+        } elseif (strpos($uri, '/post/edit/') === 0) {
+            $allowedRoles = ['moderator', 'admin'];
+        } else {
+            $allowedRoles = ['writer', 'moderator', 'admin'];
+        }
+        $editorRoleMiddleware = $roleMiddlewareFactory($container, $allowedRoles);
+        return $editorRoleMiddleware($request, $handler);
+})->add($container->get(AuthMiddleware::class));
 $app->group('/admin', function (RouteCollectorProxy $group) use ($container) {
     $group->get('/users', [UsersAdminController::class, 'index']);
     $group->post('/change_role', [UsersAdminController::class, 'changeRole']);
     $group->post('/toggle_ban', [UsersAdminController::class, 'toggleBan']); 
-});
-
-$app->get('/categories', [CategoryController::class, 'index']);
-$app->get('/category/create', [CategoryController::class, 'create']);
-$app->post('/category/create', [CategoryController::class, 'create']);
-$app->post('/category/delete/{id}', [CategoryController::class, 'delete']);
-
-$app->get('/', [PostController::class, 'index']);
-
-$app->get('/post-non-publish', [PostController::class, 'indexNonPublish']);
-
-$app->map(['GET', 'POST'],'/post-non-publish/{id}', [PostController::class, 'editNonPublish']);
-
-$app->map(['GET', 'POST'],'/post/{id}', [PostController::class, 'show']);
-
-$app->post('/post/{id}/like', [PostController::class, 'likePost']);
-
-$app->get('/account', [UserAccountController::class, 'index']);
-
-$app->get('/comment/edit/{id}', [CommentController::class, 'editForm']);
-$app->post('/comment/edit/{id}', [CommentController::class, 'update']);
-$app->post('/comment/delete/{id}', [CommentController::class, 'delete']);
+})->add(function ($request, $handler) use ($container) {
+        $roleMiddlewareFactory = $container->get(RoleMiddlewareFactory::class);
+        $adminRoleMiddleware = $roleMiddlewareFactory($container, ['admin']);
+        return $adminRoleMiddleware($request, $handler);
+})->add($container->get(AuthMiddleware::class));
+$app->get('/categories', [CategoryController::class, 'index']
+)->add(function ($request, $handler) use ($container) {
+        $roleMiddlewareFactory = $container->get(RoleMiddlewareFactory::class);
+        $adminRoleMiddleware = $roleMiddlewareFactory($container, ['moderator', 'admin']);
+        return $adminRoleMiddleware($request, $handler);
+})->add($container->get(AuthMiddleware::class));
+$app->group('/category', function (RouteCollectorProxy $group) use ($container) {
+    $group->get('/create', [CategoryController::class, 'create']);
+    $group->post('/create', [CategoryController::class, 'create']);
+    $group->post('/delete/{id}', [CategoryController::class, 'delete']);
+})->add(function ($request, $handler) use ($container) {
+        $roleMiddlewareFactory = $container->get(RoleMiddlewareFactory::class);
+        $adminRoleMiddleware = $roleMiddlewareFactory($container, ['moderator', 'admin']);
+        return $adminRoleMiddleware($request, $handler);
+})->add($container->get(AuthMiddleware::class));
+$app->group('/post-non-publish', function (RouteCollectorProxy $group) use ($container) {
+    $group->get('', [PostController::class, 'indexNonPublish']);
+    $group->get('/{id}', [PostController::class, 'editNonPublish']);
+    $group->post('/publish/{id}', [PostController::class, 'publish']);
+    $group->post('/delete/{id}', [PostController::class, 'deleteNonPublish']);
+})->add(function ($request, $handler) use ($container) {
+        $roleMiddlewareFactory = $container->get(RoleMiddlewareFactory::class);
+        $adminRoleMiddleware = $roleMiddlewareFactory($container, ['moderator', 'admin']);
+        return $adminRoleMiddleware($request, $handler);
+})->add($container->get(AuthMiddleware::class));
+$app->group('/comment', function (RouteCollectorProxy $group) use ($container) {
+    $group->get('/edit/{id}', [CommentController::class, 'editForm']);
+    $group->post('/edit/{id}', [CommentController::class, 'update']);
+    $group->post('/delete/{id}', [CommentController::class, 'delete']);
+})->add(function ($request, $handler) use ($container) {
+        $roleMiddlewareFactory = $container->get(RoleMiddlewareFactory::class);
+        $adminRoleMiddleware = $roleMiddlewareFactory($container, ['writer', 'moderator', 'admin']);
+        return $adminRoleMiddleware($request, $handler);
+})->add($container->get(AuthMiddleware::class));
 
 $app->run(); 

@@ -1,83 +1,55 @@
-<!DOCTYPE html>
-<html>
-    <head>
-        <title>Редактирование неопубликованного поста</title>
-        <link rel="stylesheet" href="/style.css">
-        <script>
-        // Добавляем тег в список перед отправкой формы
-        function addTag() {
-            const tagInput = document.getElementById('new_tag');
-            const selectedTagsDiv = document.getElementById('selected_tags');
-            const tagName = tagInput.value.trim();
+{# src/app/templates/post/nonPublish/edit.twig #}
+{% extends "layout.twig" %}
+{% block title %}Редактирование неопубликованного поста{% endblock %}
+{% block content %}
+<a href="/post-non-publish">Лента неопубликованных постов</a>
+<h1>Редактирование неопубликованного поста</h1>
+<p>Автор поста: {{ post.userNickname|escape }}</p>
+<p>Дата создания поста: {{ post.createDate|date('H:i d.m.Y', 'Asia/Yekaterinburg') }}</p>
+{% if post.editDate %}
+    <p>Пост был редактирован: {{ post.lastEditorNickname|escape }}</p>
+    <p>Дата редактирования поста: {{ post.editDate|date('H:i d.m.Y', 'Asia/Yekaterinburg') }}</p>
+{% endif %}
+<form action="/post-non-publish/publish/{{ post.id }}" method="POST">
+    <div>
+        <label for="title">Заголовок:</label><br>
+        <input type="text" id="title" name="title" value="{{ post.title|escape }}" required>
+    </div>
+    <div>
+        <label for="preview">Превью:</label><br>
+        <textarea id="preview" name="preview" rows="5" cols="50" required>{{ post.preview|escape }}</textarea>
+    </div>
+    <div>
+        <label for="content">Содержание:</label><br>
+        <textarea id="content" name="content" rows="5" cols="50" required>{{ post.content|escape }}</textarea>
+    </div>
+    <div>
+        <label for="new_tag">Добавить тег:</label><br>
+        <input type="text" id="new_tag" placeholder="Введите тег">
+        <button type="button" onclick="addTag()">Добавить</button>
+    </div>
 
-            if (tagName === '') return;
-
-            // Создаем элемент списка
-            const div = document.createElement('div');
-            div.innerHTML = `
-                <input type="hidden" name="tags[]" value="${tagName}">
-                ${tagName} <button type="button" onclick="removeTag(this)" value="deleteTag">Удалить</button>
-            `;
-            selectedTagsDiv.appendChild(div);
-            tagInput.value = '';
-        }
-
-        function removeTag(button) {
-            button.parentElement.remove();
-        }
-    </script>
-    </head>
-    <body>
-        <a href="/post-non-publish">Лента неопубликованных постов</a>
-        <h1>Редактирование неопубликованного поста</h1>
-        <p>Автор поста: {{ post.userLogin|escape }}</p>
-        <p>Дата создания поста: {{ post.createDate|date('H:i d.m.Y', 'Asia/Yekaterinburg') }}</p>
-        {% if post.editDate %}
-            <p>Пост был редактирован: {{ post.lastEditorLogin|escape }}</p>
-            <p>Дата редактирования поста: {{ post.editDate|date('H:i d.m.Y', 'Asia/Yekaterinburg') }}</p>
-        {% endif %}
-        <form action="/post-non-publish/{{ post.id }}" method="POST">
+    <div id="selected_tags" style="margin-top: 10px;">
+        {% for tag in post.tags %}
             <div>
-                <label for="title">Заголовок:</label><br>
-                <input type="text" id="title" name="title" value="{{ post.title|escape }}" required>
+                <input type="hidden" name="tags[]" value="{{ tag.name }}">
+                {{ tag.name|escape }} <button type="button" onclick="removeTag(this)">Удалить</button>
             </div>
-            <div>
-                <label for="preview">Превью:</label><br>
-                <textarea id="preview" name="preview" rows="5" cols="50" required>{{ post.preview|escape }}</textarea>
-            </div>
-            <div>
-                <label for="content">Содержание:</label><br>
-                <textarea id="content" name="content" rows="5" cols="50" required>{{ post.content|escape }}</textarea>
-            </div>
+        {% endfor %}
+    </div>
+    <label for="category_id">Категория:</label><br>
+    <select id="category_id" name="category_id">
+        {% for category in categories %}
+            <option value="{{ category.id }}" {% if category.id == post.categoryId %}selected{% endif %}>
+                {{ category.name }}
+            </option>
+        {% endfor %}
+    </select>
+    <br/>
+    <button type="submit">Сохранить и опубликовать</button>
+</form>
 
-            <div>
-                <label for="new_tag">Добавить тег:</label><br>
-                <input type="text" id="new_tag" placeholder="Введите тег">
-                <button type="button" onclick="addTag()">Добавить</button>
-            </div>
-
-            <div id="selected_tags" style="margin-top: 10px;">
-                {% for tag in post.tags %}
-                    <div>
-                        <input type="hidden" name="tags[]" value="{{ tag.name }}">
-                        {{ tag.name|escape }} <button type="button" onclick="removeTag(this)">Удалить</button>
-                    </div>
-                {% endfor %}
-            </div>
-
-            <label for="category_id">Категория:</label><br>
-            <select id="category_id" name="category_id">
-                {% for category in categories %}
-                    <option value="{{ category.id }}" {% if category.id == post.categoryId %}selected{% endif %}>
-                        {{ category.name }}
-                    </option>
-                {% endfor %}
-            </select>
-            <div>
-                <button type="submit" name="action" value="save">Сохранить изменения</button>
-                <button type="submit" name="action" value="publish">Опубликовать пост</button>
-                <button type="submit" name="action" value="delete">Удалить пост</button>
-            </div>
-        </form>
-    </body>
-</html>
+<form action="/post-non-publish/delete/{{ post.id }}" method="post">
+    <button type="submit">Удалить пост</button>
+</form>
+{% endblock %}

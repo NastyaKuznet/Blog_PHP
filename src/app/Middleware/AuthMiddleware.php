@@ -8,6 +8,7 @@ use Psr\Http\Server\RequestHandlerInterface as RequestHandler;
 use NastyaKuznet\Blog\Service\AuthService;
 use Slim\Psr7\Response\RedirectResponse;
 use Slim\Psr7\Factory\ResponseFactory;
+use Slim\Psr7\Response as SlimResponse;
 
 class AuthMiddleware
 {
@@ -31,8 +32,22 @@ class AuthMiddleware
             if ($payload !== null && isset($payload['exp']) && $payload['exp'] >= time()) {
                 // Токен валиден — добавляем пользователя в запрос
                 $request = $request->withAttribute('user', $payload);
+            } else {
+                setcookie(
+                    'token',
+                    '',
+                    [
+                        'expires' => time() - 3600,
+                        'path' => '/',
+                        'httponly' => true,
+                        'secure' => true,
+                        'samesite' => 'Strict',
+                    ]
+                );
             }
         }
+
+        session_start();
         
         // Продолжаем обработку
         return $handler->handle($request);

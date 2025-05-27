@@ -19,20 +19,10 @@
   "require": {
     "firebase/php-jwt": "^6.0",
     "php": "8.3.*",
-    "psr/http-message": "^2.0",
-    "psr/container": "^2.0",
-    "psr/link": "^2.0",
-    "psr/http-server-handler": "^1.0",
-    "psr/http-server-middleware": "^1.0",
-    "psr/simple-cache": "^3.0",
-    "psr/http-factory": "^1.0",
     "slim/slim": "^4.0",
     "slim/psr7": "dev-master",
-    "nyholm/psr7": "^1.8",
     "twig/twig": "^3.0",
     "slim/twig-view": "^3.4",
-    "pimple/pimple": "dev-main",
-    "php-di/php-di": "dev-master",
-    "vlucas/phpdotenv": "^5.6@dev"
+    "php-di/php-di": "dev-master"
   }
 }
