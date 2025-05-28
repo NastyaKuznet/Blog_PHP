@@ -74,7 +74,7 @@ class PostController
     public function indexNonPublish(Request $request, Response $response): Response
     {
         try {
-            $posts = $this->nonPublishService->getAllNonPublish();
+            $posts = $this->nonPublishService->getAll();
 
             return $this->view->render($response, 'post/nonPublish/index.twig', [
                 'posts' => $posts,
@@ -103,9 +103,9 @@ class PostController
             $isLikedByUser = null;
             if($user)
             {
-                $isLikedByUser = $this->postService->checkLikeByPostIdAndUserId($postId, $user['id']);
+                $isLikedByUser = $this->likeService->check($postId, $user['id']);
             }
-            $comments = $this->commentService->getCommentsByPostId($postId);
+            $comments = $this->commentService->getByPostId($postId);
 
             if ($request->getMethod() === 'GET') {
                 $data = [
@@ -246,7 +246,7 @@ class PostController
         $categoryId = $data['category_id'] ? (int)$data['category_id'] : null;
 
         try {
-            if (!empty($title) && !empty($content)) {
+            if (!empty($title) && !empty($preview) && !empty($content)) {
                 $this->postService->edit($postId, $title, $preview, $content, $user['id'], $tags);
                 $this->categoryService->connectPostAndCategory($postId, $categoryId);
                 $response = new SlimResponse();
@@ -280,7 +280,7 @@ class PostController
     {
         $postId = (int)$args['id'];
         try{
-            $post = $this->nonPublishService->getNonPublishPostById($postId);
+            $post = $this->nonPublishService->getById($postId);
             
             if (!$post) {
                 $response->getBody()->write("Пост не найден.");
@@ -314,7 +314,7 @@ class PostController
     {
         $postId = (int)$args['id'];
         try {
-            $this->nonPublishService->delete($postId);
+            $this->postService->delete($postId);
             $response = new SlimResponse();
             return $response->withHeader('Location', '/post-non-publish')->withStatus(302);
         } catch (Throwable) {

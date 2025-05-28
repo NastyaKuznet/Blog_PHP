@@ -11,7 +11,7 @@
     </div>
     <div>
         <label for="content">Превью:</label><br>
-        <textarea id="content" name="content" rows="5" cols="50" required>{{ post.preview|escape }}</textarea>
+        <textarea id="preview" name="preview" rows="5" cols="50" required>{{ post.preview|escape }}</textarea>
     </div>
     <div>
         <label for="content">Содержание:</label><br>
@@ -23,6 +23,8 @@
         <input type="text" id="new_tag" placeholder="Введите тег">
         <button type="button" onclick="addTag()">Добавить</button>
     </div>
+    <div id="selected_tags" style="margin-top: 10px;">
+        {% for tag in post.tags %}
             <div>
                 <input type="hidden" name="tags[]" value="{{ tag.name }}">
                 {{ tag.name|escape }} <button type="button" onclick="removeTag(this)">Удалить</button>

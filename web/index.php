@@ -57,7 +57,6 @@ $app->get('/debug/routes', function ($request, $response) use ($app) {
 $app->group('/post', function (RouteCollectorProxy $group) use ($container) {
     $group->get('/create', [PostController::class, 'create']);
     $group->post('/create', [PostController::class, 'create']);
-    $group->map(['GET', 'POST'],'/{id}', [PostController::class, 'show']);
     $group->post('/{id}/like', [PostController::class, 'likePost']);
     $group->get('/edit/{id}', [PostController::class, 'edit']);
     $group->post('/edit/{id}', [PostController::class, 'edit']);
@@ -69,27 +68,28 @@ $app->group('/post', function (RouteCollectorProxy $group) use ($container) {
         $allowedRoles = [];
         if ($uri === '/post/create') {
             $allowedRoles = ['writer', 'moderator', 'admin'];
-        } elseif (strpos($uri, '/post/edit/') === 0) {
+        } elseif (preg_match('#^/post/edit/\d+$#', $uri)) {
             $allowedRoles = ['moderator', 'admin'];
         } else {
             $allowedRoles = ['writer', 'moderator', 'admin'];
         }
-        $editorRoleMiddleware = $roleMiddlewareFactory($container, $allowedRoles);
+        $editorRoleMiddleware = $roleMiddlewareFactory($allowedRoles);
         return $editorRoleMiddleware($request, $handler);
 })->add($container->get(AuthMiddleware::class));
+$app->map(['GET', 'POST'],'/post/{id}', [PostController::class, 'show'])->add($container->get(AuthMiddleware::class));
 $app->group('/admin', function (RouteCollectorProxy $group) use ($container) {
     $group->get('/users', [UsersAdminController::class, 'index']);
     $group->post('/change_role', [UsersAdminController::class, 'changeRole']);
     $group->post('/toggle_ban', [UsersAdminController::class, 'toggleBan']); 
 })->add(function ($request, $handler) use ($container) {
         $roleMiddlewareFactory = $container->get(RoleMiddlewareFactory::class);
-        $adminRoleMiddleware = $roleMiddlewareFactory($container, ['admin']);
+        $adminRoleMiddleware = $roleMiddlewareFactory(['admin']);
         return $adminRoleMiddleware($request, $handler);
 })->add($container->get(AuthMiddleware::class));
 $app->get('/categories', [CategoryController::class, 'index']
 )->add(function ($request, $handler) use ($container) {
         $roleMiddlewareFactory = $container->get(RoleMiddlewareFactory::class);
-        $adminRoleMiddleware = $roleMiddlewareFactory($container, ['moderator', 'admin']);
+        $adminRoleMiddleware = $roleMiddlewareFactory(['moderator', 'admin']);
         return $adminRoleMiddleware($request, $handler);
 })->add($container->get(AuthMiddleware::class));
 $app->group('/category', function (RouteCollectorProxy $group) use ($container) {
@@ -98,7 +98,7 @@ $app->group('/category', function (RouteCollectorProxy $group) use ($container) 
     $group->post('/delete/{id}', [CategoryController::class, 'delete']);
 })->add(function ($request, $handler) use ($container) {
         $roleMiddlewareFactory = $container->get(RoleMiddlewareFactory::class);
-        $adminRoleMiddleware = $roleMiddlewareFactory($container, ['moderator', 'admin']);
+        $adminRoleMiddleware = $roleMiddlewareFactory(['moderator', 'admin']);
         return $adminRoleMiddleware($request, $handler);
 })->add($container->get(AuthMiddleware::class));
 $app->group('/post-non-publish', function (RouteCollectorProxy $group) use ($container) {
@@ -108,7 +108,7 @@ $app->group('/post-non-publish', function (RouteCollectorProxy $group) use ($con
     $group->post('/delete/{id}', [PostController::class, 'deleteNonPublish']);
 })->add(function ($request, $handler) use ($container) {
         $roleMiddlewareFactory = $container->get(RoleMiddlewareFactory::class);
-        $adminRoleMiddleware = $roleMiddlewareFactory($container, ['moderator', 'admin']);
+        $adminRoleMiddleware = $roleMiddlewareFactory(['moderator', 'admin']);
         return $adminRoleMiddleware($request, $handler);
 })->add($container->get(AuthMiddleware::class));
 $app->group('/comment', function (RouteCollectorProxy $group) use ($container) {
@@ -117,7 +117,7 @@ $app->group('/comment', function (RouteCollectorProxy $group) use ($container) {
     $group->post('/delete/{id}', [CommentController::class, 'delete']);
 })->add(function ($request, $handler) use ($container) {
         $roleMiddlewareFactory = $container->get(RoleMiddlewareFactory::class);
-        $adminRoleMiddleware = $roleMiddlewareFactory($container, ['writer', 'moderator', 'admin']);
+        $adminRoleMiddleware = $roleMiddlewareFactory(['writer', 'moderator', 'admin']);
         return $adminRoleMiddleware($request, $handler);
 })->add($container->get(AuthMiddleware::class));
 

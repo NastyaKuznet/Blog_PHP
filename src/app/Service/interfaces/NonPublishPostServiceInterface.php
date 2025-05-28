@@ -5,6 +5,6 @@ use NastyaKuznet\Blog\Model\Post;
 
 interface NonPublishPostServiceInterface
 {
-    public function getAllNonPublish(): array;
-    public function getNonPublishById(int $id): ?Post;
+    public function getAll(): array;
+    public function getById(int $id): ?Post;
 }

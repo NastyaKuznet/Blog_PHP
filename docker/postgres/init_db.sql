@@ -5,10 +5,6 @@ CREATE TABLE IF NOT EXISTS roles (
     parent_id INTEGER REFERENCES roles(id) ON DELETE CASCADE
 );
 
--- Заполняем roles
---INSERT INTO roles (name) VALUES ('reader'), ('writer'), ('moderator'), ('admin')
---ON CONFLICT DO NOTHING;
-
 INSERT INTO roles (name, parent_id) VALUES 
 ('reader', NULL),
 ('writer', (SELECT id FROM roles WHERE name = 'reader')),

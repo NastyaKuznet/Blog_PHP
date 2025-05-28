@@ -7,7 +7,6 @@ use NastyaKuznet\Blog\Controller\UserAccountController;
 use NastyaKuznet\Blog\Controller\UsersAdminController;
 use NastyaKuznet\Blog\Controller\CategoryController;
 use NastyaKuznet\Blog\Middleware\AuthMiddleware;
-use NastyaKuznet\Blog\Middleware\RoleMiddleware;
 use NastyaKuznet\Blog\Middleware\RoleMiddlewareFactory;
 use NastyaKuznet\Blog\Service\AuthService;
 use NastyaKuznet\Blog\Service\CommentService;
@@ -29,16 +28,12 @@ $dotenv->load();
 return [
     'config' => require __DIR__ . '/config.php',
 
+    'config.jwt_secret' => $_ENV['JWT_SECRET'],
+
     'view' => function () {
         $loader = new FilesystemLoader(__DIR__ . '/../templates');
         return new Twig($loader, ['cache' => false]);
     },
-
-    // Секретный ключ из .env
-    'config.jwt_secret' => $_ENV['JWT_SECRET'],
-
-    // Добавляем конфиг прав доступа
-    'config.route_permissions' => require __DIR__ . '/routes_permissions.php',
     
     AuthService::class => create(AuthService::class)
         ->constructor(get(DatabaseService::class)),

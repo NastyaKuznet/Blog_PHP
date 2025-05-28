@@ -23,7 +23,7 @@ class RoleMiddleware
         if (!isset($user['role']) || !in_array($user['role'], $this->allowedRoles)) {
             $response = new SlimResponse();
             $response->getBody()->write('Insufficient permissions');
-            return $response->withStatus(403); // 403 Forbidden
+            return $response->withStatus(403);
         }
 
         return $handler->handle($request);

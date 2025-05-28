@@ -63,7 +63,7 @@ class PostService implements PostServiceInterface
         return $postsFromDb;
     }
 
-    public function getAll(?string $sortBy, ?string $order, ?string $authorNickname, ?string $tag): array
+    public function getAll(?string $sortBy, ?string $order, ?string $authorLogin, ?string $tag): array
     {
         $postsFromDb = $this->getPostsWithFilters($sortBy, $order, $authorLogin, $tag);
         $posts = [];

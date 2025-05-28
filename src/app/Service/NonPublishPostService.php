@@ -18,21 +18,21 @@ class NonPublishPostService implements NonPublishPostServiceInterface
         $this->tagService = $tagService;
     }
 
-    public function getAllNonPublish(): array
+    public function getAll(): array
     {
         $postsFromDb = $this->databaseService->getAllNonPublishPosts();
         $posts = [];
         foreach ($postsFromDb as $postData) {
-            $tags = $this->tagService->getTagsByPostId($postData['id']);
+            $tags = $this->tagService->getByPostId($postData['id']);
             $posts[] = new Post(
                 $postData['id'],
                 $postData['title'],
                 $postData['preview'],
                 $postData['content'],
                 $postData['author_id'],
-                $postData['user_nickname'],
+                $postData['user_login'],
                 $postData['last_editor_id'],
-                $postData['last_editor_nickname'],
+                $postData['last_editor_login'],
                 $postData['create_date'],
                 $postData['publish_date'],
                 $postData['edit_date'],
@@ -44,14 +44,14 @@ class NonPublishPostService implements NonPublishPostServiceInterface
         return $posts;
     }
 
-    public function getNonPublishById(int $id): ?Post
+    public function getById(int $id): ?Post
     {
         $postFromDb = $this->databaseService->getNonPublishPostById($id);
 
         if (!$postFromDb) {
             return null;
         }
-        $tags = $this->tagService->getTagsByPostId($postFromDb['post']['id']);
+        $tags = $this->tagService->getByPostId($postFromDb['post']['id']);
         try {
             return new Post(
                 $postFromDb['post']['id'],
@@ -59,9 +59,9 @@ class NonPublishPostService implements NonPublishPostServiceInterface
                 $postFromDb['post']['preview'],
                 $postFromDb['post']['content'],
                 $postFromDb['post']['author_id'],
-                $postFromDb['author_nickname'],
+                $postFromDb['author_login'],
                 $postFromDb['post']['last_editor_id'],
-                $postFromDb['last_editor_nickname'],
+                $postFromDb['last_editor_login'],
                 $postFromDb['post']['create_date'],
                 $postFromDb['post']['publish_date'],
                 $postFromDb['post']['edit_date'],
