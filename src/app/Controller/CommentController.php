@@ -7,6 +7,7 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Psr7\Response as SlimResponse;
 use Slim\Views\Twig;
 use NastyaKuznet\Blog\Service\interfaces\CommentServiceInterface;
+use Throwable;
 
 class CommentController
 {
@@ -23,16 +24,22 @@ class CommentController
     public function editForm(Request $request, Response $response, array $args): Response
     {
         $commentId = (int)$args['id'];
-        $comment = $this->commentService->getCommentById($commentId);
+        try {
+            $comment = $this->commentService->getCommentById($commentId);
 
-        if (!$comment) {
-            $response->getBody()->write("Комментарий не найден или был удалён.");
-            return $response->withStatus(404)->withHeader('Content-Type', 'text/plain');
-        }
+            if (!$comment) {
+                $response->getBody()->write("Комментарий не найден или был удалён.");
+                return $response->withStatus(404)->withHeader('Content-Type', 'text/plain');
+            }
 
-        $data = ['comment' => $comment];
+            $data = ['comment' => $comment];
 
-        return $this->view->render($response, 'post/comment/edit.twig', $data);
+            return $this->view->render($response, 'post/comment/edit.twig', $data);
+        } catch (Throwable) {
+            $response->getBody()->write(json_encode(['error' => 'Internal Server Error']));
+            return $response->withStatus(500)
+                    ->withHeader('Content-Type', 'application/json');
+        } 
     }
 
     // Обработка редактирования
@@ -54,16 +61,16 @@ class CommentController
             return $response->withStatus(400)->withHeader('Content-Type', 'text/plain');
         }
 
-        $isSuccess = $this->commentService->updateComment($commentId, $content);
-
-        if ($isSuccess) {
+        try {
+            $this->commentService->updateComment($commentId, $content);
             $postId = $comment['post_id'];
             $redirect = new SlimResponse();
             return $redirect->withHeader('Location', "/post/{$postId}")->withStatus(302);
-        }
-
-        $response->getBody()->write("Ошибка при обновлении комментария.");
-        return $response->withStatus(500)->withHeader('Content-Type', 'text/plain');
+        } catch (Throwable) {
+            $response->getBody()->write(json_encode(['error' => 'Internal Server Error']));
+            return $response->withStatus(500)
+                    ->withHeader('Content-Type', 'application/json');
+        } 
     }
 
     // Удаление комментария
@@ -77,15 +84,15 @@ class CommentController
             return $response->withStatus(404)->withHeader('Content-Type', 'text/plain');
         }
 
-        $isSuccess = $this->commentService->deleteComment($commentId);
-
-        if ($isSuccess) {
+        try {
+            $this->commentService->deleteComment($commentId);
             $postId = $comment['post_id'];
             $redirect = new SlimResponse();
             return $redirect->withHeader('Location', "/post/{$postId}")->withStatus(302);
-        }
-
-        $response->getBody()->write("Ошибка при удалении комментария.");
-        return $response->withStatus(500)->withHeader('Content-Type', 'text/plain');
+        } catch (Throwable) {
+            $response->getBody()->write(json_encode(['error' => 'Internal Server Error']));
+            return $response->withStatus(500)
+                    ->withHeader('Content-Type', 'application/json');
+        } 
     }
 }

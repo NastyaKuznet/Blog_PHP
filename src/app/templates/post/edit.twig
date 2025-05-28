@@ -3,7 +3,7 @@
 
 {% block content %}
 <h1>Редактирование поста</h1>
-<p>Автор поста: {{ post.userNickname|escape }}</p>
+<p>Автор поста: {{ post.userLogin|escape }}</p>
 <form action="/post/save/{{ post.id }}" method="POST">
     <div>
         <label for="title">Заголовок:</label><br>

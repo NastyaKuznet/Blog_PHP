@@ -6,6 +6,7 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Http\Message\ResponseInterface as Response;
 use NastyaKuznet\Blog\Service\Interfaces\AuthServiceInterface;
 use Slim\Views\Twig;
+use Throwable;
 
 class AuthController
 {
@@ -49,27 +50,25 @@ class AuthController
         $username = $data['username'] ?? '';
         $password = $data['password'] ?? '';
 
-        $checkUser = $this->authService->checkUserRegistration($username, $password);
-        if ($checkUser){
-            return $this->view->render($response, 'auth/register.twig', [
-                'error' => '<div class="error">Такой никнейм уже существует</div>'
-            ]);
-        }
-
-        $success = $this->authService->registerUser($username, $password);
-
-        if ($success) {
+        try {
+            $checkUser = $this->authService->checkUserRegistration($username, $password);
+            if ($checkUser){
+                return $this->view->render($response, 'auth/register.twig', [
+                    'error' => '<div class="error">Такой никнейм уже существует</div>'
+                ]);
+            }
+            $this->authService->registerUser($username, $password);
             // После регистрации сразу логиним пользователя
             $user = $this->authService->authenticateUser($username, $password);
 
             // Вызываем наш отдельный метод для установки токена
             $response = $this->setTokenInCookie($response, $user);
             return $response->withHeader('Location', '/')->withStatus(302);
-        } else {
-            return $this->view->render($response, 'auth/register.twig', [
-                'error' => '<div class="error">Ошибка при регистрации</div>'
-            ]);
-        }
+        } catch (Throwable){
+            $response->getBody()->write(json_encode(['error' => 'Internal Server Error']));
+            return $response->withStatus(500)
+                    ->withHeader('Content-Type', 'application/json');
+        }   
     }
 
     public function loginForm(Request $request, Response $response): Response
@@ -82,26 +81,31 @@ class AuthController
         $data = $request->getParsedBody();
         $username = $data['username'] ?? '';
         $password = $data['password'] ?? '';
+        try {
+            $user = $this->authService->authenticateUser($username, $password);
 
-        $user = $this->authService->authenticateUser($username, $password);
+            if (!$user) {
+                return $this->view->render($response, 'auth/login.twig', [
+                    'error' => '<div class="error">Неверное имя или пароль</div>'
+                ]);
+            }
 
-        if (!$user) {
-            return $this->view->render($response, 'auth/login.twig', [
-                'error' => '<div class="error">Неверное имя или пароль</div>'
-            ]);
-        }
+            if($user->isBanned)
+            {
+                return $this->view->render($response, 'auth/login.twig', [
+                    'error' => '<div class="error">Вы забанены!</div>'
+                ])->withStatus(403);
+            }
 
-        if($user->isBanned)
-        {
-            return $this->view->render($response, 'auth/login.twig', [
-                'error' => '<div class="error">Вы забанены!</div>'
-            ])->withStatus(403);
-        }
+            // Вызываем отдельный метод для установки токена
+            $response = $this->setTokenInCookie($response, $user);
 
-        // Вызываем отдельный метод для установки токена
-        $response = $this->setTokenInCookie($response, $user);
-
-        return $response->withHeader('Location', '/')->withStatus(302);
+            return $response->withHeader('Location', '/')->withStatus(302);
+        } catch (Throwable){
+            $response->getBody()->write(json_encode(['error' => 'Internal Server Error']));
+            return $response->withStatus(500)
+                    ->withHeader('Content-Type', 'application/json');
+        } 
     }
 
     /**

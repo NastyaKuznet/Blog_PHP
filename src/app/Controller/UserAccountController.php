@@ -7,6 +7,7 @@ use NastyaKuznet\Blog\Service\interfaces\UserServiceInterface;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Views\Twig;
+use Throwable;
 
 class UserAccountController
 {
@@ -25,16 +26,22 @@ class UserAccountController
     {
         $userFromAttribute = $request->getAttribute('user');
         $userId = $userFromAttribute['id'];
-        $user = $this->userService->getUser($userId);
-        $countPosts = $this->postService->getCountPosts($userId);
-        $posts = $this->postService->getPostsByUserId($userId);
-        return $this->view->render($response, 'user/userAccount.twig', [
-            'posts' => $posts,
-            'user' => $user,
-            'countPosts' => $countPosts,
-            'app' => [
-                'request' => $request,
-            ],
-        ]);
+        try {
+            $user = $this->userService->getUser($userId);
+            $countPosts = $this->postService->getCountPosts($userId);
+            $posts = $this->postService->getPostsByUserId($userId);
+            return $this->view->render($response, 'user/userAccount.twig', [
+                'posts' => $posts,
+                'user' => $user,
+                'countPosts' => $countPosts,
+                'app' => [
+                    'request' => $request,
+                ],
+            ]);
+        } catch (Throwable) {
+            $response->getBody()->write(json_encode(['error' => 'Internal Server Error']));
+            return $response->withStatus(500)
+                    ->withHeader('Content-Type', 'application/json');
+        } 
     }
 }

@@ -8,7 +8,7 @@
 <table border="1" cellpadding="5" cellspacing="0">
     <tr>
         <th>ID</th>
-        <th>Никнейм</th>
+        <th>Логин</th>
         <th>Роль</th>
         <th>Дата регистрации</th>
         <th>Забанен</th>
@@ -17,7 +17,7 @@
     {% for user in users %}
         <tr>
             <td>{{ user.id|escape }}</td>
-            <td>{{ user.nickname|escape }}</td>
+            <td>{{ user.login|escape }}</td>
             <td>{{ user.roleName|escape }}</td>
             <td>{{ user.registerDate|date('H:i d.m.Y', 'Asia/Yekaterinburg') }}</td>
             <td>{{ user.isBanned ? 'Да' : 'Нет' }}</td>

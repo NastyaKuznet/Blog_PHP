@@ -4,7 +4,8 @@ namespace NastyaKuznet\Blog\Service;
 use NastyaKuznet\Blog\Service\interfaces\DatabaseServiceInterface;
 
 use PDO;
-use PDOException; 
+use PDOException;
+use Throwable;
 
 class DatabaseService implements DatabaseServiceInterface
 {
@@ -25,7 +26,6 @@ class DatabaseService implements DatabaseServiceInterface
             
             $this->prepareStatements();
         } catch (PDOException $e) {
-            $this->logger->error("Database connection error: " . $e->getMessage());
             throw new \RuntimeException("Database connection failed", 0, $e);
         }
     }
@@ -39,7 +39,6 @@ class DatabaseService implements DatabaseServiceInterface
             try {
                 $this->preparedStatements[$name] = $this->pdo->prepare($sql);
             } catch (PDOException $e) {
-                $this->logger->error("Failed to prepare statement {$name}: " . $e->getMessage());
                 throw new \RuntimeException("Failed to prepare database statements", 0, $e);
             }
         }
@@ -82,9 +81,8 @@ class DatabaseService implements DatabaseServiceInterface
             $stmt = $this->preparedStatements['getAllPosts'];
             $stmt->execute();
             return $stmt->fetchAll();
-        } catch (PDOException $e) {
-            echo "Ошибка при получении постов: " . $e->getMessage();
-            return [];
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error receiving posts", 0, $e);
         }
     }
 
@@ -95,9 +93,8 @@ class DatabaseService implements DatabaseServiceInterface
             $stmt = $this->preparedStatements['getPostsByAuthorAlphabetical'];
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            echo "Ошибка при получении постов по автору: " . $e->getMessage();
-            return [];
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when receiving posts by author asc", 0, $e);
         }
     }
 
@@ -108,9 +105,8 @@ class DatabaseService implements DatabaseServiceInterface
             $stmt = $this->preparedStatements['getPostsByAuthorReverseAlphabetical'];
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            echo "Ошибка при получении постов по автору: " . $e->getMessage();
-            return [];
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when receiving posts by author desc", 0, $e);
         }
     }
 
@@ -121,9 +117,8 @@ class DatabaseService implements DatabaseServiceInterface
             $stmt = $this->preparedStatements['getPostsByAuthor'];
             $stmt->execute(['author_login' => $author_login]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            echo "Ошибка при получении постов по автору: " . $e->getMessage();
-            return [];
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when receiving posts by author", 0, $e);
         }
     }
 
@@ -134,9 +129,8 @@ class DatabaseService implements DatabaseServiceInterface
             $stmt = $this->preparedStatements['getPostsByLikesAscending'];
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            echo "Ошибка при получении постов по лайкам: " . $e->getMessage();
-            return [];
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when receiving posts by likes asc", 0, $e);
         }
     }
 
@@ -147,9 +141,8 @@ class DatabaseService implements DatabaseServiceInterface
             $stmt = $this->preparedStatements['getPostsByLikesDescending'];
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            echo "Ошибка при получении постов по лайкам: " . $e->getMessage();
-            return [];
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when receiving posts by likes desc", 0, $e);
         }
     }
 
@@ -160,9 +153,8 @@ class DatabaseService implements DatabaseServiceInterface
             $stmt = $this->preparedStatements['getPostsByCommentsAscending'];
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            echo "Ошибка при получении постов по комментариям: " . $e->getMessage();
-            return [];
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when receiving posts by count comments asc", 0, $e);
         }
     }
 
@@ -173,9 +165,8 @@ class DatabaseService implements DatabaseServiceInterface
             $stmt = $this->preparedStatements['getPostsByCommentsDescending'];
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            echo "Ошибка при получении постов по комментариям: " . $e->getMessage();
-            return [];
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when receiving posts by count comments desc", 0, $e);
         }
     }
 
@@ -185,9 +176,8 @@ class DatabaseService implements DatabaseServiceInterface
             $stmt = $this->preparedStatements['getPostsByTag'];
             $stmt->execute(['tag_name' => $tagName]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            echo "Ошибка при получении постов по тегу: " . $e->getMessage();
-            return [];
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when receiving posts by tag", 0, $e);
         }
     }
 
@@ -198,9 +188,8 @@ class DatabaseService implements DatabaseServiceInterface
             $stmt = $this->preparedStatements['getPostsByUserId'];
             $stmt->execute(['user_id' => $userId]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            echo "Ошибка при получении постов по юзер id: " . $e->getMessage();
-            return [];
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when receiving posts by user id", 0, $e);
         }
     }
 
@@ -211,9 +200,8 @@ class DatabaseService implements DatabaseServiceInterface
             $stmt = $this->preparedStatements['getAllNonPublishPosts'];
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            echo "Ошибка при получении постов: " . $e->getMessage();
-            return [];
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when receiving all non publish posts", 0, $e);
         }
     }
 
@@ -275,12 +263,11 @@ class DatabaseService implements DatabaseServiceInterface
 
             return $result;
 
-        } catch (PDOException $e) {
+        } catch (Throwable $e) {
             if ($this->pdo->inTransaction()) {
                 $this->pdo->rollBack();
             }
-            echo "Ошибка в транзакции: " . $e->getMessage() . "\n";
-            return null;
+            throw new \RuntimeException("Transaction error", 0, $e);
         }
     }
 
@@ -338,12 +325,11 @@ class DatabaseService implements DatabaseServiceInterface
 
             return $result;
 
-        } catch (PDOException $e) {
+        } catch (Throwable $e) {
             if ($this->pdo->inTransaction()) {
                 $this->pdo->rollBack();
             }
-            echo "Ошибка в транзакции: " . $e->getMessage() . "\n";
-            return null;
+            throw new \RuntimeException("Transaction error", 0, $e);
         }
     }
 
@@ -354,9 +340,8 @@ class DatabaseService implements DatabaseServiceInterface
             $stmt = $this->preparedStatements['getCountPostsByUserId'];
             $stmt->execute(['user_id' => $userId]);
             return (int) $stmt->fetchColumn();
-        } catch (PDOException $e) {
-            echo "Ошибка при получении количество постов: " . $e->getMessage();
-            return 0;
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when receiving the number of posts by user id", 0, $e);
         }
     }
 
@@ -372,9 +357,8 @@ class DatabaseService implements DatabaseServiceInterface
                 'author_id' => $userId
             ]);
             return $this->pdo->lastInsertId();
-        } catch (PDOException $e) {
-            echo "Ошибка при добавлении поста: " . $e->getMessage();
-            return 0;
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when adding a post", 0, $e);
         }
     }
 
@@ -391,9 +375,8 @@ class DatabaseService implements DatabaseServiceInterface
                 'post_id' => $postId
             ]);
             return true;
-        } catch (PDOException $e) {
-            echo "Ошибка при редактировании поста: " . $e->getMessage();
-            return false;
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when editing a post", 0, $e);
         }
     }
 
@@ -406,9 +389,8 @@ class DatabaseService implements DatabaseServiceInterface
                 'post_id' => $postId
             ]);
             return true;
-        } catch (PDOException $e) {
-            echo "Ошибка при установки даты удаления поста: " . $e->getMessage();
-            return false;
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when setting the date for deleting a post", 0, $e);
         }
     }
 
@@ -419,9 +401,8 @@ class DatabaseService implements DatabaseServiceInterface
             $stmt = $this->preparedStatements['publishPost'];
             $stmt->execute([':post_id' => $postId]);
             return true;
-        } catch (PDOException $e) {
-            echo "Ошибка при публикации поста: " . $e->getMessage();
-            return false;
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when publishing a post", 0, $e);
         }
     }
 
@@ -432,9 +413,8 @@ class DatabaseService implements DatabaseServiceInterface
             $stmt = $this->preparedStatements['getCommentsByPostId'];
             $stmt->execute(['post_id' => $postId]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            echo "Ошибка при получении коментариев по ид поста: " . $e->getMessage();
-            return [];
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when receiving comments on the post id", 0, $e);
         }
     }
 
@@ -446,9 +426,8 @@ class DatabaseService implements DatabaseServiceInterface
             $result = $stmt->fetch(\PDO::FETCH_ASSOC);
 
             return $result ?: null;
-        } catch (\PDOException $e) {
-            error_log("Ошибка при получении комментария: " . $e->getMessage());
-            return null;
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when receiving a comment", 0, $e);
         }
     }
 
@@ -463,9 +442,8 @@ class DatabaseService implements DatabaseServiceInterface
                 'user_id' => $userId
             ]);
             return true;
-        } catch (PDOException $e) {
-            echo "Ошибка при добавлении коментария: " . $e->getMessage();
-            return false;
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when adding a comment", 0, $e);
         }
     }
 
@@ -478,9 +456,8 @@ class DatabaseService implements DatabaseServiceInterface
                 'comment_id' => $commentId
             ]);
             return $stmt->rowCount() > 0;
-        } catch (PDOException $e) {
-            echo "Ошибка при обновлении комментария: " . $e->getMessage();
-            return false;
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error updating a comment", 0, $e);
         }
     }
 
@@ -490,10 +467,9 @@ class DatabaseService implements DatabaseServiceInterface
             $stmt = $this->preparedStatements['deleteComment'];
             $stmt->execute(['comment_id' => $commentId]);
             return $stmt->rowCount() > 0;
-        } catch (PDOException $e) {
-            echo "Ошибка при мягком удалении комментария: " . $e->getMessage();
-            return false;
-        } 
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error deleting a comment", 0, $e);
+        }
     }
 
     // Метод для проверки поставлен ли лайк пользателем по определенному посту
@@ -507,9 +483,8 @@ class DatabaseService implements DatabaseServiceInterface
             ]);
             $count = $stmt->fetchColumn();
             return $count > 0;
-        } catch (PDOException $e) {
-            echo "Ошибка при проверке лайка: " . $e->getMessage();
-            return false;
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error checking the like", 0, $e);
         }
     }
 
@@ -523,9 +498,8 @@ class DatabaseService implements DatabaseServiceInterface
                 'user_id' => $userId
             ]);
             return true;
-        } catch (PDOException $e) {
-            echo "Ошибка при добавлении лайка: " . $e->getMessage();
-            return false;
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error adding the like", 0, $e);
         }
     }
 
@@ -538,9 +512,8 @@ class DatabaseService implements DatabaseServiceInterface
                 'user_id' => $userId
             ]);
             return true;
-        } catch (PDOException $e) {
-            echo "Ошибка при удалении лайка: " . $e->getMessage();
-            return false;
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error deleting the like", 0, $e);
         }
     }
 
@@ -551,9 +524,8 @@ class DatabaseService implements DatabaseServiceInterface
             $stmt = $this->preparedStatements['getUserInfo'];
             $stmt->execute(['user_id' => $user_id]);
             return $stmt->fetch(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            echo "Ошибка при получении информации о пользователе: " . $e->getMessage();
-            return [];
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when receiving user information", 0, $e);
         }
     }
 
@@ -564,9 +536,8 @@ class DatabaseService implements DatabaseServiceInterface
             $stmt = $this->preparedStatements['getAllUsers'];
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            echo "Ошибка при получении пользователей: " . $e->getMessage();
-            return [];
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when receiving all users", 0, $e);
         }
     }
 
@@ -580,9 +551,8 @@ class DatabaseService implements DatabaseServiceInterface
                 'user_id' => $user_id
             ]);
             return true;
-        } catch (PDOException $e) {
-            echo "Ошибка при изменении роли пользователя: " . $e->getMessage();
-            return false;
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when changing the user role", 0, $e);
         }
     }
 
@@ -596,9 +566,8 @@ class DatabaseService implements DatabaseServiceInterface
                 'password' => password_hash($password, PASSWORD_DEFAULT) // Хэшируем пароль
             ]);
             return true;
-        } catch (PDOException $e) {
-            echo "Ошибка при добавлении пользователя: " . $e->getMessage();
-            return false;
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when adding a user", 0, $e);
         }
     }
 
@@ -615,9 +584,8 @@ class DatabaseService implements DatabaseServiceInterface
             } else {
                 return false;
             }
-        } catch (PDOException $e) {
-            echo "Ошибка при авторизации пользователя: " . $e->getMessage();
-            return false;
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error during user authorization", 0, $e);
         }
     }
 
@@ -630,9 +598,8 @@ class DatabaseService implements DatabaseServiceInterface
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
            return !!$user;
-        } catch (PDOException $e) {
-            echo "Ошибка при проверке занятости ника: " . $e->getMessage();
-            return false;
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when checking the employment of a nickname", 0, $e);
         }
     }
   
@@ -643,9 +610,8 @@ class DatabaseService implements DatabaseServiceInterface
             $stmt = $this->preparedStatements['toggleUserBan'];
             $stmt->execute([$isBanned ? 't' : 'f', $userId]);
             return $stmt->rowCount() > 0;
-        } catch (PDOException $e) {
-            echo "Ошибка при изменении статуса забаненности пользователя: " . $e->getMessage();
-            return false;
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when changing the user's ban status", 0, $e);
         }
     }
 
@@ -656,9 +622,8 @@ class DatabaseService implements DatabaseServiceInterface
             $stmt = $this->preparedStatements['getRoles'];
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_COLUMN);
-        } catch (PDOException $e) {
-            echo "Ошибка при получении списка ролей: " . $e->getMessage();
-            return [];
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when getting the list of roles", 0, $e);
         }
     }
 
@@ -669,9 +634,8 @@ class DatabaseService implements DatabaseServiceInterface
             $stmt = $this->preparedStatements['getAllTags'];
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            echo "Ошибка при получении тегов: " . $e->getMessage();
-            return [];
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error receiving tags", 0, $e);
         }
     }
 
@@ -682,9 +646,8 @@ class DatabaseService implements DatabaseServiceInterface
             $stmt = $this->preparedStatements['getTagsByPostId'];
             $stmt->execute(['post_id' => $postId]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            echo "Ошибка при получении тегов поста: " . $e->getMessage();
-            return [];
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when receiving post tags", 0, $e);
         }
     }
 
@@ -695,9 +658,8 @@ class DatabaseService implements DatabaseServiceInterface
             $stmt = $this->preparedStatements['getAllCategories'];
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            echo "Ошибка при получении категорий: " . $e->getMessage();
-            return [];
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when getting categories", 0, $e);
         }
     }
 
@@ -708,9 +670,8 @@ class DatabaseService implements DatabaseServiceInterface
             $stmt = $this->preparedStatements['addTag'];
             $stmt->execute(['name' => $name, 'post_id' => $postId]);
             return true;
-        } catch (PDOException $e) {
-            error_log("Ошибка при добавлении тега: " . $e->getMessage());
-            return false;
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when adding the tag", 0, $e);
         }
     }
 
@@ -723,9 +684,8 @@ class DatabaseService implements DatabaseServiceInterface
                 'post_id' => $postId
             ]);
             return true;
-        } catch (PDOException $e) {
-            error_log("Ошибка при добавлении тега: " . $e->getMessage());
-            return false;
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when adding the tag", 0, $e);
         }
     }
 
@@ -736,9 +696,8 @@ class DatabaseService implements DatabaseServiceInterface
             $stmt = $this->preparedStatements['getCategoryById'];
             $stmt->execute(['category_id' => $categoryId]);
             return $stmt->fetch(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            echo "Ошибка при получении категории: " . $e->getMessage();
-            return null;
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when getting the category", 0, $e);
         }
     }
 
@@ -752,9 +711,8 @@ class DatabaseService implements DatabaseServiceInterface
                 'parent_id' => $parentId
             ]);
             return true;
-        } catch (PDOException $e) {
-            echo "Ошибка при добавлении категории: " . $e->getMessage();
-            return false;
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when adding a category", 0, $e);
         }
     }
 
@@ -766,9 +724,8 @@ class DatabaseService implements DatabaseServiceInterface
             $stmt->execute(['name' => $name]);
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
             return $result ? (int)$result['id'] : null;
-        } catch (PDOException $e) {
-            error_log("Ошибка при получении ID тега: " . $e->getMessage());
-            return null;
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when getting the tag ID", 0, $e);
         }
     }
 
@@ -785,9 +742,8 @@ class DatabaseService implements DatabaseServiceInterface
             ]);
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
             return $result ? (int)$result['id'] : null;
-        } catch (PDOException $e) {
-            error_log("Ошибка при добавлении поста: " . $e->getMessage());
-            return null;
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when adding a post", 0, $e);
         }
     }
 
@@ -798,9 +754,8 @@ class DatabaseService implements DatabaseServiceInterface
             $stmt = $this->preparedStatements['getCategoriesByPostId'];
             $stmt->execute(['post_id' => $postId]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            echo "Ошибка при получении категорий поста: " . $e->getMessage();
-            return [];
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when getting post categories", 0, $e);
         }
     }
 
@@ -811,9 +766,8 @@ class DatabaseService implements DatabaseServiceInterface
             $stmt = $this->preparedStatements['getPostsByCategoryId'];
             $stmt->execute(['category_id' => $categoryId]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            echo "Ошибка при получении постов по категории: " . $e->getMessage();
-            return [];
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when receiving posts by category", 0, $e);
         }
     }                         
 
@@ -825,9 +779,8 @@ class DatabaseService implements DatabaseServiceInterface
             $this->markAsDeletedRecursive($categoryId);
             $this->pdo->commit();
             return true;
-        } catch (PDOException $e) {
-            error_log("Ошибка при пометке категории как удалённой: " . $e->getMessage());
-            return false;
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when marking a category as deleted", 0, $e);
         }
     }
 
@@ -835,7 +788,7 @@ class DatabaseService implements DatabaseServiceInterface
     private function markAsDeletedRecursive(int $categoryId): void
     {
         $stmt = $this->preparedStatements['markCategoryAsDeleted'];
-        $stmt->execute([':categoryId' => $categoryId]);
+        $stmt->execute([':category_id' => $categoryId]);
 
         $stmt = $this->preparedStatements['getChildCategories'];
         $stmt->execute(['category_id' => $categoryId]);
@@ -868,12 +821,11 @@ class DatabaseService implements DatabaseServiceInterface
             
             $this->pdo->commit();
             return true;
-        } catch (PDOException $e) {
+        } catch (Throwable $e) {
             if ($this->pdo->inTransaction()) {
                 $this->pdo->rollBack();
             }
-            error_log("Ошибка добавления связи между постом и категорией: " . $e->getMessage());
-            return false;
+            throw new \RuntimeException("Error adding a link between a post and a category", 0, $e);
         }
     }
 }
