@@ -5,12 +5,12 @@ use NastyaKuznet\Blog\Model\Category;
 
 interface CategoryServiceInterface
 {
-    public function getAllCategories(): array;
-    public function getCategoriesTree(): array;
-    public function getCategoryById(int $categoryId): ?Category;
-    public function addCategory(string $name, ?int $parentId): bool;
-    public function getCategoriesByPostId(int $postId): array;
-    public function getPostsByCategoryId(int $categoryId): array;
-    public function deleteCategory(int $categoryId): bool;
-    public function connectPostAndCategory(int $postId, int $categoryId): bool;
+    public function getAll(): array;
+    public function getTree(): array;
+    public function getById(int $id): ?Category;
+    public function add(string $name, ?int $parentId): bool;
+    public function getByPostId(int $postId): array;
+    public function getPostsByCategoryId(int $categoryId): array; // унести в пост сервис
+    public function delete(int $id): bool;
+    public function connectPostAndCategory(int $postId, int $categoryId): bool; //возможно утащить в что-то промежуточное?
 }

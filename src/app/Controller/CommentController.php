@@ -25,7 +25,7 @@ class CommentController
     {
         $commentId = (int)$args['id'];
         try {
-            $comment = $this->commentService->getCommentById($commentId);
+            $comment = $this->commentService->getById($commentId);
 
             if (!$comment) {
                 $response->getBody()->write("Комментарий не найден или был удалён.");
@@ -46,7 +46,7 @@ class CommentController
     public function update(Request $request, Response $response, array $args): Response
     {
         $commentId = (int)$args['id'];
-        $comment = $this->commentService->getCommentById($commentId);
+        $comment = $this->commentService->getById($commentId);
 
         if (!$comment) {
             $response->getBody()->write("Комментарий не найден.");
@@ -62,7 +62,7 @@ class CommentController
         }
 
         try {
-            $this->commentService->updateComment($commentId, $content);
+            $this->commentService->update($commentId, $content);
             $postId = $comment['post_id'];
             $redirect = new SlimResponse();
             return $redirect->withHeader('Location', "/post/{$postId}")->withStatus(302);
@@ -77,7 +77,7 @@ class CommentController
     public function delete(Request $request, Response $response, array $args): Response
     {
         $commentId = (int)$args['id'];
-        $comment = $this->commentService->getCommentById($commentId);
+        $comment = $this->commentService->getById($commentId);
 
         if (!$comment) {
             $response->getBody()->write("Комментарий не найден.");
@@ -85,7 +85,7 @@ class CommentController
         }
 
         try {
-            $this->commentService->deleteComment($commentId);
+            $this->commentService->delete($commentId);
             $postId = $comment['post_id'];
             $redirect = new SlimResponse();
             return $redirect->withHeader('Location', "/post/{$postId}")->withStatus(302);

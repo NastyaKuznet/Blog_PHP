@@ -23,7 +23,7 @@ class UsersAdminController
     public function index(Request $request, Response $response): Response
     {
         try{
-            $allUsers = $this->userService->getAllUsers();
+            $allUsers = $this->userService->getAll();
             return $this->view->render($response, 'admin/users.twig', [
                 'users' => $allUsers,
             ]);
@@ -40,7 +40,7 @@ class UsersAdminController
         $userId = (int) ($parsedBody['user_id'] ?? 0);
         $newRoleId = (int) ($parsedBody['new_role_id'] ?? 0);
         try {
-            $this->userService->changeUserRole($userId, $newRoleId);
+            $this->userService->changeRole($userId, $newRoleId);
             return $response->withHeader('Location', '/admin/users')->withStatus(302);
         } catch (Throwable) {
             $response->getBody()->write(json_encode(['error' => 'Internal Server Error']));
@@ -56,7 +56,7 @@ class UsersAdminController
         $isBanned = (bool)$parsedBody['is_banned'];
 
         try {
-            $this->userService->toggleUserBan($userId, $isBanned);
+            $this->userService->toggleBan($userId, $isBanned);
             return $response->withHeader('Location', '/admin/users')->withStatus(302);
         } catch (Throwable) {
             $response->getBody()->write(json_encode(['error' => 'Internal Server Error']));

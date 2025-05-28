@@ -22,7 +22,7 @@ class CategoryController
     public function index(Request $request, Response $response): Response
     {
         try {
-            $categories = $this->categoryService->getAllCategories();
+            $categories = $this->categoryService->getAll();
             return $this->view->render($response, 'categories/categories.twig', [
                 'categories' => $categories,
             ]);
@@ -37,7 +37,7 @@ class CategoryController
     {
         if ($request->getMethod() === 'GET') {
             try {
-                $categories = $this->categoryService->getAllCategories();
+                $categories = $this->categoryService->getAll();
                 return $this->view->render($response, 'categories/create_category.twig', [
                     'categories' => $categories,
                 ]);
@@ -57,9 +57,9 @@ class CategoryController
                 'error' => '<div class="error">Введите название категории</div>'
             ]);
         }
-
+      
         try {
-            $this->categoryService->addCategory($name, $parentId);
+            $this->categoryService->add($name, $parentId);
             return $response->withHeader('Location', '/categories')->withStatus(302);
         } catch (Throwable) {
             $response->getBody()->write(json_encode(['error' => 'Internal Server Error']));
@@ -75,9 +75,8 @@ class CategoryController
         if (!$categoryId) {
             return $response->withHeader('Location', '/categories')->withStatus(302);
         }
-
         try {
-            $this->categoryService->deleteCategory($categoryId);
+            $this->categoryService->delete($categoryId);
             return $response->withHeader('Location', '/categories')->withStatus(302);
         } catch (Throwable) {
             $response->getBody()->write(json_encode(['error' => 'Internal Server Error']));

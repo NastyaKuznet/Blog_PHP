@@ -5,6 +5,8 @@ namespace NastyaKuznet\Blog\Controller;
 use NastyaKuznet\Blog\Service\interfaces\PostServiceInterface;
 use NastyaKuznet\Blog\Service\interfaces\CategoryServiceInterface;
 use NastyaKuznet\Blog\Service\interfaces\CommentServiceInterface;
+use NastyaKuznet\Blog\Service\interfaces\LikeServiceInterface;
+use NastyaKuznet\Blog\Service\interfaces\NonPublishPostServiceInterface;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Psr7\Response as SlimResponse;
@@ -16,17 +18,23 @@ class PostController
     private PostServiceInterface $postService;
     private CategoryServiceInterface $categoryService;
     private CommentServiceInterface $commentService;
+    private NonPublishPostServiceInterface $nonPublishService;
+    private LikeServiceInterface $likeService;
     private Twig $view;
 
     public function __construct(
         PostServiceInterface $postService, 
         CategoryServiceInterface $categoryService, 
-        CommentServiceInterface $commentService, 
+        CommentServiceInterface $commentService,
+        NonPublishPostServiceInterface $nonPublishService,
+        LikeServiceInterface $likeService,
         Twig $view)
     {
         $this->postService = $postService;
         $this->categoryService = $categoryService;
         $this->commentService = $commentService;
+        $this->nonPublishService = $nonPublishService;
+        $this->likeService = $likeService;
         $this->view = $view;
     }
 
@@ -41,11 +49,11 @@ class PostController
         $categoryId = $queryParams['category_id'] ?? null;
 
         try {
-            $categories = $this->categoryService->getCategoriesTree();
+            $categories = $this->categoryService->getTree();
             if ($categoryId) {
-                $posts = $this->postService->getPostsByCategoryId($categoryId);
+                $posts = $this->categoryService->getPostsByCategoryId($categoryId);
             } else {
-                $posts = $this->postService->getAllPosts($sortBy, $order, $authorLogin, $tag);
+                $posts = $this->postService->getAll($sortBy, $order, $authorLogin, $tag);
             }
 
             return $this->view->render($response, 'post/index.twig', [
@@ -66,7 +74,7 @@ class PostController
     public function indexNonPublish(Request $request, Response $response): Response
     {
         try {
-            $posts = $this->postService->getAllNonPublishPosts();
+            $posts = $this->nonPublishService->getAllNonPublish();
 
             return $this->view->render($response, 'post/nonPublish/index.twig', [
                 'posts' => $posts,
@@ -86,7 +94,7 @@ class PostController
         $user = $request->getAttribute('user');
         $postId = (int)$args['id'];
         try {
-            $post = $this->postService->getPostById($postId);
+            $post = $this->postService->getById($postId);
 
             if (!$post) {
                 $response->getBody()->write("Пост не найден.");
@@ -127,8 +135,7 @@ class PostController
             $commentText = trim($data['comment'] ?? '');
 
             if (!empty($commentText)) {
-                $isSuccess = $this->commentService->addComment($commentText, $postId, $user['id']);
-
+                $isSuccess = $this->commentService->add($commentText, $postId, $user['id']);
                 if ($isSuccess) {
                     $response = new SlimResponse();
                     return $response->withHeader('Location', '/post/' . $postId)->withStatus(302);
@@ -174,7 +181,7 @@ class PostController
 
         try {
             if (!empty($title) && !empty($preview) && !empty($content)) {
-                $success = $this->postService->addPostWithTags($title, $preview, $content, $user['id'], $tags);
+                $success = $this->postService->add($title, $preview, $content, $user['id'], $tags);
                 if ($success) {
                     return $response->withHeader('Location', '/')->withStatus(302);
                 }
@@ -198,12 +205,12 @@ class PostController
     {
         $postId = (int)$args['id'];
         try {
-            $post = $this->postService->getPostById($postId);
+            $post = $this->postService->getById($postId);
             if (!$post) {
                 $response->getBody()->write("Пост не найден.");
                 return $response->withStatus(404);
             }
-            $categories = $this->categoryService->getAllCategories();
+            $categories = $this->categoryService->getAll();
         } catch (Throwable) {
             $response->getBody()->write(json_encode(['error' => 'Internal Server Error']));
             return $response->withStatus(500)
@@ -240,7 +247,7 @@ class PostController
 
         try {
             if (!empty($title) && !empty($content)) {
-                $this->postService->editPost($postId, $title, $preview, $content, $user['id'], $tags);
+                $this->postService->edit($postId, $title, $preview, $content, $user['id'], $tags);
                 $this->categoryService->connectPostAndCategory($postId, $categoryId);
                 $response = new SlimResponse();
                 return $response->withHeader('Location', '/')->withStatus(302);
@@ -258,9 +265,8 @@ class PostController
     public function delete(Request $request, Response $response, array $args): Response
     {
         $postId = (int)$args['id'];
-
         try {
-            $this->postService->deletePost($postId);
+            $this->postService->delete($postId);
             $response = new SlimResponse();
             return $response->withHeader('Location', '/')->withStatus(302);
         } catch (Throwable) {
@@ -274,13 +280,13 @@ class PostController
     {
         $postId = (int)$args['id'];
         try{
-            $post = $this->postService->getNonPublishPostById($postId);
+            $post = $this->nonPublishService->getNonPublishPostById($postId);
             
             if (!$post) {
                 $response->getBody()->write("Пост не найден.");
                 return $response->withStatus(404);
             }
-            $categories = $this->categoryService->getAllCategories();  
+            $categories = $this->categoryService->getAll();  
         } catch (Throwable) {
             $response->getBody()->write(json_encode(['error' => 'Internal Server Error']));
             return $response->withStatus(500)
@@ -308,7 +314,7 @@ class PostController
     {
         $postId = (int)$args['id'];
         try {
-            $this->postService->deletePost($postId);
+            $this->nonPublishService->delete($postId);
             $response = new SlimResponse();
             return $response->withHeader('Location', '/post-non-publish')->withStatus(302);
         } catch (Throwable) {
@@ -331,8 +337,8 @@ class PostController
 
         try{
             if (!empty($title) && !empty($preview) && !empty($content)) {
-                $this->postService->editPost($postId, $title, $preview, $content, $user['id'], $tags);
-                $this->postService->publishPost($postId);
+                $this->postService->edit($postId, $title, $preview, $content, $user['id'], $tags);
+                $this->postService->publish($postId);
                 $this->categoryService->connectPostAndCategory($postId, $categoryId);
                 $response = new SlimResponse();
                 return $response->withHeader('Location', '/post-non-publish')->withStatus(302);
@@ -352,14 +358,14 @@ class PostController
         $user = $request->getAttribute('user');
         $postId = (int)$args['id'];
         try{
-            $isLikedByUser = $this->postService->checkLikeByPostIdAndUserId($postId, $user['id']);
+            $isLikedByUser = $this->likeService->check($postId, $user['id']);
             if($isLikedByUser)
             {
-                $this->postService->deleteLike($postId, $user['id']);
+                $this->likeService->delete($postId, $user['id']);
             }
             else 
             {
-                $this->postService->addLike($postId, $user['id']);
+                $this->likeService->add($postId, $user['id']);
             }     
             $response = new SlimResponse();
             return $response->withHeader('Location', '/post/' . $postId)->withStatus(302);

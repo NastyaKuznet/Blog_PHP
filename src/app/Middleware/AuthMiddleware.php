@@ -6,9 +6,6 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Server\RequestHandlerInterface as RequestHandler;
 use NastyaKuznet\Blog\Service\AuthService;
-use Slim\Psr7\Response\RedirectResponse;
-use Slim\Psr7\Factory\ResponseFactory;
-use Slim\Psr7\Response as SlimResponse;
 
 class AuthMiddleware
 {

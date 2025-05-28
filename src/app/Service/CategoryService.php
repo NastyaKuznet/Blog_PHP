@@ -3,24 +3,28 @@
 namespace NastyaKuznet\Blog\Service;
 
 use NastyaKuznet\Blog\Model\Category;
+use NastyaKuznet\Blog\Model\Post;
 use NastyaKuznet\Blog\Service\interfaces\CategoryServiceInterface;
 use NastyaKuznet\Blog\Service\interfaces\DatabaseServiceInterface;
+use NastyaKuznet\Blog\Service\interfaces\TagServiceInterface;
 
 class CategoryService implements CategoryServiceInterface
 {
     private DatabaseServiceInterface $databaseService;
+    private TagServiceInterface $tagService;
 
-    public function __construct(DatabaseServiceInterface $databaseService)
+    public function __construct(DatabaseServiceInterface $databaseService, TagServiceInterface $tagService)
     {
         $this->databaseService = $databaseService;
+        $this->tagService = $tagService;
     }
 
-    public function getAllCategories(): array
+    public function getAll(): array
     {
         return $this->databaseService->getAllCategories();
     }
 
-    public function getCategoriesTree(): array
+    public function getTree(): array
     {
         $categories = $this->databaseService->getAllCategories();
         $indexed = [];
@@ -60,29 +64,52 @@ class CategoryService implements CategoryServiceInterface
         return $treeWithoutReferences;
     }
 
-    public function getCategoryById(int $categoryId): ?Category
+    public function getById(int $id): ?Category
     {
-        return $this->databaseService->getCategoryById($categoryId);
+        return $this->databaseService->getCategoryById($id);
     }
 
-    public function addCategory(string $name, ?int $parentId): bool
+    public function add(string $name, ?int $parentId): bool
     {
         return $this->databaseService->addCategory($name, $parentId);
     }
 
-    public function getCategoriesByPostId(int $postId): array
+    public function getByPostId(int $postId): array
     {
         return $this->databaseService->getCategoriesByPostId($postId);
     }
 
     public function getPostsByCategoryId(int $categoryId): array
     {
-        return $this->databaseService->getPostsByCategoryId($categoryId);
+        $postsFromDb = $this->databaseService->getPostsByCategoryId($categoryId);
+        $posts = [];
+        foreach ($postsFromDb as $postData) {
+            $tags = $this->tagService->getByPostId($postData['id']);
+            $posts[] = new Post(
+                $postData['id'],
+                $postData['title'],
+                $postData['preview'],
+                $postData['content'],
+                $postData['author_id'],
+                $postData['user_nickname'],
+                $postData['last_editor_id'],
+                $postData['last_editor_nickname'],
+                $postData['create_date'],
+                $postData['publish_date'],
+                $postData['edit_date'],
+                $postData['category_id'],
+                $postData['category_name'],
+                $tags,
+                $postData['like_count'],
+                $postData['comment_count']
+            );
+        }
+        return $posts;
     }
 
-    public function deleteCategory(int $categoryId): bool
+    public function delete(int $id): bool
     {
-        return $this->databaseService->deleteCategory($categoryId);
+        return $this->databaseService->deleteCategory($id);
     }
 
     public function connectPostAndCategory(int $postId, int $categoryId): bool

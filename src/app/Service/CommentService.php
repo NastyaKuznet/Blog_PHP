@@ -15,7 +15,7 @@ class CommentService implements CommentServiceInterface
         $this->databaseService = $databaseService;
     }
 
-    public function getCommentsByPostId(int $postId): array
+    public function getByPostId(int $postId): array
     {
         $commentsFromDb = $this->databaseService->getCommentsByPostId($postId);
         $comments = [];
@@ -36,23 +36,23 @@ class CommentService implements CommentServiceInterface
         return $comments;
     }
 
-    public function addComment(string $content, int $postId, int $userId): bool
+    public function add(string $content, int $postId, int $userId): bool
     {
         return $this->databaseService->addComment($content, $postId, $userId);
     }
 
-    public function updateComment(int $commentId, string $newContent): bool
+    public function update(int $id, string $newContent): bool
     {
-        return $this->databaseService->updateComment($commentId, $newContent);
+        return $this->databaseService->updateComment($id, $newContent);
     }
 
-    public function deleteComment(int $commentId): bool
+    public function delete(int $id): bool
     {
-        return $this->databaseService->deleteComment($commentId);
+        return $this->databaseService->deleteComment($id);
     }
 
-    public function getCommentById(int $commentId): ?array
+    public function getById(int $id): ?array
     {
-        return $this->databaseService->getCommentById($commentId);
+        return $this->databaseService->getCommentById($id);
     }
 }

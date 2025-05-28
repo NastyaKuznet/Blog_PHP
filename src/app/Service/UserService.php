@@ -15,7 +15,7 @@ class UserService implements UserServiceInterface
         $this->databaseService = $databaseService;
     }
 
-    public function getUser(int $userId): User
+    public function get(int $userId): User
     {
         $userFromDB = $this->databaseService->getUserInfo($userId);
         return new User(
@@ -29,7 +29,7 @@ class UserService implements UserServiceInterface
         );
     }
 
-    public function getAllUsers(): array
+    public function getAll(): array
     {
         $usersFromDb = $this->databaseService->getAllUsers();
         $users = [];
@@ -47,12 +47,17 @@ class UserService implements UserServiceInterface
         return $users;
     }
     
-    public function changeUserRole($user_id, $new_role_id) : bool 
+    public function changeRole(int $userId, int $newRoleId) : bool 
     {
-        return $this->databaseService->changeUserRole($user_id, $new_role_id);
+        return $this->databaseService->changeUserRole($userId, $newRoleId);
     }
 
-    public function toggleUserBan(int $userId, bool $isBanned): bool
+    public function delete(int $userId) : bool 
+    {
+        return $this->databaseService->deleteUser($userId);
+    }
+
+    public function toggleBan(int $userId, bool $isBanned): bool
     {
         return $this->databaseService->toggleUserBan($userId, $isBanned);
     }

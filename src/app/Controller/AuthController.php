@@ -49,17 +49,16 @@ class AuthController
         $data = $request->getParsedBody();
         $username = $data['username'] ?? '';
         $password = $data['password'] ?? '';
-
         try {
-            $checkUser = $this->authService->checkUserRegistration($username, $password);
+            $checkUser = $this->authService->checkRegistration($username, $password);
             if ($checkUser){
                 return $this->view->render($response, 'auth/register.twig', [
                     'error' => '<div class="error">Такой никнейм уже существует</div>'
                 ]);
             }
-            $this->authService->registerUser($username, $password);
+            $this->authService->register($username, $password);
             // После регистрации сразу логиним пользователя
-            $user = $this->authService->authenticateUser($username, $password);
+            $user = $this->authService->authenticate($username, $password);
 
             // Вызываем наш отдельный метод для установки токена
             $response = $this->setTokenInCookie($response, $user);
@@ -82,8 +81,7 @@ class AuthController
         $username = $data['username'] ?? '';
         $password = $data['password'] ?? '';
         try {
-            $user = $this->authService->authenticateUser($username, $password);
-
+            $user = $this->authService->authenticate($username, $password);
             if (!$user) {
                 return $this->view->render($response, 'auth/login.twig', [
                     'error' => '<div class="error">Неверное имя или пароль</div>'
