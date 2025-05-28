@@ -20,7 +20,7 @@ class UserService implements UserServiceInterface
         $userFromDB = $this->databaseService->getUserInfo($userId);
         return new User(
             $userFromDB["id"],
-            $userFromDB["nickname"],
+            $userFromDB["login"],
             $userFromDB["password"],
             $userFromDB["role_id"],
             $userFromDB["role_name"],
@@ -36,7 +36,7 @@ class UserService implements UserServiceInterface
         foreach ($usersFromDb as $userData) {
             $users[] = new User(
                 $userData["id"],
-                $userData["nickname"],
+                $userData["login"],
                 $userData["password"],
                 $userData["role_id"],
                 $userData["role_name"],

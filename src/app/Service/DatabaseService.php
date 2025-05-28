@@ -4,11 +4,13 @@ namespace NastyaKuznet\Blog\Service;
 use NastyaKuznet\Blog\Service\interfaces\DatabaseServiceInterface;
 
 use PDO;
-use PDOException; 
+use PDOException;
+use Throwable;
 
 class DatabaseService implements DatabaseServiceInterface
 {
     public $pdo;
+    private array $preparedStatements = [];
 
     public function __construct(array $config)
     {
@@ -20,36 +22,67 @@ class DatabaseService implements DatabaseServiceInterface
         try {
             $this->pdo = new PDO("pgsql:host=$host;dbname=$dbname", $username, $password);
             $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-            $this->pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC); //Установите режим выборки по умолчанию
+            $this->pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+            
+            $this->prepareStatements();
         } catch (PDOException $e) {
-            throw new \Exception("Ошибка подключения к базе данных: " . $e->getMessage());
+            throw new \RuntimeException("Database connection failed", 0, $e);
         }
+    }
+
+    private function prepareStatements(): void
+    {
+        $sqlDir = __DIR__.'/sql';
+        $queries = $this->loadSqlQueriesRecursively($sqlDir);
+        
+        foreach ($queries as $name => $sql) {
+            try {
+                $this->preparedStatements[$name] = $this->pdo->prepare($sql);
+            } catch (PDOException $e) {
+                throw new \RuntimeException("Failed to prepare database statements", 0, $e);
+            }
+        }
+    }
+
+    private function loadSqlQueriesRecursively(string $baseDir, string $subDir = ''): array
+    {
+        $queries = [];
+        $currentDir = $baseDir . ($subDir ? DIRECTORY_SEPARATOR . $subDir : '');
+        
+        if (!is_dir($currentDir)) {
+            return $queries;
+        }
+        
+        $items = scandir($currentDir);
+        
+        foreach ($items as $item) {
+            if ($item === '.' || $item === '..') {
+                continue;
+            }
+            
+            $path = $currentDir . DIRECTORY_SEPARATOR . $item;
+            
+            if (is_dir($path)) {
+                $subQueries = $this->loadSqlQueriesRecursively($baseDir, $subDir . DIRECTORY_SEPARATOR . $item);
+                $queries = array_merge($queries, $subQueries);
+            } elseif (pathinfo($item, PATHINFO_EXTENSION) === 'sql') {
+                $queryName = pathinfo($item, PATHINFO_FILENAME);
+                $queries[$queryName] = file_get_contents($path);
+            }
+        }
+        
+        return $queries;
     }
 
     // Метод для получения всех опубликованных постов
     public function getAllPosts(): array
     {
         try {
-            $stmt = $this->pdo->query("SELECT p.*, 
-                                            u.nickname as user_nickname, 
-                                            u2.nickname as last_editor_nickname,
-                                            ca.id as category_id,
-                                            ca.name as category_name,
-                                            COUNT(l.id) as like_count,
-                                            COUNT(CASE WHEN c.is_delete = false THEN c.id ELSE NULL END) as comment_count
-                                        FROM posts p
-                                        LEFT JOIN comments c ON p.id = c.post_id
-                                        LEFT JOIN likes l ON p.id = l.post_id
-                                        LEFT JOIN category_posts cp ON cp.post_id = p.id
-                                        LEFT JOIN categories ca ON ca.id = cp.category_id
-                                        JOIN users u ON p.author_id = u.id
-                                        JOIN users u2 ON p.last_editor_id = u2.id
-                                        WHERE p.is_publish = true and p.is_delete = false
-                                        GROUP BY p.id, u.nickname, u2.nickname, ca.id;");
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            echo "Ошибка при получении постов: " . $e->getMessage();
-            return [];
+            $stmt = $this->preparedStatements['getAllPosts'];
+            $stmt->execute();
+            return $stmt->fetchAll();
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error receiving posts", 0, $e);
         }
     }
 
@@ -57,27 +90,11 @@ class DatabaseService implements DatabaseServiceInterface
     public function getPostsByAuthorAlphabetical(): array
     {
         try {
-            $stmt = $this->pdo->query("SELECT p.* , 
-                                                u.nickname as user_nickname, 
-                                                u2.nickname as last_editor_nickname,
-                                                ca.id as category_id,
-                                                ca.name as category_name,
-                                                COUNT(l.id) as like_count,
-                                                COUNT(CASE WHEN c.is_delete = false THEN c.id ELSE NULL END) as comment_count
-                                        FROM posts p 
-                                        LEFT JOIN comments c ON p.id = c.post_id
-                                        LEFT JOIN likes l ON p.id = l.post_id
-                                        LEFT JOIN category_posts cp ON cp.post_id = p.id
-                                        LEFT JOIN categories ca ON ca.id = cp.category_id
-                                        JOIN users u ON p.author_id = u.id  
-                                        JOIN users u2 ON p.last_editor_id = u2.id
-                                        WHERE p.is_publish = true and p.is_delete = false
-                                        GROUP BY p.id, u.nickname, u2.nickname, ca.id
-                                        ORDER BY u.nickname ASC;");
+            $stmt = $this->preparedStatements['getPostsByAuthorAlphabetical'];
+            $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            echo "Ошибка при получении постов по автору: " . $e->getMessage();
-            return [];
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when receiving posts by author asc", 0, $e);
         }
     }
 
@@ -85,55 +102,23 @@ class DatabaseService implements DatabaseServiceInterface
     public function getPostsByAuthorReverseAlphabetical(): array
     {
         try {
-            $stmt = $this->pdo->query("SELECT p.*, 
-                                            u.nickname as user_nickname, 
-                                            u2.nickname as last_editor_nickname,
-                                            ca.id as category_id,
-                                            ca.name as category_name,
-                                            COUNT(l.id) as like_count,
-                                            COUNT(CASE WHEN c.is_delete = false THEN c.id ELSE NULL END) as comment_count
-                                        FROM posts p 
-                                        LEFT JOIN comments c ON p.id = c.post_id
-                                        LEFT JOIN likes l ON p.id = l.post_id
-                                        LEFT JOIN category_posts cp ON cp.post_id = p.id
-                                        LEFT JOIN categories ca ON ca.id = cp.category_id
-                                        JOIN users u ON p.author_id = u.id
-                                        JOIN users u2 ON p.last_editor_id = u2.id
-                                        WHERE p.is_publish = true and p.is_delete = false
-                                        GROUP BY p.id, u.nickname, u2.nickname, ca.id
-                                        ORDER BY u.nickname DESC;");
+            $stmt = $this->preparedStatements['getPostsByAuthorReverseAlphabetical'];
+            $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            echo "Ошибка при получении постов по автору: " . $e->getMessage();
-            return [];
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when receiving posts by author desc", 0, $e);
         }
     }
 
     // Метод для получения всех постов по конкретному нику автора
-    public function getPostsByAuthor($author_nickname): array
+    public function getPostsByAuthor($author_login): array
     {
         try {
-            $stmt = $this->pdo->prepare("SELECT p.*, 
-                                            u.nickname as user_nickname, 
-                                            u2.nickname as last_editor_nickname,
-                                            ca.id as category_id,
-                                            ca.name as category_name,
-                                            COUNT(l.id) as like_count,
-                                            COUNT(CASE WHEN c.is_delete = false THEN c.id ELSE NULL END) as comment_count
-                                        FROM posts p 
-                                        LEFT JOIN comments c ON p.id = c.post_id
-                                        LEFT JOIN likes l ON p.id = l.post_id
-                                        LEFT JOIN category_posts cp ON cp.post_id = p.id
-                                        LEFT JOIN categories ca ON ca.id = cp.category_id
-                                        JOIN users u ON p.author_id = u.id
-                                        JOIN users u2 ON p.last_editor_id = u2.id 
-                                        WHERE u.nickname = :author_nickname AND p.is_publish = true AND p.is_delete = false
-                                        GROUP BY p.id, u.nickname, u2.nickname, ca.id;");
-            $stmt->execute(['author_nickname' => $author_nickname]);
+            $stmt = $this->preparedStatements['getPostsByAuthor'];
+            $stmt->execute(['author_login' => $author_login]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            echo "Ошибка при получении постов по автору: " . $e->getMessage();
-            return [];
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when receiving posts by author", 0, $e);
         }
     }
 
@@ -141,27 +126,11 @@ class DatabaseService implements DatabaseServiceInterface
     public function getPostsByLikesAscending(): array
     {
         try {
-            $stmt = $this->pdo->query("SELECT p.*, 
-                                            u.nickname as user_nickname,
-                                            u2.nickname as last_editor_nickname,
-                                            ca.id as category_id,
-                                            ca.name as category_name,
-                                            COUNT(l.id) as like_count,
-                                            COUNT(CASE WHEN c.is_delete = false THEN c.id ELSE NULL END) as comment_count
-                                        FROM posts p 
-                                        LEFT JOIN comments c ON p.id = c.post_id
-                                        LEFT JOIN likes l ON p.id = l.post_id
-                                        LEFT JOIN category_posts cp ON cp.post_id = p.id
-                                        LEFT JOIN categories ca ON ca.id = cp.category_id
-                                        JOIN users u ON p.author_id = u.id
-                                        JOIN users u2 ON p.last_editor_id = u2.id 
-                                        WHERE p.is_publish = true and p.is_delete = false
-                                        GROUP BY p.id, u.nickname, u2.nickname, ca.id
-                                        ORDER BY like_count ASC;");
+            $stmt = $this->preparedStatements['getPostsByLikesAscending'];
+            $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            echo "Ошибка при получении постов по лайкам: " . $e->getMessage();
-            return [];
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when receiving posts by likes asc", 0, $e);
         }
     }
 
@@ -169,27 +138,11 @@ class DatabaseService implements DatabaseServiceInterface
     public function getPostsByLikesDescending(): array
     {
         try {
-            $stmt = $this->pdo->query("SELECT p.*, 
-                                            u.nickname as user_nickname, 
-                                            u2.nickname as last_editor_nickname,
-                                            ca.id as category_id,
-                                            ca.name as category_name,
-                                            COUNT(l.id) as like_count,
-                                            COUNT(CASE WHEN c.is_delete = false THEN c.id ELSE NULL END) as comment_count
-                                        FROM posts p 
-                                        LEFT JOIN comments c ON p.id = c.post_id
-                                        LEFT JOIN likes l ON p.id = l.post_id
-                                        JOIN users u ON p.author_id = u.id  
-                                        JOIN users u2 ON p.last_editor_id = u2.id
-                                        LEFT JOIN category_posts cp ON cp.post_id = p.id
-                                        LEFT JOIN categories ca ON ca.id = cp.category_id
-                                        WHERE p.is_publish = true and p.is_delete = false
-                                        GROUP BY p.id, u.nickname, u2.nickname, ca.id
-                                        ORDER BY like_count DESC;");
+            $stmt = $this->preparedStatements['getPostsByLikesDescending'];
+            $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            echo "Ошибка при получении постов по лайкам: " . $e->getMessage();
-            return [];
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when receiving posts by likes desc", 0, $e);
         }
     }
 
@@ -197,27 +150,11 @@ class DatabaseService implements DatabaseServiceInterface
     public function getPostsByCommentsAscending(): array
     {
         try {
-            $stmt = $this->pdo->query("SELECT p.*, 
-                                            u.nickname as user_nickname,
-                                            u2.nickname as last_editor_nickname,
-                                            ca.id as category_id,
-                                            ca.name as category_name,
-                                            COUNT(l.id) as like_count,
-                                            COUNT(CASE WHEN c.is_delete = false THEN c.id ELSE NULL END) as comment_count
-                                        FROM posts p 
-                                        LEFT JOIN comments c ON p.id = c.post_id
-                                        LEFT JOIN likes l ON p.id = l.post_id
-                                        LEFT JOIN category_posts cp ON cp.post_id = p.id
-                                        LEFT JOIN categories ca ON ca.id = cp.category_id
-                                        JOIN users u ON p.author_id = u.id
-                                        JOIN users u2 ON p.last_editor_id = u2.id
-                                        WHERE p.is_publish = true and p.is_delete = false
-                                        GROUP BY p.id, u.nickname, u2.nickname, ca.id
-                                        ORDER BY comment_count ASC;");
+            $stmt = $this->preparedStatements['getPostsByCommentsAscending'];
+            $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            echo "Ошибка при получении постов по комментариям: " . $e->getMessage();
-            return [];
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when receiving posts by count comments asc", 0, $e);
         }
     }
 
@@ -225,55 +162,22 @@ class DatabaseService implements DatabaseServiceInterface
     public function getPostsByCommentsDescending(): array
     {
         try {
-            $stmt = $this->pdo->query("SELECT p.*, 
-                                            u.nickname as user_nickname, 
-                                            u2.nickname as last_editor_nickname,
-                                            ca.id as category_id,
-                                            ca.name as category_name,
-                                            COUNT(l.id) as like_count,
-                                            COUNT(CASE WHEN c.is_delete = false THEN c.id ELSE NULL END) as comment_count
-                                        FROM posts p 
-                                        LEFT JOIN comments c ON p.id = c.post_id
-                                        LEFT JOIN likes l ON p.id = l.post_id
-                                        LEFT JOIN category_posts cp ON cp.post_id = p.id
-                                        LEFT JOIN categories ca ON ca.id = cp.category_id
-                                        JOIN users u ON p.author_id = u.id 
-                                        JOIN users u2 ON p.last_editor_id = u2.id 
-                                        WHERE p.is_publish = true and p.is_delete = false
-                                        GROUP BY p.id, u.nickname, u2.nickname, ca.id
-                                        ORDER BY comment_count DESC;");
+            $stmt = $this->preparedStatements['getPostsByCommentsDescending'];
+            $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            echo "Ошибка при получении постов по комментариям: " . $e->getMessage();
-            return [];
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when receiving posts by count comments desc", 0, $e);
         }
     }
 
     public function getPostsByTag(string $tagName): array
     {
         try {
-            $stmt = $this->pdo->prepare("SELECT p.* ,
-                                        u.nickname as user_nickname, 
-                                        u2.nickname as last_editor_nickname,
-                                        ca.id as category_id,
-                                        ca.name as category_name,
-                                        COUNT(l.id) as like_count,
-                                        COUNT(CASE WHEN c.is_delete = false THEN c.id ELSE NULL END) as comment_count
-                                        FROM tags t 
-                                        JOIN posts p ON t.post_id = p.id
-                                        LEFT JOIN comments c ON p.id = c.post_id
-                                        LEFT JOIN likes l ON p.id = l.post_id
-                                        LEFT JOIN category_posts cp ON cp.post_id = p.id
-                                        LEFT JOIN categories ca ON ca.id = cp.category_id
-                                        JOIN users u2 ON p.last_editor_id = u2.id 
-                                        JOIN users u ON p.author_id = u.id  
-                                        WHERE t.name = :tag_name
-                                        GROUP BY p.id, u.nickname, u2.nickname, ca.id");
+            $stmt = $this->preparedStatements['getPostsByTag'];
             $stmt->execute(['tag_name' => $tagName]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            echo "Ошибка при получении постов по тегу: " . $e->getMessage();
-            return [];
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when receiving posts by tag", 0, $e);
         }
     }
 
@@ -281,27 +185,11 @@ class DatabaseService implements DatabaseServiceInterface
     public function getPostsByUserId(int $userId):array
     {
         try {
-            $stmt = $this->pdo->prepare("SELECT p.*, 
-                                            u.nickname as user_nickname,
-                                            u2.nickname as last_editor_nickname, 
-                                            ca.id as category_id,
-                                            ca.name as category_name,
-                                            COUNT(l.id) as like_count,
-                                            COUNT(CASE WHEN c.is_delete = false THEN c.id ELSE NULL END) as comment_count
-                                        FROM posts p 
-                                        LEFT JOIN comments c ON p.id = c.post_id
-                                        LEFT JOIN likes l ON p.id = l.post_id
-                                        LEFT JOIN category_posts cp ON cp.post_id = p.id
-                                        LEFT JOIN categories ca ON ca.id = cp.category_id
-                                        JOIN users u ON p.author_id = u.id  
-                                        JOIN users u2 ON p.last_editor_id = u2.id
-                                        WHERE u.id = :user_id and p.is_publish = true
-                                        GROUP BY p.id, u.nickname, u2.nickname, ca.id;");
+            $stmt = $this->preparedStatements['getPostsByUserId'];
             $stmt->execute(['user_id' => $userId]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            echo "Ошибка при получении постов по юзер id: " . $e->getMessage();
-            return [];
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when receiving posts by user id", 0, $e);
         }
     }
 
@@ -309,28 +197,21 @@ class DatabaseService implements DatabaseServiceInterface
     public function getAllNonPublishPosts(): array
     {
         try {
-            $stmt = $this->pdo->query("SELECT p.*, 
-                                            u.nickname as user_nickname, 
-                                            u2.nickname as last_editor_nickname
-                                        FROM posts p
-                                        JOIN users u ON p.author_id = u.id
-                                        JOIN users u2 ON p.last_editor_id = u2.id
-                                        WHERE p.is_publish = false and p.is_delete = false
-                                        GROUP BY p.id, u.nickname, u2.nickname;");
+            $stmt = $this->preparedStatements['getAllNonPublishPosts'];
+            $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            echo "Ошибка при получении постов: " . $e->getMessage();
-            return [];
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when receiving all non publish posts", 0, $e);
         }
     }
 
     // Метод для получения поста по ид
     public function getPostById(int $postId): ?array
-    {
+    { 
         try {
             $this->pdo->beginTransaction();
 
-            $stmt = $this->pdo->prepare("SELECT * FROM posts WHERE id = :postId");
+            $stmt = $this->preparedStatements['getPostById'];
             $stmt->execute([':postId' => $postId]);
             $post = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -339,32 +220,32 @@ class DatabaseService implements DatabaseServiceInterface
                 return null;
             }
 
-            $stmt = $this->pdo->prepare("SELECT COUNT(*) FROM likes WHERE post_id = :postId");
+            $stmt = $this->preparedStatements['getLikeCountForPost'];
             $stmt->execute([':postId' => $postId]);
             $likeCount = $stmt->fetchColumn();
 
-            $stmt = $this->pdo->prepare("SELECT COUNT(*) FROM comments WHERE post_id = :postId AND is_delete = false");
+            $stmt = $this->preparedStatements['getCommentCountForPost'];
             $stmt->execute([':postId' => $postId]);
             $commentCount = $stmt->fetchColumn();
 
             $authorId = $post['author_id'];
-            $stmt = $this->pdo->prepare("SELECT nickname FROM users WHERE id = :authorId");
-            $stmt->execute([':authorId' => $authorId]);
-            $authorNickname = $stmt->fetchColumn();
+            $stmt = $this->preparedStatements['getUserLoginById'];
+            $stmt->execute([':user_id' => $authorId]);
+            $authorLogin = $stmt->fetchColumn();
 
-            $editorNickname = null;
+            $editorLogin = null;
             if (isset($post['last_editor_id']) && $post['last_editor_id'] !== null) 
             {
                 $lastEditorId = $post['last_editor_id'];
-                $stmt = $this->pdo->prepare("SELECT nickname FROM users WHERE id = :lastEditorId");
-                $stmt->execute([':lastEditorId' => $lastEditorId]);
-                $editorNickname = $stmt->fetchColumn();
+                $stmt = $this->preparedStatements['getUserLoginById'];
+                $stmt->execute([':user_id' => $lastEditorId]);
+                $editorLogin = $stmt->fetchColumn();
             }
-            $stmt = $this->pdo->prepare("SELECT category_id FROM category_posts WHERE post_id = :post_id");
+            $stmt = $this->preparedStatements['getPostCategoryId'];
             $stmt->execute([':post_id' => $postId]);
             $categoryId = $stmt->fetchColumn();
 
-            $stmt = $this->pdo->prepare("SELECT name FROM categories WHERE id = :category_id");
+            $stmt = $this->preparedStatements['getCategoryNameById'];
             $stmt->execute([':category_id' => $categoryId]);
             $categoryName = $stmt->fetchColumn();
 
@@ -374,20 +255,19 @@ class DatabaseService implements DatabaseServiceInterface
                 'post' => $post,
                 'like_count' => $likeCount,
                 'comment_count' => $commentCount,
-                'author_nickname' => $authorNickname,
-                'last_editor_nickname' => $editorNickname,
+                'author_login' => $authorLogin,
+                'last_editor_login' => $editorLogin,
                 'category_id' => $categoryId,
                 'category_name' => $categoryName,
             ];
 
             return $result;
 
-        } catch (PDOException $e) {
+        } catch (Throwable $e) {
             if ($this->pdo->inTransaction()) {
                 $this->pdo->rollBack();
             }
-            echo "Ошибка в транзакции: " . $e->getMessage() . "\n";
-            return null;
+            throw new \RuntimeException("Transaction error", 0, $e);
         }
     }
 
@@ -397,37 +277,38 @@ class DatabaseService implements DatabaseServiceInterface
         try {
             $this->pdo->beginTransaction();
 
-            $stmt = $this->pdo->prepare("SELECT * FROM posts WHERE id = :postId");
+            $stmt = $this->preparedStatements['getNonPublishPostById'];
             $stmt->execute([':postId' => $postId]);
             $post = $stmt->fetch(PDO::FETCH_ASSOC);
 
             if (!$post) {
+                $this->pdo->rollBack();
                 echo "Пост с ID $postId не найден.\n";
                 return null;
             }
 
             $authorId = $post['author_id'];
-            $stmt = $this->pdo->prepare("SELECT nickname FROM users WHERE id = :authorId");
-            $stmt->execute([':authorId' => $authorId]);
-            $authorNickname = $stmt->fetchColumn();
+            $stmt = $this->preparedStatements['getUserLoginById'];
+            $stmt->execute([':user_id' => $authorId]);
+            $authorLogin = $stmt->fetchColumn();
 
-            $editorNickname = null;
+            $editorLogin = null;
             if (isset($post['last_editor_id']) && $post['last_editor_id'] !== null) 
             {
                 $lastEditorId = $post['last_editor_id'];
-                $stmt = $this->pdo->prepare("SELECT nickname FROM users WHERE id = :lastEditorId");
-                $stmt->execute([':lastEditorId' => $lastEditorId]);
-                $editorNickname = $stmt->fetchColumn();
+                $stmt = $this->preparedStatements['getUserLoginById'];
+                $stmt->execute([':user_id' => $lastEditorId]);
+                $editorLogin = $stmt->fetchColumn();
             }
 
-            $stmt = $this->pdo->prepare("SELECT category_id FROM category_posts WHERE post_id = :post_id");
+            $stmt = $this->preparedStatements['getPostCategoryId'];
             $stmt->execute([':post_id' => $postId]);
             $categoryId = $stmt->fetchColumn();
 
             $categoryName = "";
             if($categoryId)
             {
-                $stmt = $this->pdo->prepare("SELECT name FROM categories WHERE id = :category_id");
+                $stmt = $this->preparedStatements['getCategoryNameById'];
                 $stmt->execute([':category_id' => $categoryId]);
                 $categoryName = $stmt->fetchColumn();
             }
@@ -436,20 +317,19 @@ class DatabaseService implements DatabaseServiceInterface
 
             $result = [
                 'post' => $post,
-                'author_nickname' => $authorNickname,
-                'last_editor_nickname' => $editorNickname,
+                'author_login' => $authorLogin,
+                'last_editor_login' => $editorLogin,
                 'category_id' => $categoryId,
                 'category_name' => $categoryName,
             ];
 
             return $result;
 
-        } catch (PDOException $e) {
+        } catch (Throwable $e) {
             if ($this->pdo->inTransaction()) {
                 $this->pdo->rollBack();
             }
-            echo "Ошибка в транзакции: " . $e->getMessage() . "\n";
-            return null;
+            throw new \RuntimeException("Transaction error", 0, $e);
         }
     }
 
@@ -457,14 +337,11 @@ class DatabaseService implements DatabaseServiceInterface
     public function getCountPostsByUserId(int $userId):int
     {
         try {
-            $stmt = $this->pdo->prepare("SELECT COUNT(*) 
-                                        FROM posts p
-                                        WHERE p.author_id = :user_id and p.is_publish = true");
+            $stmt = $this->preparedStatements['getCountPostsByUserId'];
             $stmt->execute(['user_id' => $userId]);
             return (int) $stmt->fetchColumn();
-        } catch (PDOException $e) {
-            echo "Ошибка при получении количество постов: " . $e->getMessage();
-            return 0;
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when receiving the number of posts by user id", 0, $e);
         }
     }
 
@@ -472,7 +349,7 @@ class DatabaseService implements DatabaseServiceInterface
     public function addPost(string $title, string $preview, string $content, int $userId): bool
     {
         try {
-            $stmt = $this->pdo->prepare("INSERT INTO posts (title, preview, content, author_id, last_editor_id) VALUES (:title, :preview, :content, :author_id, :author_id)");
+            $stmt = $this->preparedStatements['addPost'];
             $stmt->execute([
                 'title' => $title,
                 'preview' => $preview,
@@ -480,9 +357,8 @@ class DatabaseService implements DatabaseServiceInterface
                 'author_id' => $userId
             ]);
             return $this->pdo->lastInsertId();
-        } catch (PDOException $e) {
-            echo "Ошибка при добавлении поста: " . $e->getMessage();
-            return 0;
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when adding a post", 0, $e);
         }
     }
 
@@ -490,13 +366,7 @@ class DatabaseService implements DatabaseServiceInterface
     public function editPost(int $postId, string $title, string $preview, string $content, int $editorId): bool
     {
         try {
-            $stmt = $this->pdo->prepare("UPDATE posts 
-                                        SET title = :title, 
-                                            preview = :preview,
-                                            content = :content,
-                                            edit_date = CURRENT_TIMESTAMP,
-                                            last_editor_id = :editor_id
-                                        WHERE id = :post_id");
+            $stmt = $this->preparedStatements['editPost'];
             $stmt->execute([
                 'title' => $title,
                 'preview' => $preview,
@@ -505,9 +375,8 @@ class DatabaseService implements DatabaseServiceInterface
                 'post_id' => $postId
             ]);
             return true;
-        } catch (PDOException $e) {
-            echo "Ошибка при редактировании поста: " . $e->getMessage();
-            return false;
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when editing a post", 0, $e);
         }
     }
 
@@ -515,17 +384,13 @@ class DatabaseService implements DatabaseServiceInterface
     public function deletePost(int $postId): bool
     {
         try {
-            $stmt = $this->pdo->prepare("UPDATE posts 
-                                        SET delete_date = CURRENT_TIMESTAMP, 
-                                            is_delete = true
-                                        WHERE id = :post_id");
+            $stmt = $this->preparedStatements['deletePost'];
             $stmt->execute([
                 'post_id' => $postId
             ]);
             return true;
-        } catch (PDOException $e) {
-            echo "Ошибка при установки даты удаления поста: " . $e->getMessage();
-            return false;
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when setting the date for deleting a post", 0, $e);
         }
     }
 
@@ -533,17 +398,11 @@ class DatabaseService implements DatabaseServiceInterface
     public function publishPost(int $postId): bool
     {
         try {
-            $stmt = $this->pdo->prepare("UPDATE posts 
-                                        SET publish_date = CURRENT_TIMESTAMP, 
-                                            is_publish = true
-                                        WHERE id = :post_id");
-            $stmt->execute([
-                'post_id' => $postId
-            ]);
+            $stmt = $this->preparedStatements['publishPost'];
+            $stmt->execute([':post_id' => $postId]);
             return true;
-        } catch (PDOException $e) {
-            echo "Ошибка при публикации поста: " . $e->getMessage();
-            return false;
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when publishing a post", 0, $e);
         }
     }
 
@@ -551,29 +410,24 @@ class DatabaseService implements DatabaseServiceInterface
     public function getCommentsByPostId(int $postId): array
     {
         try {
-            $stmt = $this->pdo->prepare("SELECT c.*, u.nickname as user_nickname
-                                        FROM comments c
-                                        JOIN users u ON c.user_id = u.id
-                                        WHERE c.post_id = :post_id AND c.is_delete = FALSE");
+            $stmt = $this->preparedStatements['getCommentsByPostId'];
             $stmt->execute(['post_id' => $postId]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            echo "Ошибка при получении коментариев по ид поста: " . $e->getMessage();
-            return [];
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when receiving comments on the post id", 0, $e);
         }
     }
 
     public function getCommentById(int $commentId): ?array
     {
         try {
-            $stmt = $this->pdo->prepare("SELECT * FROM comments WHERE id = :id AND is_delete = FALSE");
+            $stmt = $this->preparedStatements['getCommentById'];
             $stmt->execute(['id' => $commentId]);
             $result = $stmt->fetch(\PDO::FETCH_ASSOC);
 
             return $result ?: null;
-        } catch (\PDOException $e) {
-            error_log("Ошибка при получении комментария: " . $e->getMessage());
-            return null;
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when receiving a comment", 0, $e);
         }
     }
 
@@ -581,71 +435,56 @@ class DatabaseService implements DatabaseServiceInterface
     public function addComment(string $content, int $postId, int $userId): bool
     {
         try {
-            $stmt = $this->pdo->prepare("INSERT INTO comments (content, post_id, user_id, created_date, is_edit, is_delete) 
-                                        VALUES (:content, :post_id, :user_id, CURRENT_TIMESTAMP, FALSE, FALSE)");
+            $stmt = $this->preparedStatements['addComment'];
             $stmt->execute([
                 'content' => $content,
                 'post_id' => $postId,
                 'user_id' => $userId
             ]);
             return true;
-        } catch (PDOException $e) {
-            echo "Ошибка при добавлении коментария: " . $e->getMessage();
-            return false;
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when adding a comment", 0, $e);
         }
     }
 
     public function updateComment(int $commentId, string $newContent): bool
     {
         try {
-            $stmt = $this->pdo->prepare("UPDATE comments
-                                        SET content = :content,
-                                            edit_date = CURRENT_TIMESTAMP,
-                                            is_edit = TRUE
-                                        WHERE id = :comment_id");
+            $stmt = $this->preparedStatements['updateComment'];
             $stmt->execute([
                 'content' => $newContent,
                 'comment_id' => $commentId
             ]);
             return $stmt->rowCount() > 0;
-        } catch (PDOException $e) {
-            echo "Ошибка при обновлении комментария: " . $e->getMessage();
-            return false;
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error updating a comment", 0, $e);
         }
     }
 
     public function deleteComment(int $commentId): bool
     {
         try {
-            $stmt = $this->pdo->prepare("UPDATE comments
-                                        SET is_delete = TRUE,
-                                            delete_date = CURRENT_TIMESTAMP
-                                        WHERE id = :comment_id");
+            $stmt = $this->preparedStatements['deleteComment'];
             $stmt->execute(['comment_id' => $commentId]);
             return $stmt->rowCount() > 0;
-        } catch (PDOException $e) {
-            echo "Ошибка при мягком удалении комментария: " . $e->getMessage();
-            return false;
-        } 
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error deleting a comment", 0, $e);
+        }
     }
 
     // Метод для проверки поставлен ли лайк пользателем по определенному посту
     public function checkLikeByPostIdAndUserId(int $postId, int $userId): bool
     {
         try {
-            $stmt = $this->pdo->prepare("SELECT * 
-                                        FROM likes l
-                                        WHERE l.post_id = :post_id AND l.user_id = :user_id;
-                                        ");
+            $stmt = $this->preparedStatements['checkLikeByPostIdAndUserId'];
             $stmt->execute([
                 'post_id' => $postId,
                 'user_id' => $userId
             ]);
             $count = $stmt->fetchColumn();
             return $count > 0;
-        } catch (PDOException $e) {
-            echo "Ошибка при проверке лайка: " . $e->getMessage();
-            return false;
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error checking the like", 0, $e);
         }
     }
 
@@ -653,33 +492,28 @@ class DatabaseService implements DatabaseServiceInterface
     public function addLike(int $postId, int $userId): bool
     {
         try {
-            $stmt = $this->pdo->prepare("INSERT INTO likes (post_id, user_id) 
-                                        VALUES (:post_id, :user_id);");
+            $stmt = $this->preparedStatements['addLike'];
             $stmt->execute([
                 'post_id' => $postId,
                 'user_id' => $userId
             ]);
             return true;
-        } catch (PDOException $e) {
-            echo "Ошибка при добавлении лайка: " . $e->getMessage();
-            return false;
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error adding the like", 0, $e);
         }
     }
 
     public function deleteLike(int $postId, int $userId): bool
     {
         try {
-            $stmt = $this->pdo->prepare("DELETE FROM likes l
-                                        WHERE l.post_id = :post_id AND l.user_id = :user_id;
-                                        ");
+            $stmt = $this->preparedStatements['deleteLike'];
             $stmt->execute([
                 'post_id' => $postId,
                 'user_id' => $userId
             ]);
             return true;
-        } catch (PDOException $e) {
-            echo "Ошибка при удалении лайка: " . $e->getMessage();
-            return false;
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error deleting the like", 0, $e);
         }
     }
 
@@ -687,15 +521,11 @@ class DatabaseService implements DatabaseServiceInterface
     public function getUserInfo(int $user_id): array
     {
         try {
-            $stmt = $this->pdo->prepare("SELECT u.*, r.name AS role_name 
-                                        FROM users u 
-                                        JOIN roles r ON u.role_id = r.id 
-                                        WHERE u.id = :user_id");
+            $stmt = $this->preparedStatements['getUserInfo'];
             $stmt->execute(['user_id' => $user_id]);
             return $stmt->fetch(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            echo "Ошибка при получении информации о пользователе: " . $e->getMessage();
-            return [];
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when receiving user information", 0, $e);
         }
     }
 
@@ -703,14 +533,11 @@ class DatabaseService implements DatabaseServiceInterface
     public function getAllUsers(): array
     {
         try {
-            $stmt = $this->pdo->query("SELECT u.*, r.name as role_name 
-                                       FROM users u 
-                                       JOIN roles r ON u.role_id = r.id 
-                                       ORDER BY u.id ASC");
+            $stmt = $this->preparedStatements['getAllUsers'];
+            $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            echo "Ошибка при получении пользователей: " . $e->getMessage();
-            return [];
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when receiving all users", 0, $e);
         }
     }
 
@@ -718,89 +545,38 @@ class DatabaseService implements DatabaseServiceInterface
     public function changeUserRole(int $user_id, int $new_role_id): bool
     {
         try {
-            $stmt = $this->pdo->prepare("UPDATE users SET role_id = :new_role_id WHERE id = :user_id");
+            $stmt = $this->preparedStatements['changeUserRole'];
             $stmt->execute([
                 'new_role_id' => $new_role_id,
                 'user_id' => $user_id
             ]);
             return true;
-        } catch (PDOException $e) {
-            echo "Ошибка при изменении роли пользователя: " . $e->getMessage();
-            return false;
-        }
-    }
-
-    // Метод для удаления пользователя и всех его постов
-    public function deleteUser(int $user_id): bool
-    {
-        try {
-            $this->pdo->beginTransaction();
-
-            // Проверяем, существует ли пользователь
-            $stmt = $this->pdo->prepare("SELECT COUNT(*) FROM users WHERE id = ?");
-            $stmt->execute([$user_id]);
-            if ($stmt->fetchColumn() == 0) {
-                throw new \Exception("Пользователь с ID {$user_id} не найден.");
-            }
-
-            // Получаем все ID постов, написанных пользователем
-            $stmt = $this->pdo->prepare("SELECT id FROM posts WHERE user_id = ?");
-            $stmt->execute([$user_id]);
-            $postIds = $stmt->fetchAll(\PDO::FETCH_COLUMN); // Получаем массив ID постов
-
-            // Если есть посты, удаляем комментарии к этим постам
-            if (!empty($postIds)) {
-                // Создаем строку с плейсхолдерами для IN ()
-                $placeholders = str_repeat('?,', count($postIds) - 1) . '?';
-
-                // Подготавливаем запрос на удаление комментариев
-                $stmt = $this->pdo->prepare("DELETE FROM comments WHERE post_id IN ($placeholders)");
-
-                // Выполняем запрос, передавая массив ID постов
-                $stmt->execute($postIds);
-            }
-
-            // Удаляем все посты (автоматически удалятся комментарии благодаря ON DELETE CASCADE, если настроено)
-            $stmt = $this->pdo->prepare("DELETE FROM posts WHERE user_id = ?");
-            $stmt->execute([$user_id]);
-
-            // Удаляем пользователя
-            $stmt = $this->pdo->prepare("DELETE FROM users WHERE id = ?");
-            $stmt->execute([$user_id]);
-
-            $this->pdo->commit();
-            return true;
-        } catch (\PDOException | \Exception $e) {
-            $this->pdo->rollBack();
-            echo("Ошибка при удалении пользователя: " . $e->getMessage());
-            return false;
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when changing the user role", 0, $e);
         }
     }
 
     // Метод для добавления нового пользователя
-    public function addUser(string $nickname, string $password): bool
+    public function addUser(string $login, string $password): bool
     {
         try {
-            $stmt = $this->pdo->prepare("INSERT INTO users (nickname, password, role_id) VALUES (:nickname, :password, 2)");
+            $stmt = $this->preparedStatements['addUser'];
             $stmt->execute([
-                'nickname' => $nickname,
+                'login' => $login,
                 'password' => password_hash($password, PASSWORD_DEFAULT) // Хэшируем пароль
             ]);
             return true;
-        } catch (PDOException $e) {
-            echo "Ошибка при добавлении пользователя: " . $e->getMessage();
-            return false;
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when adding a user", 0, $e);
         }
     }
 
     // Метод для авторизации пользователя
-    public function authorizationUser(string $nickname, string $password): mixed
+    public function authorizationUser(string $login, string $password): mixed
     {
         try {
-            $stmt = $this->pdo->prepare("SELECT u.*, r.name AS role_name 
-                                        FROM users u JOIN roles r ON u.role_id = r.id 
-                                        WHERE u.nickname = :nickname");
-            $stmt->execute(['nickname' => $nickname]);
+            $stmt = $this->preparedStatements['authorizationUser'];
+            $stmt->execute(['login' => $login]);
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
             if ($user && password_verify($password, $user['password'])) {
@@ -808,26 +584,22 @@ class DatabaseService implements DatabaseServiceInterface
             } else {
                 return false;
             }
-        } catch (PDOException $e) {
-            echo "Ошибка при авторизации пользователя: " . $e->getMessage();
-            return false;
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error during user authorization", 0, $e);
         }
     }
 
     // Метод для проверки занятого ника
-    public function checkUserNickname(string $nickname): bool
+    public function checkUserLogin(string $login): bool
     {
         try {
-            $stmt = $this->pdo->prepare("SELECT u.*, r.name AS role_name 
-                                        FROM users u JOIN roles r ON u.role_id = r.id 
-                                        WHERE u.nickname = :nickname");
-            $stmt->execute(['nickname' => $nickname]);
+            $stmt = $this->preparedStatements['checkUserLogin'];
+            $stmt->execute(['login' => $login]);
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
            return !!$user;
-        } catch (PDOException $e) {
-            echo "Ошибка при проверке занятости ника: " . $e->getMessage();
-            return false;
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when checking the employment of a nickname", 0, $e);
         }
     }
   
@@ -835,12 +607,11 @@ class DatabaseService implements DatabaseServiceInterface
     public function toggleUserBan(int $userId, bool $isBanned): bool
     {
         try {
-            $stmt = $this->pdo->prepare("UPDATE users SET is_banned = ? WHERE id = ?");
+            $stmt = $this->preparedStatements['toggleUserBan'];
             $stmt->execute([$isBanned ? 't' : 'f', $userId]);
             return $stmt->rowCount() > 0;
-        } catch (PDOException $e) {
-            echo "Ошибка при изменении статуса забаненности пользователя: " . $e->getMessage();
-            return false;
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when changing the user's ban status", 0, $e);
         }
     }
 
@@ -848,13 +619,11 @@ class DatabaseService implements DatabaseServiceInterface
     public function getRoles(): array
     {
         try {
-            $stmt = $this->pdo->query("SELECT r.id, r.name 
-                                        FROM roles r");
-
-           return $stmt->fetchAll(PDO::FETCH_COLUMN);
-        } catch (PDOException $e) {
-            echo "Ошибка при получении списка ролей: " . $e->getMessage();
-            return [];
+            $stmt = $this->preparedStatements['getRoles'];
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_COLUMN);
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when getting the list of roles", 0, $e);
         }
     }
 
@@ -862,11 +631,11 @@ class DatabaseService implements DatabaseServiceInterface
     public function getAllTags(): array
     {
         try {
-            $stmt = $this->pdo->query("SELECT * FROM tags");
+            $stmt = $this->preparedStatements['getAllTags'];
+            $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            echo "Ошибка при получении тегов: " . $e->getMessage();
-            return [];
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error receiving tags", 0, $e);
         }
     }
 
@@ -874,16 +643,11 @@ class DatabaseService implements DatabaseServiceInterface
     public function getTagsByPostId(int $postId): array
     {
         try {
-            $stmt = $this->pdo->prepare("
-                SELECT t.*
-                FROM tags t
-                WHERE t.post_id = :post_id
-            ");
+            $stmt = $this->preparedStatements['getTagsByPostId'];
             $stmt->execute(['post_id' => $postId]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            echo "Ошибка при получении тегов поста: " . $e->getMessage();
-            return [];
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when receiving post tags", 0, $e);
         }
     }
 
@@ -891,11 +655,11 @@ class DatabaseService implements DatabaseServiceInterface
     public function getAllCategories(): array
     {
         try {
-            $stmt = $this->pdo->query("SELECT * FROM categories ORDER BY id ASC");
+            $stmt = $this->preparedStatements['getAllCategories'];
+            $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            echo "Ошибка при получении категорий: " . $e->getMessage();
-            return [];
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when getting categories", 0, $e);
         }
     }
 
@@ -903,28 +667,25 @@ class DatabaseService implements DatabaseServiceInterface
     public function addTag(string $name, int $postId): bool
     {
         try {
-            $stmt = $this->pdo->prepare("INSERT INTO tags (name, post_id) VALUES (:name, :post_id);");
+            $stmt = $this->preparedStatements['addTag'];
             $stmt->execute(['name' => $name, 'post_id' => $postId]);
             return true;
-        } catch (PDOException $e) {
-            error_log("Ошибка при добавлении тега: " . $e->getMessage());
-            return false;
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when adding the tag", 0, $e);
         }
     }
 
     public function deleteTag(string $name, int $postId): bool
     {
         try {
-            $stmt = $this->pdo->prepare("DELETE FROM tags t
-                                        WHERE t.name = :name AND t.post_id = :post_id;");
+            $stmt = $this->preparedStatements['deleteTag'];
             $stmt->execute([
                 'name' => $name, 
                 'post_id' => $postId
             ]);
             return true;
-        } catch (PDOException $e) {
-            error_log("Ошибка при добавлении тега: " . $e->getMessage());
-            return false;
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when adding the tag", 0, $e);
         }
     }
 
@@ -932,12 +693,11 @@ class DatabaseService implements DatabaseServiceInterface
     public function getCategoryById(int $categoryId): ?array
     {
         try {
-            $stmt = $this->pdo->prepare("SELECT * FROM categories WHERE id = :category_id");
+            $stmt = $this->preparedStatements['getCategoryById'];
             $stmt->execute(['category_id' => $categoryId]);
             return $stmt->fetch(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            echo "Ошибка при получении категории: " . $e->getMessage();
-            return null;
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when getting the category", 0, $e);
         }
     }
 
@@ -945,15 +705,14 @@ class DatabaseService implements DatabaseServiceInterface
     public function addCategory(string $name, ?int $parentId): bool
     {
         try {
-            $stmt = $this->pdo->prepare("INSERT INTO categories (name, parent_id) VALUES (:name, :parent_id)");
+            $stmt = $this->preparedStatements['addCategory'];
             $stmt->execute([
                 'name' => $name,
                 'parent_id' => $parentId
             ]);
             return true;
-        } catch (PDOException $e) {
-            echo "Ошибка при добавлении категории: " . $e->getMessage();
-            return false;
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when adding a category", 0, $e);
         }
     }
 
@@ -961,13 +720,12 @@ class DatabaseService implements DatabaseServiceInterface
     public function getTagIdByName(string $name): ?int
     {
         try {
-            $stmt = $this->pdo->prepare("SELECT id FROM tags WHERE name = :name LIMIT 1");
+            $stmt = $this->preparedStatements['getTagIdByName'];
             $stmt->execute(['name' => $name]);
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
             return $result ? (int)$result['id'] : null;
-        } catch (PDOException $e) {
-            error_log("Ошибка при получении ID тега: " . $e->getMessage());
-            return null;
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when getting the tag ID", 0, $e);
         }
     }
 
@@ -975,7 +733,7 @@ class DatabaseService implements DatabaseServiceInterface
     public function addPostAndGetId(string $title, string $preview, string $content, int $userId): ?int
     {
         try {
-            $stmt = $this->pdo->prepare("INSERT INTO posts (title, preview, content, author_id, last_editor_id) VALUES (:title, :preview, :content, :user_id, :user_id) RETURNING id");
+            $stmt = $this->preparedStatements['addPostAndGetId'];
             $stmt->execute([
                 'title' => $title,
                 'preview' => $preview,
@@ -984,9 +742,8 @@ class DatabaseService implements DatabaseServiceInterface
             ]);
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
             return $result ? (int)$result['id'] : null;
-        } catch (PDOException $e) {
-            error_log("Ошибка при добавлении поста: " . $e->getMessage());
-            return null;
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when adding a post", 0, $e);
         }
     }
 
@@ -994,17 +751,11 @@ class DatabaseService implements DatabaseServiceInterface
     public function getCategoriesByPostId(int $postId): array
     {
         try {
-            $stmt = $this->pdo->prepare("
-                SELECT c.*
-                FROM categories c
-                JOIN category_posts cp ON c.id = cp.category_id
-                WHERE cp.post_id = :post_id
-            ");
+            $stmt = $this->preparedStatements['getCategoriesByPostId'];
             $stmt->execute(['post_id' => $postId]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            echo "Ошибка при получении категорий поста: " . $e->getMessage();
-            return [];
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when getting post categories", 0, $e);
         }
     }
 
@@ -1012,37 +763,11 @@ class DatabaseService implements DatabaseServiceInterface
     public function getPostsByCategoryId(int $categoryId): array
     {
         try {
-            $stmt = $this->pdo->prepare("
-                WITH RECURSIVE category_tree AS (
-                SELECT id FROM categories WHERE id = :category_id
-                UNION ALL
-                SELECT c.id 
-                FROM categories c
-                INNER JOIN category_tree ct ON c.parent_id = ct.id
-            )
-            SELECT p.*, 
-                u.nickname as user_nickname,
-                u2.nickname as last_editor_nickname,
-                ca.id as category_id,
-                ca.name as category_name,  
-                COUNT(l.id) as like_count,
-                COUNT(CASE WHEN c.is_delete = false THEN c.id ELSE NULL END) as comment_count
-            FROM posts p
-            LEFT JOIN comments c ON p.id = c.post_id
-            LEFT JOIN likes l ON p.id = l.post_id
-            JOIN category_posts cp ON p.id = cp.post_id
-             LEFT JOIN categories ca ON ca.id = cp.category_id
-            JOIN users u ON p.author_id = u.id
-            JOIN users u2 ON p.last_editor_id = u2.id
-            WHERE cp.category_id IN (SELECT id FROM category_tree) AND p.is_publish = true
-            GROUP BY p.id, u.nickname, u2.nickname, ca.id;
-            ");
-
+            $stmt = $this->preparedStatements['getPostsByCategoryId'];
             $stmt->execute(['category_id' => $categoryId]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            echo "Ошибка при получении постов по категории: " . $e->getMessage();
-            return [];
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when receiving posts by category", 0, $e);
         }
     }                         
 
@@ -1050,42 +775,57 @@ class DatabaseService implements DatabaseServiceInterface
     public function deleteCategory(int $categoryId): bool
     {
         try {
-            $stmt = $this->pdo->prepare("DELETE FROM category_posts WHERE category_id = :category_id");
-            $stmt->execute(['category_id' => $categoryId]);
-
-            $stmt = $this->pdo->prepare("DELETE FROM categories WHERE id = :category_id");
-            $stmt->execute(['category_id' => $categoryId]);
-
+            $this->pdo->beginTransaction();
+            $this->markAsDeletedRecursive($categoryId);
+            $this->pdo->commit();
             return true;
-        } catch (PDOException $e) {
-            error_log("Ошибка удаления категории: " . $e->getMessage());
-            return false;
+        } catch (Throwable $e) {
+            throw new \RuntimeException("Error when marking a category as deleted", 0, $e);
         }
     }
 
+    // Рекурсивная функция для пометки категории и всех подкатегорий как удалённых
+    private function markAsDeletedRecursive(int $categoryId): void
+    {
+        $stmt = $this->preparedStatements['markCategoryAsDeleted'];
+        $stmt->execute([':category_id' => $categoryId]);
+
+        $stmt = $this->preparedStatements['getChildCategories'];
+        $stmt->execute(['category_id' => $categoryId]);
+
+        $children = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+        foreach ($children as $childId) {
+            $this->markAsDeletedRecursive($childId);
+        }
+    }
+
+    // Метод для добавления связи между постом и категорией
     public function connectPostAndCategory(int $postId, int $categoryId): bool
     {
         try {
             $this->pdo->beginTransaction();
-            $stmt = $this->pdo->prepare("DELETE FROM category_posts 
-                                        WHERE post_id = :post_id;");
+            
+            // Проверяем, что категория не удалена
+            $stmt = $this->preparedStatements['checkCategoryActive'];
+            $stmt->execute(['category_id' => $categoryId]);
+            if (!$stmt->fetch()) {
+                throw new PDOException("Категория не найдена или удалена");
+            }
 
+            $stmt = $this->preparedStatements['deletePostCategoryLinks'];
             $stmt->execute(['post_id' => $postId]);
 
-            $stmt = $this->pdo->prepare("INSERT INTO category_posts (category_id, post_id)
-                                        VALUES (:category_id, :post_id);");
-
-            $stmt->execute(['category_id' => $categoryId,
-                            'post_id' => $postId]);
+            $stmt = $this->preparedStatements['insertPostCategoryLink'];
+            $stmt->execute(['category_id' => $categoryId, 'post_id' => $postId]);
+            
             $this->pdo->commit();
-
             return true;
-        } catch (PDOException $e) {
+        } catch (Throwable $e) {
             if ($this->pdo->inTransaction()) {
                 $this->pdo->rollBack();
             }
-            error_log("Ошибка добавления связи между постом и категорией: " . $e->getMessage());
-            return false;
+            throw new \RuntimeException("Error adding a link between a post and a category", 0, $e);
         }
     }
 }

@@ -36,6 +36,9 @@ return [
 
     // Секретный ключ из .env
     'config.jwt_secret' => $_ENV['JWT_SECRET'],
+
+    // Добавляем конфиг прав доступа
+    'config.route_permissions' => require __DIR__ . '/routes_permissions.php',
     
     AuthService::class => create(AuthService::class)
         ->constructor(get(DatabaseService::class)),

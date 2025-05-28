@@ -1,0 +1,1 @@
+SELECT name FROM categories WHERE id = :category_id;

@@ -1,0 +1,1 @@
+UPDATE users SET is_banned = ? WHERE id = ?;

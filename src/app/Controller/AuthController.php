@@ -6,6 +6,7 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Http\Message\ResponseInterface as Response;
 use NastyaKuznet\Blog\Service\Interfaces\AuthServiceInterface;
 use Slim\Views\Twig;
+use Throwable;
 
 class AuthController
 {
@@ -38,82 +39,71 @@ class AuthController
         return $this->view->render($response, 'auth/register.twig');
     }
 
+    public function registerForm(Request $request, Response $response): Response
+    {
+        return $this->view->render($response, 'auth/register.twig');
+    }
+
     public function register(Request $request, Response $response): Response
     {
-        if ($request->getMethod() === 'GET') {
-            return $this->view->render($response, 'auth/register.twig');
-        }
-
         $data = $request->getParsedBody();
         $username = $data['username'] ?? '';
         $password = $data['password'] ?? '';
-
-        if (empty($username) || empty($password)) {
-            $html = '<div class="error">Заполните имя и пароль</div>';
-            $response->getBody()->write($html);
-            return $response
-                ->withHeader('Content-Type', 'text/html')
-                ->withStatus(400);
-        }
-
-        $checkUser = $this->authService->checkRegistration($username, $password);
-        if ($checkUser){
-            return $this->view->render($response, 'auth/register.twig', [
-                'error' => '<div class="error">Такой никнейм уже существует</div>'
-            ]);
-        }
-
-        $success = $this->authService->register($username, $password);
-
-        if ($success) {
+        try {
+            $checkUser = $this->authService->checkRegistration($username, $password);
+            if ($checkUser){
+                return $this->view->render($response, 'auth/register.twig', [
+                    'error' => '<div class="error">Такой никнейм уже существует</div>'
+                ]);
+            }
+            $this->authService->register($username, $password);
             // После регистрации сразу логиним пользователя
             $user = $this->authService->authenticate($username, $password);
 
             // Вызываем наш отдельный метод для установки токена
             $response = $this->setTokenInCookie($response, $user);
             return $response->withHeader('Location', '/')->withStatus(302);
-        } else {
-            return $this->view->render($response, 'auth/register.twig', [
-                'error' => '<div class="error">Ошибка при регистрации</div>'
-            ]);
-        }
+        } catch (Throwable){
+            $response->getBody()->write(json_encode(['error' => 'Internal Server Error']));
+            return $response->withStatus(500)
+                    ->withHeader('Content-Type', 'application/json');
+        }   
+    }
+
+    public function loginForm(Request $request, Response $response): Response
+    {
+        return $this->view->render($response, 'auth/login.twig');
     }
 
     public function login(Request $request, Response $response): Response
     {
-        if ($request->getMethod() === 'GET') {
-            return $this->view->render($response, 'auth/login.twig');
-        }
-
         $data = $request->getParsedBody();
         $username = $data['username'] ?? '';
         $password = $data['password'] ?? '';
+        try {
+            $user = $this->authService->authenticate($username, $password);
+            if (!$user) {
+                return $this->view->render($response, 'auth/login.twig', [
+                    'error' => '<div class="error">Неверное имя или пароль</div>'
+                ]);
+            }
 
-        if (empty($username) || empty($password)) {
-            return $this->view->render($response, 'auth/login.twig', [
-                'error' => '<div class="error">Введите имя и пароль</div>'
-            ]);
-        }
+            if($user->isBanned)
+            {
+                return $this->view->render($response, 'auth/login.twig', [
+                    'error' => '<div class="error">Вы забанены!</div>'
+                ])->withStatus(403);
+            }
 
-        $user = $this->authService->authenticate($username, $password);
+            // Вызываем отдельный метод для установки токена
+            $response = $this->setTokenInCookie($response, $user);
 
-        if (!$user) {
-            return $this->view->render($response, 'auth/login.twig', [
-                'error' => '<div class="error">Неверное имя или пароль</div>'
-            ]);
-        }
-
-        if($user->isBanned)
-        {
-            return $this->view->render($response, 'auth/login.twig', [
-                'error' => '<div class="error">Вы забанены!</div>'
-            ]);
-        }
-
-        // Вызываем отдельный метод для установки токена
-        $response = $this->setTokenInCookie($response, $user);
-
-        return $response->withHeader('Location', '/')->withStatus(302);
+            return $response->withHeader('Location', '/')->withStatus(302);
+        } catch (Throwable){
+            $response->getBody()->write(json_encode(['error' => 'Internal Server Error']));
+            return $response->withStatus(500)
+                    ->withHeader('Content-Type', 'application/json');
+        } 
     }
 
     /**
@@ -129,9 +119,16 @@ class AuthController
         $token = $this->authService->generateJwtToken($user, $_ENV['JWT_SECRET']);
 
         // Устанавливаем токен в куки
-        $response = $response->withHeader(
-            'Set-Cookie',
-            sprintf('token=%s; Path=/; HttpOnly; Secure; SameSite=Strict', $token)
+        setcookie(
+            'token',
+            $token,
+            [
+                'path' => '/',
+                'httponly' => true,
+                'secure' => true,
+                'samesite' => 'Strict',
+                'expires' => strtotime('+1 day')
+            ]
         );
 
         return $response;
@@ -140,9 +137,16 @@ class AuthController
     public function logout(Request $request, Response $response): Response
     {
         // Устанавливаем куку с пустым значением и прошедшим сроком действия
-        $response = $response->withHeader(
-            'Set-Cookie',
-            'token=; Path=/; Expires=' . gmdate('D, d M Y H:i:s', time() - 3600) . ' GMT'
+        setcookie(
+            'token',
+            '',
+            [
+                'path' => '/',
+                'httponly' => true,
+                'secure' => true,
+                'samesite' => 'Strict',
+                'expires' => time() - 3600
+            ]
         );
 
         // Перенаправляем на главную страницу

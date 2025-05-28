@@ -1,10 +1,9 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <title>Регистрация</title>
-    <link rel="stylesheet" href="/style.css">
-</head>
-<body>
+{# src/app/templates/auth/register.twig #}
+{% extends "layout.twig" %}
+
+{% block title %}Регистрация{% endblock %}
+
+{% block content %}
     <h2>Регистрация</h2>
     <form method="POST" action="/register">
         <input type="text" name="username" placeholder="Имя пользователя" required><br>
@@ -18,5 +17,4 @@
     {% if error %}
         <div class="error">{{ error|raw }}</div>
     {% endif %}
-</body>
-</html>
+{% endblock %}

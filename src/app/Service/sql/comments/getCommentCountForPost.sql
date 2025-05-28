@@ -1,0 +1,1 @@
+SELECT COUNT(*) FROM comments WHERE post_id = :postId AND is_delete = false;

@@ -6,6 +6,7 @@ use NastyaKuznet\Blog\Service\interfaces\CategoryServiceInterface;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Views\Twig;
+use Throwable;
 
 class CategoryController
 {
@@ -20,19 +21,31 @@ class CategoryController
 
     public function index(Request $request, Response $response): Response
     {
-        $categories = $this->categoryService->getAll();
-        return $this->view->render($response, 'categories/categories.twig', [
-            'categories' => $categories,
-        ]);
+        try {
+            $categories = $this->categoryService->getAll();
+            return $this->view->render($response, 'categories/categories.twig', [
+                'categories' => $categories,
+            ]);
+        } catch (Throwable){
+            $response->getBody()->write(json_encode(['error' => 'Internal Server Error']));
+            return $response->withStatus(500)
+                    ->withHeader('Content-Type', 'application/json');
+        } 
     }
 
     public function create(Request $request, Response $response): Response
     {
         if ($request->getMethod() === 'GET') {
-            $categories = $this->categoryService->getAll();
-            return $this->view->render($response, 'categories/create_category.twig', [
-                'categories' => $categories,
-            ]);
+            try {
+                $categories = $this->categoryService->getAll();
+                return $this->view->render($response, 'categories/create_category.twig', [
+                    'categories' => $categories,
+                ]);
+            } catch (Throwable){
+            $response->getBody()->write(json_encode(['error' => 'Internal Server Error']));
+            return $response->withStatus(500)
+                    ->withHeader('Content-Type', 'application/json');
+            } 
         }
 
         $data = $request->getParsedBody();
@@ -44,15 +57,15 @@ class CategoryController
                 'error' => '<div class="error">Введите название категории</div>'
             ]);
         }
-
-        $success = $this->categoryService->add($name, $parentId);
-        if ($success) {
+      
+        try {
+            $this->categoryService->add($name, $parentId);
             return $response->withHeader('Location', '/categories')->withStatus(302);
-        } else {
-            return $this->view->render($response, 'categories/create_category.twig', [
-                'error' => '<div class="error">Ошибка при создании категории</div>'
-            ]);
-        }
+        } catch (Throwable) {
+            $response->getBody()->write(json_encode(['error' => 'Internal Server Error']));
+            return $response->withStatus(500)
+                    ->withHeader('Content-Type', 'application/json');
+        } 
     }
 
     public function delete(Request $request, Response $response, array $args): Response
@@ -62,14 +75,13 @@ class CategoryController
         if (!$categoryId) {
             return $response->withHeader('Location', '/categories')->withStatus(302);
         }
-
-        $success = $this->categoryService->delete($categoryId);
-
-        if ($success) {
+        try {
+            $this->categoryService->delete($categoryId);
             return $response->withHeader('Location', '/categories')->withStatus(302);
-        } else {
-            $response->getBody()->write("Ошибка при удалении категории.");
-            return $response->withStatus(500);
-        }
+        } catch (Throwable) {
+            $response->getBody()->write(json_encode(['error' => 'Internal Server Error']));
+            return $response->withStatus(500)
+                    ->withHeader('Content-Type', 'application/json');
+        } 
     }
 }

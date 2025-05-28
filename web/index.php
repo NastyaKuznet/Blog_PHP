@@ -41,9 +41,9 @@ $errorMiddleware = $app->addErrorMiddleware(true, true, true);
 $container = $app->getContainer();
 
 $app->get('/', [PostController::class, 'index'])->add($container->get(AuthMiddleware::class));
-$app->get('/login', [AuthController::class, 'login']);
+$app->get('/login', [AuthController::class, 'loginForm']);
 $app->post('/login', [AuthController::class, 'login']);
-$app->get('/register', [AuthController::class, 'register']);
+$app->get('/register', [AuthController::class, 'registerForm']);
 $app->post('/register', [AuthController::class, 'register']);
 $app->post('/logout', [AuthController::class, 'logout'])->add($container->get(AuthMiddleware::class));
 $app->get('/account', [UserAccountController::class, 'index'])->add($container->get(AuthMiddleware::class));
@@ -61,6 +61,8 @@ $app->group('/post', function (RouteCollectorProxy $group) use ($container) {
     $group->post('/{id}/like', [PostController::class, 'likePost']);
     $group->get('/edit/{id}', [PostController::class, 'edit']);
     $group->post('/edit/{id}', [PostController::class, 'edit']);
+    $group->post('/save/{id}', [PostController::class, 'save']);
+    $group->post('/delete/{id}', [PostController::class, 'delete']);
 })->add(function ($request, $handler) use ($container) {
         $roleMiddlewareFactory = $container->get(RoleMiddlewareFactory::class);
         $uri = $request->getUri()->getPath();
@@ -101,7 +103,9 @@ $app->group('/category', function (RouteCollectorProxy $group) use ($container) 
 })->add($container->get(AuthMiddleware::class));
 $app->group('/post-non-publish', function (RouteCollectorProxy $group) use ($container) {
     $group->get('', [PostController::class, 'indexNonPublish']);
-    $group->map(['GET', 'POST'],'/{id}', [PostController::class, 'editNonPublish']);
+    $group->get('/{id}', [PostController::class, 'editNonPublish']);
+    $group->post('/publish/{id}', [PostController::class, 'publish']);
+    $group->post('/delete/{id}', [PostController::class, 'deleteNonPublish']);
 })->add(function ($request, $handler) use ($container) {
         $roleMiddlewareFactory = $container->get(RoleMiddlewareFactory::class);
         $adminRoleMiddleware = $roleMiddlewareFactory($container, ['moderator', 'admin']);
