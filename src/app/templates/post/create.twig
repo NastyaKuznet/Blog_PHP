@@ -1,0 +1,32 @@
+{% extends "layout.twig" %}
+{% block title %}Создание поста{% endblock %}
+
+{% block content %}
+<h1>Создание поста</h1>
+
+<form action="/post/create" method="POST">
+    <div>
+        <label for="title">Заголовок:</label><br>
+        <input type="text" id="title" name="title" required>
+    </div>
+    <div>
+        <label for="preview">Превью:</label><br>
+        <textarea id="preview" name="preview" rows="5" cols="50" required></textarea>
+    </div>
+    <div>
+        <label for="content">Содержание:</label><br>
+        <textarea id="content" name="content" rows="5" cols="50" required></textarea>
+    </div>
+    <div>
+        <label for="new_tag">Добавить тег:</label><br>
+        <input type="text" id="new_tag" placeholder="Введите тег">
+        <button type="button" onclick="addTag()">Добавить</button>
+    </div>
+
+    <div id="selected_tags" style="margin-top: 10px;"></div>
+    <div>
+        <button type="submit">Создать</button>
+        <a href="/">Лента</a>
+    </div>
+</form>
+{% endblock %}

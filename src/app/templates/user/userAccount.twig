@@ -1,0 +1,27 @@
+{# src/app/templates/user/userAccount.twig #}
+{% extends "layout.twig" %}
+
+{% block title %}Личный кабинет{% endblock %}
+
+{% block content %}
+<h1>Личный кабинет</h1>
+<p><strong>Имя пользователя:</strong> {{ user.nickname|escape }}</p>
+<p><strong>Роль:</strong> {{ user.roleName|escape }}</p>
+<p><strong>Дата регистрации:</strong> {{ user.registerDate|date('H:i d.m.Y', 'Asia/Yekaterinburg') }}</p>
+
+{% if user.roleName != 'reader' %}
+    <p><strong>Количество постов:</strong> {{ countPosts|escape }}</p>
+    <h2>Посты пользователя</h2>
+    <ul>
+        {% for post in posts %}
+            <li>
+                <strong>{{ post.title|escape }}</strong><br>
+                {{ post.preview|escape|nl2br }}<br>
+                <small>{{ post.created_at|escape }}</small>
+            </li>
+        {% endfor %}
+    </ul>
+{% endif %}
+
+<a href="/">← На главную</a>
+{% endblock %}

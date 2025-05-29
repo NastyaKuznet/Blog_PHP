@@ -1,0 +1,1 @@
+INSERT INTO tags (name, post_id) VALUES (:name, :post_id);

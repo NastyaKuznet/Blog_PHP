@@ -2,3 +2,6 @@
 /.idea/
 /vendor/
 /.bash_history
+/src/config/
+.env
+/.vs/Blog_PHP/v17

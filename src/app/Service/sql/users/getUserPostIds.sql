@@ -1,0 +1,1 @@
+SELECT id FROM posts WHERE user_id = ?;

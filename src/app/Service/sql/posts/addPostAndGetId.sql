@@ -1,0 +1,1 @@
+INSERT INTO posts (title, preview, content, author_id, last_editor_id) VALUES (:title, :preview, :content, :user_id, :user_id) RETURNING id;

@@ -1,0 +1,1 @@
+DELETE FROM tags t WHERE t.name = :name AND t.post_id = :post_id;

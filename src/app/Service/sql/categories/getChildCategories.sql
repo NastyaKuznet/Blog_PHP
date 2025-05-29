@@ -1,0 +1,1 @@
+SELECT id FROM categories WHERE parent_id = :category_id AND is_delete = FALSE;

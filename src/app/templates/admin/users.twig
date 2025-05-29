@@ -1,0 +1,47 @@
+{# src/app/templates/admin/users.twig #}
+{% extends "layout.twig" %}
+
+{% block title %}Управление пользователями{% endblock %}
+
+{% block content %}
+<h1>Пользователи</h1>
+<table border="1" cellpadding="5" cellspacing="0">
+    <tr>
+        <th>ID</th>
+        <th>Логин</th>
+        <th>Роль</th>
+        <th>Дата регистрации</th>
+        <th>Забанен</th>
+        <th>Действия</th>
+    </tr>
+    {% for user in users %}
+        <tr>
+            <td>{{ user.id|escape }}</td>
+            <td>{{ user.login|escape }}</td>
+            <td>{{ user.roleName|escape }}</td>
+            <td>{{ user.registerDate|date('H:i d.m.Y', 'Asia/Yekaterinburg') }}</td>
+            <td>{{ user.isBanned ? 'Да' : 'Нет' }}</td>
+            <td>
+                <!-- Форма для изменения роли -->
+                <form method="POST" action="/admin/change_role">
+                    <input type="hidden" name="user_id" value="{{ user.id|escape }}">
+                    <select name="new_role_id">
+                        <option value="1" {% if user.roleId == 1 %}selected{% endif %}>Читатель</option>
+                        <option value="2" {% if user.roleId == 2 %}selected{% endif %}>Писатель</option>
+                        <option value="3" {% if user.roleId == 3 %}selected{% endif %}>Модератор</option>
+                        <option value="4" {% if user.roleId == 4 %}selected{% endif %}>Администратор</option>
+                    </select>
+                    <button type="submit">Сохранить роль</button>
+                </form>
+                <!-- Форма для изменения статуса забаненности -->
+                <form method="POST" action="/admin/toggle_ban">
+                    <input type="hidden" name="user_id" value="{{ user.id|escape }}">
+                    <input type="hidden" name="is_banned" value="{{ user.isBanned ? 0 : 1 }}">
+                    <button type="submit">{{ user.isBanned ? 'Разбанить' : 'Забанить' }}</button>
+                </form>
+            </td>
+        </tr>
+    {% endfor %}
+</table>
+<a href="/">← На главную</a>
+{% endblock %}

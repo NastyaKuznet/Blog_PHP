@@ -1,0 +1,1 @@
+SELECT * FROM comments WHERE id = :id AND is_delete = FALSE;
